@@ -74,18 +74,16 @@ flowchart LR
 
     MEMSVC[Memory Service\n(Read/Write, Summaries)]
     TOOLS[Tool/Skills Runner\n(SSH, scripts, Slack, etc.)]
-    SQL[(Relational DB\nPostgres/SQLite\nprojects, timeline)]
-    VDB[(Vector DB\nQdrant/Chroma\nembeddings)]
-    OBJ[(Object Store\nFiles/MinIO\nnotes, docs)]
+    OBJ[(Object Store\n.skyra/projects\nversioned state)]
+    VDB[(Vector DB\nChroma\nsemantic index)]
 
     APIGW --> AGENT
     AGENT --> CLASS
     AGENT --> CHAT
     AGENT --> CODER
     AGENT --> MEMSVC
-    MEMSVC --> SQL
-    MEMSVC --> VDB
     MEMSVC --> OBJ
+    MEMSVC --> VDB
     AGENT --> TOOLS
   end
 
@@ -199,46 +197,45 @@ sequenceDiagram
 
 ## 7. Memory Architecture
 
-### 7.1 Structured Data (Relational DB)
+### 7.1 Object Store (System of Record)
 
-**Tables**:
-- projects
-- subprojects
-- events (timestamped facts)
-- preferences
+**Structure**:
+- `.skyra/projects/{project}/`
+- HEAD.json (current commit pointer)
+- state.json (materialized current state)
+- commits/ (immutable commit objects)
+- attachments/ (files, documents)
 
-### 7.2 Vector Memory
+**Usage**:
+- Versioned project state via commit objects
+- AI modifications through explicit commits only
+- File-based storage (local) or S3/MinIO (distributed)
 
-**Stores**:
-- Embedded conversation chunks
-- Embedded documents
-
-**Metadata**:
-- project_id
-- timestamp
-- importance
-- source_type
-
-### 7.3 Object Storage
+### 7.2 Vector Store (Derived Data)
 
 **Stores**:
-- PDFs
-- Markdown notes
-- Logs
-- Audio files
-- Attachments
+- Embedded project state snapshots
+- Embedded documents and attachments
+- Semantic index for fast retrieval
 
-## 8. Retrieval Strategy (Semantic + Temporal)
+**Characteristics**:
+- Can be rebuilt from object store
+- Not source of truth
+- Used for semantic search only
+
+## 8. Retrieval Strategy (Commit + Semantic + Temporal)
 
 1. Classifier determines project domain.
-2. Vector DB retrieves top-K similar entries.
-3. Results are re-ranked by:
-   - Recency
-   - Importance
-   - Source reliability
-4. Top results injected into LLM prompt.
+2. Vector store retrieves semantically similar content with temporal metadata.
+3. Object store provides recent commit context.
+4. Results are re-ranked by:
+   - Commit recency
+   - Semantic similarity
+   - Project relevance
+   - Temporal importance (recent events weighted higher)
+5. Top results injected into LLM prompt with timestamp context.
 
-**Rule**: Similarity finds what; metadata decides which version.
+**Rule**: Vector store finds relevant content; object store provides authoritative state; temporal metadata adds context.
 
 ## 9. OpenClaw Integration
 
