@@ -18,13 +18,195 @@ The system is composed of three main machines:
 
 Each machine has a clear responsibility.
 
-## 3. Model Roles
+## 3. Distributed Agent Architecture
+
+### 3.1 Agent Model Overview
+
+Each computer (laptop, desktop, server) runs a lightweight "Jarvis Agent" that extends the system's reach beyond the central control plane. The Mac mini remains the central orchestrator, sending high-level commands to agents for execution.
+
+**Jarvis Agents are execution-only components and do not perform reasoning, memory access, or model inference.**
+
+**Key Concepts:**
+
+- **Control Plane**: Mac mini maintains intelligence, memory, and decision-making
+- **Jarvis Agents**: Lightweight services on target machines
+- **Command Distribution**: High-level intents sent to agents for execution
+- **Secure Execution**: Allowlisted actions only, with authenticated connections
+
+### 3.2 Distributed System Diagram
+
+```mermaid
+flowchart TB
+  %% Voice Node
+  subgraph PI[Raspberry Pi • Voice Node]
+    WW[Wake Word]
+    STT[Speech-to-Text]
+    VCLIENT[Voice Client]
+    WW --> STT --> VCLIENT
+  end
+
+  %% Control Plane
+  subgraph CTRL[Mac mini • Control Plane]
+    APIGW[API Gateway]
+    ORCH[Orchestrator]
+    CORE[OpenClaw Core]
+
+    CHAT[Conversational Model]
+    CODER[Coding Model]
+
+    MEM[Memory Service]
+    OBJ[Object Store]
+    VDB[Vector DB]
+
+    APIGW --> ORCH
+    ORCH --> CORE
+    CORE --> CHAT
+    CORE --> CODER
+    CORE --> MEM
+    MEM --> OBJ
+    MEM --> VDB
+  end
+
+  %% GPU Machine
+  subgraph GPU[GPU Machine • Compute]
+    DEEP[DeepSeek Model]
+  end
+
+  %% Agent Machines
+  subgraph LAPTOP[Laptop • Agent]
+    LAGENT[Jarvis Agent\nWebSocket Client]
+    LEXEC[Command Executor]
+    LAGENT --> LEXEC
+  end
+
+  subgraph DESKTOP[Desktop • Agent]
+    DAGENT[Jarvis Agent\nWebSocket Client]
+    DEXEC[Command Executor]
+    DAGENT --> DEXEC
+  end
+
+  subgraph SERVER[Server • Agent]
+    SAGENT[Jarvis Agent\nWebSocket Client]
+    SEXEC[Command Executor]
+    SAGENT --> SEXEC
+  end
+
+  %% Connections
+  VCLIENT -->|voice| APIGW
+  AGENT -->|complex tasks| DEEP
+  ORCH -->|high-level commands| LAGENT
+  ORCH -->|high-level commands| DAGENT
+  ORCH -->|high-level commands| SAGENT
+
+  %% Secure outbound connections
+  LAGENT -.->|outbound WSS| CTRL
+  DAGENT -.->|outbound WSS| CTRL
+  SAGENT -.->|outbound WSS| CTRL
+```
+
+### 3.3 Agent Security Model
+
+#### Authentication & Authorization
+
+- **Token-based authentication** using mTLS or JWT tokens
+- **Allowlisted commands only** - agents reject unknown actions
+- **Non-root execution** - agents run as unprivileged users
+- **Audit logging** - all commands logged with timestamps and results
+
+#### Command Allowlist
+
+```json
+{
+  "allowed_actions": {
+    "open_vscode": {
+      "cmd": "code",
+      "args": ["."]
+    },
+    "open_browser": {
+      "cmd": "google-chrome",
+      "args": []
+    },
+    "open_terminal": {
+      "cmd": "gnome-terminal",
+      "args": []
+    },
+    "start_docker": {
+      "cmd": "docker-compose",
+      "args": ["up", "-d"]
+    },
+    "stop_docker": {
+      "cmd": "docker-compose",
+      "args": ["down"]
+    },
+    "start_minecraft_server": {
+      "cmd": "systemctl",
+      "args": ["start", "minecraft"]
+    }
+  }
+}
+```
+
+#### Network Security
+
+- **Outbound connections only** - agents initiate contact with control plane
+- **WebSocket or HTTPS** for secure command channels
+- **No inbound ports** - reduces attack surface on agent machines
+- **Command validation** - parameters validated against schemas
+
+### 3.4 Agent Communication Protocol
+
+#### Command Format
+
+```json
+{
+  "command_id": "cmd_12345",
+  "intent": "start_development_environment",
+  "action": "start_docker",
+  "parameters": {
+    "compose_file": "/path/to/docker-compose.yml",
+    "services": ["database", "redis"]
+  },
+  "timeout": 30
+}
+```
+
+#### Response Format
+
+```json
+{
+  "command_id": "cmd_12345",
+  "status": "success|error|timeout",
+  "result": "Docker containers started successfully",
+  "exit_code": 0,
+  "timestamp": "2026-02-11T22:15:30Z"
+}
+```
+
+### 3.5 Example Command Flow
+
+**User**: "Jarvis, open VS Code on my laptop."
+
+1. **Voice node** captures audio → sends text to control plane
+2. **Orchestrator** selects target: laptop, action: open_vscode
+3. **Control plane** sends command to laptop Jarvis Agent
+4. **Agent** executes local command (`code .`)
+5. **Agent** returns result to control plane
+6. **Control plane** responds to user: "VS Code opened on your laptop"
+
+---
+
+## 4. Concurrency and Job Model (Planned)
+
+The system will eventually support multiple concurrent user requests across voice, chat, and agent interactions. A formal job queue, request lifecycle management, and concurrency limits will be designed in a future iteration to ensure proper resource allocation and response ordering. This portion of the architecture is intentionally deferred for a later version to focus on core functionality first.
+
+## 5. Model Roles
 
 The system uses multiple specialized models instead of a single monolithic model.
 
 ### Mac mini (fast, always-on models)
 
 **Conversational Model**
+
 - Example: Llama 3.1 8B Instruct
 - Handles:
   - General conversation
@@ -33,6 +215,7 @@ The system uses multiple specialized models instead of a single monolithic model
   - Task routing
 
 **Coding / Tool Model**
+
 - Example: Qwen2.5-Coder 7B
 - Handles:
   - Script generation
@@ -43,6 +226,7 @@ The system uses multiple specialized models instead of a single monolithic model
 ### GPU Machine (heavy reasoning model)
 
 **Primary Reasoning Model**
+
 - Example: DeepSeek-Coder 33B+
 - Handles:
   - Complex coding
@@ -51,7 +235,7 @@ The system uses multiple specialized models instead of a single monolithic model
   - Deep debugging
   - Long-context tasks
 
-## 4. System Topology Diagram
+## 6. System Topology Diagram
 
 ```mermaid
 flowchart LR
@@ -99,7 +283,7 @@ flowchart LR
   APIGW -->|text for speech| TTS
 ```
 
-## 5. Voice Request Flow
+## 7. Voice Request Flow
 
 ```mermaid
 sequenceDiagram
@@ -132,28 +316,31 @@ sequenceDiagram
   Pi-->>User: Spoken response
 ```
 
-## 6. Component Responsibilities
+## 8. Component Responsibilities
 
-### 5.1 Raspberry Pi – Voice Node
+### 8.1 Raspberry Pi – Voice Node
 
 **Purpose**: Always-on audio interface.
 
 **Services**:
+
 - Wake word detection
 - Speech-to-text (STT)
 - Text-to-speech (TTS)
 - Voice client that sends text to Mac mini
 
 **Characteristics**:
+
 - Lightweight compute
 - Always powered on
 - Local network only
 
-### 5.2 Mac mini – Control Plane
+### 8.2 Mac mini – Control Plane
 
 **Purpose**: Orchestration, memory, APIs, tools, and fast local models.
 
 **Services**:
+
 - API gateway (/chat, /voice, /tools, /memory)
 - OpenClaw agent runtime (orchestrator + router)
 - Project classifier
@@ -166,40 +353,44 @@ sequenceDiagram
 
 **Local Models**:
 
-| Model | Role |
-|-------|------|
+| Model                 | Role                                 |
+| --------------------- | ------------------------------------ |
 | Llama 3.1 8B Instruct | Conversational interface and routing |
-| Qwen2.5-Coder 7B | Coding and tool execution |
+| Qwen2.5-Coder 7B      | Coding and tool execution            |
 
 **Datastores**:
+
 - Relational DB (projects, events, preferences)
 - Vector DB (embeddings)
 - Object storage (documents)
 
-### 5.3 GPU Machine – Compute Plane
+### 8.3 GPU Machine – Compute Plane
 
 **Purpose**: Heavy reasoning and large-model inference.
 
 **Services**:
+
 - DeepSeek-Coder (33B+)
 - LLM server (vLLM, TGI, or Ollama)
 
 **Characteristics**:
+
 - Dedicated GPU
 - High VRAM
 - Private network access only
 
 **Model Role**:
 
-| Model | Purpose |
-|-------|---------|
+| Model               | Purpose              |
+| ------------------- | -------------------- |
 | DeepSeek-Coder 33B+ | Main reasoning brain |
 
-## 7. Memory Architecture
+## 9. Memory Architecture
 
-### 7.1 Object Store (System of Record)
+### 9.1 Object Store (System of Record)
 
 **Structure**:
+
 - `.skyra/projects/{project}/`
 - HEAD.json (current commit pointer)
 - state.json (materialized current state)
@@ -207,23 +398,26 @@ sequenceDiagram
 - attachments/ (files, documents)
 
 **Usage**:
+
 - Versioned project state via commit objects
 - AI modifications through explicit commits only
 - File-based storage (local) or S3/MinIO (distributed)
 
-### 7.2 Vector Store (Derived Data)
+### 9.3 Vector Store (Derived Data)
 
 **Stores**:
+
 - Embedded project state snapshots
 - Embedded documents and attachments
 - Semantic index for fast retrieval
 
 **Characteristics**:
+
 - Can be rebuilt from object store
 - Not source of truth
 - Used for semantic search only
 
-## 8. Retrieval Strategy (Commit + Semantic + Temporal)
+## 9.4. Retrieval Strategy (Commit + Semantic + Temporal)
 
 1. Classifier determines project domain.
 2. Vector store retrieves semantically similar content with temporal metadata.
@@ -237,11 +431,12 @@ sequenceDiagram
 
 **Rule**: Vector store finds relevant content; object store provides authoritative state; temporal metadata adds context.
 
-## 9. OpenClaw Integration
+## 10. OpenClaw Integration
 
 OpenClaw runs on the Mac mini as the central orchestrator and model router.
 
 **Agent pipeline**:
+
 1. Receive message
 2. Run project and intent classifier
 3. Retrieve memory context
@@ -256,21 +451,25 @@ OpenClaw runs on the Mac mini as the central orchestrator and model router.
 ## 10. Network Layout
 
 ### Logical network
+
 - All machines on same LAN/VLAN
 - Token or mTLS between services
 - No public exposure of GPU machine
 
 ### Trust zones
-| Zone | Machine | Role |
-|------|---------|------|
-| Edge | Raspberry Pi | Voice input/output |
-| Control | Mac mini | Orchestration + memory + fast models |
-| Compute | GPU box | Deep reasoning model |
+
+| Zone    | Machine      | Role                                 |
+| ------- | ------------ | ------------------------------------ |
+| Edge    | Raspberry Pi | Voice input/output                   |
+| Control | Mac mini     | Orchestration + memory + fast models |
+| Compute | GPU box      | Deep reasoning model                 |
 
 ## 11. Deployment Strategy
 
 ### Phase 1 (single machine)
+
 Mac mini runs:
+
 - Llama conversational model
 - Qwen coding model
 - API
@@ -278,10 +477,12 @@ Mac mini runs:
 - OpenClaw agent
 
 ### Phase 2 (two machines)
+
 - GPU box hosts DeepSeek
 - Mac mini runs control plane + local models
 
 ### Phase 3 (three machines)
+
 - Raspberry Pi handles voice
 - Full modular architecture
 
@@ -295,11 +496,11 @@ Mac mini runs:
 
 ## 13. End-State Role Assignment
 
-| Machine | Role |
-|---------|------|
-| GPU Box | DeepSeek reasoning model |
-| Mac mini | OpenClaw agent, APIs, memory, tools, fast models |
-| Raspberry Pi | Voice interface |
+| Machine      | Role                                             |
+| ------------ | ------------------------------------------------ |
+| GPU Box      | DeepSeek reasoning model                         |
+| Mac mini     | OpenClaw agent, APIs, memory, tools, fast models |
+| Raspberry Pi | Voice interface                                  |
 
 ## 14. Example Capabilities
 
@@ -312,64 +513,60 @@ Mac mini runs:
 For every request:
 
 **Input**:
+
 - User message
 - Recent chat history
 - Project registry
 
 **Output**:
+
 - project_id
 - intent
 - confidence score
 
 If confidence is low:
+
 - Ask clarification
 - Or search across multiple projects
 
-## 9. OpenClaw Integration
-
-OpenClaw runs on the Mac mini.
-
-**Agent pipeline**:
-1. Receive message
-2. Run classifier
-3. Retrieve memory
-4. Call LLM on GPU box
-5. Execute tools if needed
-6. Write memory updates
-7. Return final response
-
-## 10. Network Layout
+## 15. Network Layout
 
 ### Logical network
+
 - All machines on same LAN/VLAN
 - Token or mTLS between services
 - No public exposure of GPU machine
 
 ### Trust zones
-| Zone | Machine | Role |
-|------|---------|------|
-| Edge | Raspberry Pi | Voice input/output |
-| Control | Mac mini | Orchestration + memory |
-| Compute | GPU box | Model inference |
 
-## 11. Deployment Strategy
+| Zone    | Machine      | Role                   |
+| ------- | ------------ | ---------------------- |
+| Edge    | Raspberry Pi | Voice input/output     |
+| Control | Mac mini     | Orchestration + memory |
+| Compute | GPU box      | Model inference        |
+
+## 16. Deployment Strategy
 
 ### Phase 1 (single machine)
+
 Mac mini runs:
+
 - Local model
 - API
 - Memory
 - Agent
 
 ### Phase 2 (two machines)
+
 - GPU box hosts model
 - Mac mini runs control plane
 
 ### Phase 3 (three machines)
+
 - Raspberry Pi handles voice
 - Full modular architecture
 
-## 12. Security Baseline
+## 17. Security Baseline
 
 - Token-based service authentication
 - Separate service accounts
@@ -377,51 +574,57 @@ Mac mini runs:
 - Audit logs
 - Encrypted backups
 
-## 13. Telemetry and Monitoring
+## 18. Telemetry and Monitoring
 
-### 13.1 Model-Level Metrics
+### 18.1 Model-Level Metrics
+
 - Request count per model (Llama/Qwen vs DeepSeek)
 - Response times and token counts
 - GPU utilization during DeepSeek calls
 - Memory usage per inference request
 - Cache hit rates for local models
 
-### 13.2 User Interaction Metrics
+### 18.2 User Interaction Metrics
+
 - Voice-to-text latency
 - End-to-end request/response time
 - Routing decision accuracy (was DeepSeek escalation needed?)
 - User satisfaction signals (voice follow-ups, task completion)
 
-### 13.3 System Health
+### 18.3 System Health
+
 - Network latency between machines
 - Database query performance
 - Model warm-up times
 - Error rates and fallback triggers
 
-### 13.4 Cost Tracking
+### 18.4 Cost Tracking
+
 - Energy consumption per machine
 - GPU compute time cost estimates
 - Storage usage trends
 - Peak vs average resource utilization
 
-### 13.5 Implementation
+### 18.5 Implementation
+
 - Prometheus metrics on each machine
 - Simple dashboard in the Mac mini control plane
 - Alerts when DeepSeek usage spikes unusually
 - Weekly summaries of model usage patterns
 
-### 13.6 Key Focus: Routing Efficiency
+### 18.6 Key Focus: Routing Efficiency
+
 Track the system's ability to correctly choose local vs GPU models and analyze the tradeoffs between response time and accuracy.
 
-## 14. End-State Role Assignment
+## 18. End-State Role Assignment
 
-| Machine | Role |
-|---------|------|
-| GPU Box | DeepSeek reasoning model |
-| Mac mini | OpenClaw agent, APIs, memory, tools, fast models |
-| Raspberry Pi | Voice interface |
+| Machine      | Role                                             |
+| ------------ | ------------------------------------------------ |
+| GPU Box      | DeepSeek reasoning model                         |
+| Mac mini     | OpenClaw agent, APIs, memory, tools, fast models |
+| Raspberry Pi | Voice interface                                  |
 
-## 15. Example Capabilities
+## 18. Example Capabilities
 
 - "What did I decide about the Tekkit backups last week?"
 - "Switch to work mode—draft a SOC2 response."
@@ -430,6 +633,3 @@ Track the system's ability to correctly choose local vs GPU models and analyze t
 - "Server mode—summarize crash logs."
 
 ## Notes
-
-
-
