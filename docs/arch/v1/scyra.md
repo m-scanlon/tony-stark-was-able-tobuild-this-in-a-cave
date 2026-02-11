@@ -632,4 +632,114 @@ Track the system's ability to correctly choose local vs GPU models and analyze t
 - "Music mode—ideas for SKANZ Vol. 3."
 - "Server mode—summarize crash logs."
 
-## Notes
+## 19. Planned Extensions
+
+The following sections describe high-level architectural concepts that will be designed in more detail in future iterations. These are included to guide the long-term evolution of the system without constraining the initial implementation.
+
+### 19.1 TV Node Architecture (Planned)
+
+The system may include a dedicated TV node consisting of a small computer (mini PC or Raspberry Pi) connected to a television via HDMI. This node will run a Jarvis/Skyra agent and act as the primary media execution environment.
+
+In this model:
+
+The TV becomes a display only.
+
+All media playback occurs on the local TV node through a browser or local apps.
+
+Jarvis controls playback by interacting directly with the local execution environment.
+
+High-level goals:
+
+Avoid limitations of smart TV and streaming device APIs.
+
+Allow full control of streaming services through web interfaces.
+
+Enable the system to read what is currently playing.
+
+Provide reliable, scriptable media control.
+
+Hardware selection, browser automation, and media control logic will be designed in a later iteration.
+
+### 19.2 Mobile Interaction via Progressive Web App (Planned)
+
+Jarvis will expose a secure web interface that can be installed on a phone as a Progressive Web App (PWA). This will provide a native-like experience without requiring a dedicated mobile application.
+
+High-level goals:
+
+Chat-style interface for natural language commands.
+
+Quick action buttons for common tasks.
+
+Real-time system and device status.
+
+Optional push notifications.
+
+The exact UI design, authentication model, and notification system will be defined in a future version.
+
+### 19.3 Voice Authorization Model (Planned)
+
+The voice subsystem will include a speaker-aware authorization layer so that only approved users can control the system.
+
+High-level components:
+
+Wake word detection.
+
+Speaker identification.
+
+Command authorization based on recognized voice profiles.
+
+This ensures that unauthorized users cannot issue commands.
+High-risk or destructive actions may require additional spoken confirmation.
+
+Specific models, thresholds, and security policies will be defined in a later design phase.
+
+### 19.4 Streaming Device Integration Strategy (Planned)
+
+The system will support multiple types of media devices, using the most appropriate control method for each platform.
+
+High-level strategy:
+
+Use direct APIs where available (e.g., Roku power or input control).
+
+Use casting or device-level control for platforms like Android TV.
+
+Prefer a local TV node for full automation when APIs are limited.
+
+Media endpoints will be treated as device nodes with defined capabilities.
+Detailed control logic for each platform will be designed later.
+
+### 19.5 External Device Control Model (Planned)
+
+Not all devices will run native Jarvis agents. Some will be controlled through network protocols or automation bridges.
+
+High-level concepts:
+
+Certain devices (TVs, smart devices, streaming boxes) are controlled via:
+
+Local network APIs
+
+Casting protocols
+
+Automation bridges
+
+The control plane maintains a centralized device registry.
+
+High-level intents are mapped to device-specific actions.
+
+Multiple device types are supported under a unified abstraction.
+
+The device capability schema and integration patterns will be defined in a future design phase.
+
+### 19.6 Remote Access Model (Planned)
+
+Remote clients (such as phones or laptops outside the home network) will access Jarvis through a secure overlay network.
+
+High-level concept:
+
+The control plane is not exposed directly to the public internet.
+
+Remote devices connect through a secure mesh or VPN-style network.
+
+All interactions occur over authenticated, encrypted channels.
+
+Authentication, session management, and final network topology will be specified in a later iteration.
