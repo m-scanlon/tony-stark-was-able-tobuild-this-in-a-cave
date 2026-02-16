@@ -52,6 +52,7 @@ Defaults:
 - Event ingress and ACK: `docs/arch/v1/event-ingress-ack.md`
 - Task Formation: `docs/arch/v1/task-formation.md`
 - Listener service: `skyra/services/listener/README.md`
+- Persona config and system prompt sources: `skyra/configs/persona/`
 
 ## Next Steps
 
