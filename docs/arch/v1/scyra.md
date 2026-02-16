@@ -62,8 +62,8 @@ flowchart TB
     INGRESS[Event Ingress]
     INBOX[(SQLite Event Inbox)]
     ROUTE[Domain Routing]
-    FORM[Task Formation\n(WorkPlan / TaskSheet + Patch)]
-    REVIEW[Threshold Review\n(optional)]
+    FORM["Task Formation<br/>WorkPlan or TaskSheet plus Patch"]
+    REVIEW["Threshold Review<br/>optional"]
     TASKOBJ[Task Object Factory]
     SCHED[Scheduler Intake]
     ORCH[Orchestrator]
@@ -110,8 +110,8 @@ flowchart TB
   end
 
   %% Connections
-  VCLIENT -->|delegated tasks/events| APIGW
-  INBOX -->|ACK(event_id)| OBOX
+  VCLIENT -->|delegated events| APIGW
+  INBOX -->|ACK event_id| OBOX
   ORCH -->|complex tasks| DEEP
   CIX -->|context package push| LCACHE
   ORCH -->|high-level commands| LAGENT
@@ -274,15 +274,15 @@ flowchart LR
   %% ===== Nodes =====
   subgraph PI[Raspberry Pi • Voice Node]
     direction LR
-    WW[Wake Word\n(openWakeWord/Porcupine)]
+    WW[Wake Word<br/>openWakeWord or Porcupine]
     VAD[Voice Activity Detection]
-    STT[Speech-to-Text\n(Whisper small/base)]
-    TTS[Text-to-Speech\n(Piper/Coqui)]
-    GATE[Intent Gate\n(deterministic)]
-    LCACHE[Listener Context Cache\n(base + live + injected)]
+    STT[Speech to Text<br/>Whisper small or base]
+    TTS[Text to Speech<br/>Piper or Coqui]
+    GATE[Intent Gate<br/>deterministic]
+    LCACHE[Listener Context Cache<br/>base + live + injected]
     FDOOR[Front-Door Fast Model\nLlama 3.2 3B]
-    OBOX[Local Event Outbox\n(durable + retry)]
-    VCLIENT[Voice Client\nHTTP/gRPC to API]
+    OBOX[Local Event Outbox<br/>durable plus retry]
+    VCLIENT[Voice Client<br/>HTTP or gRPC to API]
     WW --> VAD --> STT --> GATE --> FDOOR
     LCACHE --> FDOOR
     FDOOR --> VCLIENT
@@ -290,26 +290,26 @@ flowchart LR
     OBOX --> VCLIENT
   end
 
-  subgraph MAC[Mac mini (M4, 24GB) • Control Plane]
+  subgraph MAC[Mac mini M4 24GB Control Plane]
     direction LR
-    APIGW[API Gateway\n(FastAPI/Node)\n/voice /chat /tools /memory]
-    INGRESS[Event Ingress\n(WS/gRPC receiver)]
-    INBOX[(SQLite Inbox\nPRIMARY KEY: event_id)]
+    APIGW[API Gateway<br/>FastAPI or Node<br/>voice chat tools memory]
+    INGRESS[Event Ingress<br/>WS or gRPC receiver]
+    INBOX[(SQLite Inbox<br/>PRIMARY KEY event_id)]
     ROUTE[Domain Routing]
-    FORM[Task Formation\nWorkPlan / TaskSheet + Patch]
-    REVIEW[Threshold Review\n(optional)]
+    FORM["Task Formation<br/>WorkPlan or TaskSheet plus Patch"]
+    REVIEW["Threshold Review<br/>optional"]
     TASKOBJ[Task Object Factory]
     SCHED[Scheduler Intake]
-    AGENT[Skyra Orchestration Runtime\nLangGraph Orchestrator + Router]
-    CIX[Context Injector Service\n(Rank + Compress + Push)]
+    AGENT[Skyra Orchestration Runtime<br/>LangGraph Orchestrator and Router]
+    CIX[Context Injector Service<br/>Rank Compress Push]
     CLASS[Project + Intent Classifier]
 
-    CODER[Coding/Tool Model\nQwen2.5-Coder 7B]
+    CODER[Coding Tool Model<br/>Qwen2.5 Coder 7B]
 
-    MEMSVC[Memory Service\n(Read/Write, Summaries)]
-    TOOLS[Tool/Skills Runner\n(SSH, scripts, Slack, etc.)]
-    OBJ[(Object Store\n.skyra/projects\nversioned state)]
-    VDB[(Vector DB\nChroma\nsemantic index)]
+    MEMSVC[Memory Service<br/>Read Write Summaries]
+    TOOLS[Tool Skills Runner<br/>SSH scripts Slack]
+    OBJ[(Object Store<br/>.skyra projects<br/>versioned state)]
+    VDB[(Vector DB<br/>Chroma<br/>semantic index)]
 
     APIGW --> INGRESS --> INBOX --> ROUTE --> FORM --> REVIEW --> TASKOBJ --> SCHED --> AGENT
     AGENT --> CLASS
@@ -324,13 +324,13 @@ flowchart LR
   end
 
   subgraph GPU[GPU Machine • Compute Plane]
-    LLM[DeepSeek Reasoning Model\n(33B+)\nLLM Server]
+    LLM[DeepSeek Reasoning Model<br/>33B plus<br/>LLM Server]
   end
 
   %% ===== Links between machines =====
-  VCLIENT -->|delegated request/event| APIGW
+  VCLIENT -->|delegated event| APIGW
   CIX -->|compressed context package| LCACHE
-  INBOX -->|ACK(event_id)| OBOX
+  INBOX -->|ACK event_id| OBOX
   AGENT -->|complex task| LLM
   LLM -->|completion| AGENT
   APIGW -->|delegated result| VCLIENT
