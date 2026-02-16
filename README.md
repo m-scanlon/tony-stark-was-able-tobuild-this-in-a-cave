@@ -1,33 +1,50 @@
 # Skyra - Personal AI Assistant
 
-A distributed personal AI system designed for always-on voice interaction with project-centric memory and modular hardware scaling.
+Distributed personal AI system for always-on voice interaction, project-centric memory, and modular hardware scaling.
 
-## Project Vision
+## Architecture (Current Direction)
 
-Skyra aims to be a private, local-first AI assistant that understands your personal context across different projects and domains. The end goal is a three-machine architecture: Raspberry Pi for voice, Mac mini as control plane, and GPU machine for heavy reasoning.
+- Raspberry Pi: listener service (wake word, VAD, STT, deterministic intent gate)
+- Mac mini: control plane (LangGraph orchestration, APIs, memory, routing)
+- GPU machine: heavy reasoning model (DeepSeek)
 
-## Current State
+The listener pipeline is always-on, while front-door LLM inference is event-driven (invoked after wake/audio capture).
 
-This repository contains the architectural planning and initial project structure. The system is designed to use:
+## Model Strategy
 
-- **OpenClaw** agent runtime for orchestration
-- Multiple specialized models (Llama 3.1, Qwen2.5-Coder, DeepSeek)
-- Project-centric memory with semantic retrieval
-- Voice interface with wake word detection
+- Listener/front-door on small device:
+  - `Llama-3.2-3B-Instruct` (recommended) using GGUF quant such as `Q4_K_M`
+  - Target context window: `4k-8k` for responsiveness
+- Control plane / heavy reasoning:
+  - Llama/Qwen for local control-plane tasks
+  - DeepSeek on GPU for complex reasoning
 
-## Next Steps
+## Implemented So Far
 
-1. Set up OpenClaw agent runtime
-2. Implement core API endpoints
-3. Configure local models (Llama 3.1 8B, Qwen2.5-Coder 7B)
-4. Build memory service with vector database
-5. Develop voice interface for Raspberry Pi
+- Secured control-plane endpoints (`/v1/chat`, `/v1/voice`) with API key auth and rate limiting
+- Working `/v1/chat` path to OpenAI-compatible model endpoint
+- Response sanitization for reasoning artifacts (`<think>...</think>`)
+- Listener service scaffold as separate service (`skyra/services/listener`)
+- Context compression engine for prompt budgeting (`skyra/internal/context/compress`)
 
-## Key Technologies Planned
+## Context Compression
 
-- **Agent Runtime**: OpenClaw
-- **Models**: Llama 3.1, Qwen2.5-Coder, DeepSeek-Coder
-- **Databases**: PostgreSQL, Vector DB (Qdrant/Chroma)
-- **Voice**: openWakeWord, Whisper, Piper/Coqui
-- **API**: FastAPI/Node.js
-- **Infrastructure**: Docker, private LAN
+Skyra now includes a deterministic context compression engine to keep prompts small and fast.
+
+- Package: `skyra/internal/context/compress`
+- Behavior:
+  - ranks chunks by score + recency
+  - trims chunk length
+  - enforces token budget
+  - emits prompt-ready context block
+
+Defaults:
+- `MaxTokens: 700`
+- `MaxChunks: 8`
+- `MaxWordsPerHit: 60`
+
+## Docs
+
+- Main architecture: `docs/arch/v1/scyra.md`
+- Model endpoint example: `docs/examples/model-endpoint-phase1.md`
+- Listener service: `skyra/services/listener/README.md`
