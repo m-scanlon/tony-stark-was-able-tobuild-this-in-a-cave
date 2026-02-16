@@ -40,9 +40,15 @@ flowchart TB
   %% Voice Node
   subgraph PI[Raspberry Pi • Voice Node]
     WW[Wake Word]
+    VAD[VAD]
     STT[Speech-to-Text]
+    GATE[Intent Gate]
+    LCACHE[Listener Context Cache]
+    FDOOR[Front-Door Fast Model]
     VCLIENT[Voice Client]
-    WW --> STT --> VCLIENT
+    WW --> VAD --> STT --> GATE --> FDOOR
+    LCACHE --> FDOOR
+    FDOOR --> VCLIENT
   end
 
   %% Control Plane
@@ -50,8 +56,8 @@ flowchart TB
     APIGW[API Gateway]
     ORCH[Orchestrator]
     CORE[Skyra Orchestration Core]
+    CIX[Context Injector]
 
-    CHAT[Conversational Model]
     CODER[Coding Model]
 
     MEM[Memory Service]
@@ -60,7 +66,7 @@ flowchart TB
 
     APIGW --> ORCH
     ORCH --> CORE
-    CORE --> CHAT
+    CORE --> CIX
     CORE --> CODER
     CORE --> MEM
     MEM --> OBJ
@@ -92,8 +98,9 @@ flowchart TB
   end
 
   %% Connections
-  VCLIENT -->|voice| APIGW
+  VCLIENT -->|delegated tasks| APIGW
   ORCH -->|complex tasks| DEEP
+  CIX -->|context package push| LCACHE
   ORCH -->|high-level commands| LAGENT
   ORCH -->|high-level commands| DAGENT
   ORCH -->|high-level commands| SAGENT
@@ -205,23 +212,26 @@ The system uses a layered runtime: deterministic listener pipeline, fast front-d
 
 ### Listener Layer (always-on, non-LLM)
 
-Runs continuously and should not depend on an LLM.
+The always-on path runs continuously and does not require continuous LLM inference.
 
 - Wake word detection
 - Voice activity detection (VAD)
 - Speech-to-text (STT)
 - Deterministic intent gate (ignore, dispatch, clarification-needed)
+- Event-driven front-door LLM invocation after utterance capture
 
-### Mac mini (fast front-door + orchestration)
+### Listener Device (front-door fast model)
 
 **Front-Door Fast Model**
 
-- Example: Llama 3.1 8B Instruct
+- Example: Llama 3.2 3B Instruct (quantized)
 - Handles:
   - Quick request understanding
   - One-step clarifications
   - Immediate acknowledgement
-  - Structured handoff data for orchestration
+  - Structured handoff data for orchestration when delegation is needed
+
+### Mac mini (orchestration + tools)
 
 **Coding / Tool Model**
 
@@ -251,19 +261,25 @@ flowchart LR
   %% ===== Nodes =====
   subgraph PI[Raspberry Pi • Voice Node]
     WW[Wake Word\n(openWakeWord/Porcupine)]
+    VAD[Voice Activity Detection]
     STT[Speech-to-Text\n(Whisper small/base)]
     TTS[Text-to-Speech\n(Piper/Coqui)]
+    GATE[Intent Gate\n(deterministic)]
+    LCACHE[Listener Context Cache\n(base + live + injected)]
+    FDOOR[Front-Door Fast Model\nLlama 3.2 3B]
     VCLIENT[Voice Client\nHTTP/gRPC to API]
-    WW --> STT --> VCLIENT
+    WW --> VAD --> STT --> GATE --> FDOOR
+    LCACHE --> FDOOR
+    FDOOR --> VCLIENT
   end
 
   subgraph MAC[Mac mini (M4, 24GB) • Control Plane]
     APIGW[API Gateway\n(FastAPI/Node)\n/voice /chat /tools /memory]
     AGENT[Skyra Orchestration Runtime\nLangGraph Orchestrator + Router]
+    CIX[Context Injector Service\n(Rank + Compress + Push)]
     CLASS[Project + Intent Classifier]
 
-    CHAT[Conversational Model\nLlama 3.1 8B]
-    CODER[Coding Model\nQwen2.5-Coder 7B]
+    CODER[Coding/Tool Model\nQwen2.5-Coder 7B]
 
     MEMSVC[Memory Service\n(Read/Write, Summaries)]
     TOOLS[Tool/Skills Runner\n(SSH, scripts, Slack, etc.)]
@@ -272,9 +288,11 @@ flowchart LR
 
     APIGW --> AGENT
     AGENT --> CLASS
-    AGENT --> CHAT
     AGENT --> CODER
     AGENT --> MEMSVC
+    MEMSVC --> CIX
+    CLASS --> CIX
+    AGENT --> CIX
     MEMSVC --> OBJ
     MEMSVC --> VDB
     AGENT --> TOOLS
@@ -285,11 +303,12 @@ flowchart LR
   end
 
   %% ===== Links between machines =====
-  VCLIENT -->|text transcript| APIGW
+  VCLIENT -->|delegated request| APIGW
+  CIX -->|compressed context package| LCACHE
   AGENT -->|complex task| LLM
   LLM -->|completion| AGENT
-  AGENT -->|final response| APIGW
-  APIGW -->|text for speech| TTS
+  APIGW -->|delegated result| VCLIENT
+  VCLIENT -->|text for speech| TTS
 ```
 
 ## 7. Voice Request Flow
@@ -297,8 +316,9 @@ flowchart LR
 ```mermaid
 sequenceDiagram
   participant User
-  participant Pi as Raspberry Pi (Voice)
-  participant Mac as Mac mini (Front Door + Orchestrator)
+  participant Pi as Raspberry Pi (Listener + Front Door)
+  participant CIX as Context Injector
+  participant Mac as Mac mini (Orchestrator)
   participant DB as Memory (SQL+Vector+Docs)
   participant GPU as GPU Box (DeepSeek)
 
@@ -307,26 +327,35 @@ sequenceDiagram
   Pi->>Pi: VAD start/stop
   Pi->>Pi: STT (audio → text)
   Pi->>Pi: Intent gate (deterministic)
-  Pi->>Mac: POST /voice {text, timestamp}
-
-  Mac->>Mac: Front-door model (quick classify + ack)
-  Mac-->>Pi: Optional immediate acknowledgement
-  Mac->>Mac: Project/Intent classify
-  Mac->>DB: Retrieve relevant context
-  DB-->>Mac: Context snippets
-
-  Mac->>Mac: LangGraph route task
-  alt Simple or coding task
-    Mac->>Mac: Use local model (Llama or Qwen)
-  else Complex reasoning task
-    Mac->>GPU: Send to DeepSeek
-    GPU-->>Mac: Completion
+  Pi->>Pi: Front-door model uses base + live + injected context
+  par Proactive context refresh
+    CIX-->>Pi: Push compressed context package
+  and User-facing response path
+    Pi-->>User: Immediate acknowledgement (if simple)
   end
 
-  Mac->>DB: Write memory update
-  Mac-->>Pi: Response text
-  Pi->>Pi: TTS
-  Pi-->>User: Spoken response
+  alt Delegation needed
+    Pi->>Mac: POST /voice {text, timestamp, intent_hint}
+    Mac->>Mac: Project/Intent classify
+    Mac->>DB: Retrieve relevant context
+    DB-->>Mac: Context snippets
+
+    Mac->>Mac: LangGraph route task
+    alt Simple or coding task
+      Mac->>Mac: Use local model (Qwen/local tools)
+    else Complex reasoning task
+      Mac->>GPU: Send to DeepSeek
+      GPU-->>Mac: Completion
+    end
+
+    Mac->>DB: Write memory update
+    Mac-->>Pi: Response text
+    Pi->>Pi: Front-door merges delegated result
+    Pi->>Pi: TTS
+    Pi-->>User: Spoken response
+  else No delegation needed
+    Pi->>Pi: Complete locally in front-door path
+  end
 ```
 
 ## 8. Component Responsibilities
@@ -342,6 +371,7 @@ sequenceDiagram
 - Speech-to-text (STT)
 - Text-to-speech (TTS)
 - Intent gate (deterministic rules + tiny classifier)
+- Front-door fast model (event-driven, not always-on inference)
 - Voice client that sends text to Mac mini
 
 **Characteristics**:
@@ -358,7 +388,6 @@ sequenceDiagram
 **Services**:
 
 - API gateway (/chat, /voice, /tools, /memory)
-- Front-door fast model (low-latency understanding + acknowledgement)
 - Orchestration runtime (LangGraph orchestrator + router)
 - Project classifier
 - Model router
@@ -372,7 +401,6 @@ sequenceDiagram
 
 | Model                 | Role                                 |
 | --------------------- | ------------------------------------ |
-| Llama 3.1 8B Instruct | Conversational interface and routing |
 | Qwen2.5-Coder 7B      | Coding and tool execution            |
 
 **Datastores**:

@@ -48,3 +48,9 @@ Defaults:
 - Main architecture: `docs/arch/v1/scyra.md`
 - Model endpoint example: `docs/examples/model-endpoint-phase1.md`
 - Listener service: `skyra/services/listener/README.md`
+
+## Next Steps
+
+Implement the Context Injector service (`skyra/services/context-injector`) as a first-class control-plane background service.
+
+The Context Injector continuously watches conversation state, active tasks, and time-relevant memory signals, then builds compressed context packages and pushes them to the listener/front-door cache. This keeps front-door responses relevant and personal without blocking the always-on listener pipeline on heavy retrieval.
