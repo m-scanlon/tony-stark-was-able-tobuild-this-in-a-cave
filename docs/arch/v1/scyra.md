@@ -13,7 +13,7 @@
 The system is composed of three main machines:
 
 - **Raspberry Pi** → Voice interface (wake word, STT, TTS)
-- **Mac mini** → Control plane (API, OpenClaw agent, memory, tools, fast local models)
+- **Mac mini** → Control plane (API, orchestration runtime, memory, tools, fast local models)
 - **GPU Machine** → Heavy reasoning model (DeepSeek LLM server)
 
 Each machine has a clear responsibility.
@@ -49,7 +49,7 @@ flowchart TB
   subgraph CTRL[Mac mini • Control Plane]
     APIGW[API Gateway]
     ORCH[Orchestrator]
-    CORE[OpenClaw Core]
+    CORE[Skyra Orchestration Core]
 
     CHAT[Conversational Model]
     CODER[Coding Model]
@@ -93,7 +93,7 @@ flowchart TB
 
   %% Connections
   VCLIENT -->|voice| APIGW
-  AGENT -->|complex tasks| DEEP
+  ORCH -->|complex tasks| DEEP
   ORCH -->|high-level commands| LAGENT
   ORCH -->|high-level commands| DAGENT
   ORCH -->|high-level commands| SAGENT
@@ -199,20 +199,29 @@ flowchart TB
 
 The system will eventually support multiple concurrent user requests across voice, chat, and agent interactions. A formal job queue, request lifecycle management, and concurrency limits will be designed in a future iteration to ensure proper resource allocation and response ordering. This portion of the architecture is intentionally deferred for a later version to focus on core functionality first.
 
-## 5. Model Roles
+## 5. Model and Runtime Roles
 
-The system uses multiple specialized models instead of a single monolithic model.
+The system uses a layered runtime: deterministic listener pipeline, fast front-door model, orchestration runtime, and heavy reasoning model.
 
-### Mac mini (fast, always-on models)
+### Listener Layer (always-on, non-LLM)
 
-**Conversational Model**
+Runs continuously and should not depend on an LLM.
+
+- Wake word detection
+- Voice activity detection (VAD)
+- Speech-to-text (STT)
+- Deterministic intent gate (ignore, dispatch, clarification-needed)
+
+### Mac mini (fast front-door + orchestration)
+
+**Front-Door Fast Model**
 
 - Example: Llama 3.1 8B Instruct
 - Handles:
-  - General conversation
-  - Intent detection
-  - Clarifications
-  - Task routing
+  - Quick request understanding
+  - One-step clarifications
+  - Immediate acknowledgement
+  - Structured handoff data for orchestration
 
 **Coding / Tool Model**
 
@@ -250,7 +259,7 @@ flowchart LR
 
   subgraph MAC[Mac mini (M4, 24GB) • Control Plane]
     APIGW[API Gateway\n(FastAPI/Node)\n/voice /chat /tools /memory]
-    AGENT[OpenClaw Agent Runtime\nOrchestrator + Router]
+    AGENT[Skyra Orchestration Runtime\nLangGraph Orchestrator + Router]
     CLASS[Project + Intent Classifier]
 
     CHAT[Conversational Model\nLlama 3.1 8B]
@@ -289,20 +298,24 @@ flowchart LR
 sequenceDiagram
   participant User
   participant Pi as Raspberry Pi (Voice)
-  participant Mac as Mac mini (OpenClaw + Models)
+  participant Mac as Mac mini (Front Door + Orchestrator)
   participant DB as Memory (SQL+Vector+Docs)
   participant GPU as GPU Box (DeepSeek)
 
   User->>Pi: "Hey Skyra..." (audio)
   Pi->>Pi: Wake word detect
+  Pi->>Pi: VAD start/stop
   Pi->>Pi: STT (audio → text)
+  Pi->>Pi: Intent gate (deterministic)
   Pi->>Mac: POST /voice {text, timestamp}
 
+  Mac->>Mac: Front-door model (quick classify + ack)
+  Mac-->>Pi: Optional immediate acknowledgement
   Mac->>Mac: Project/Intent classify
   Mac->>DB: Retrieve relevant context
   DB-->>Mac: Context snippets
 
-  Mac->>Mac: Route task
+  Mac->>Mac: LangGraph route task
   alt Simple or coding task
     Mac->>Mac: Use local model (Llama or Qwen)
   else Complex reasoning task
@@ -320,13 +333,15 @@ sequenceDiagram
 
 ### 8.1 Raspberry Pi – Voice Node
 
-**Purpose**: Always-on audio interface.
+**Purpose**: Always-on audio interface and deterministic listener pipeline.
 
 **Services**:
 
 - Wake word detection
+- VAD (voice activity detection)
 - Speech-to-text (STT)
 - Text-to-speech (TTS)
+- Intent gate (deterministic rules + tiny classifier)
 - Voice client that sends text to Mac mini
 
 **Characteristics**:
@@ -334,6 +349,7 @@ sequenceDiagram
 - Lightweight compute
 - Always powered on
 - Local network only
+- No heavy reasoning models on this node
 
 ### 8.2 Mac mini – Control Plane
 
@@ -342,7 +358,8 @@ sequenceDiagram
 **Services**:
 
 - API gateway (/chat, /voice, /tools, /memory)
-- OpenClaw agent runtime (orchestrator + router)
+- Front-door fast model (low-latency understanding + acknowledgement)
+- Orchestration runtime (LangGraph orchestrator + router)
 - Project classifier
 - Model router
 - Memory service
@@ -431,24 +448,37 @@ sequenceDiagram
 
 **Rule**: Vector store finds relevant content; object store provides authoritative state; temporal metadata adds context.
 
-## 10. OpenClaw Integration
+## 10. Orchestration Layer
 
-OpenClaw runs on the Mac mini as the central orchestrator and model router.
+The orchestration runtime runs on the Mac mini as the central orchestrator and model router.
+
+**Framework decision**:
+
+- **LangGraph** is the primary orchestration runtime for stateful workflows, routing, retries, and checkpointed execution.
+- **LangChain** is used for integrations (model clients, retrievers, tool wrappers), not as the primary orchestration layer.
 
 **Agent pipeline**:
 
 1. Receive message
 2. Run project and intent classifier
-3. Retrieve memory context
-4. Route task:
+3. Build structured job envelope:
+   - `project_id`
+   - `intent`
+   - `priority`
+   - `required_tools`
+   - `can_run_async`
+4. Retrieve memory context
+5. Route task:
    - Llama (conversation)
    - Qwen (coding/tools)
    - DeepSeek (GPU reasoning)
-5. Execute tools if needed
-6. Write memory updates
-7. Return final response
+6. Execute tools if needed
+7. Write memory updates
+8. Return final response
 
-## 10. Network Layout
+Safety/policy enforcement for high-risk actions is intentionally deferred to a later iteration.
+
+## 11. Network Layout
 
 ### Logical network
 
@@ -464,7 +494,10 @@ OpenClaw runs on the Mac mini as the central orchestrator and model router.
 | Control | Mac mini     | Orchestration + memory + fast models |
 | Compute | GPU box      | Deep reasoning model                 |
 
-## 11. Deployment Strategy
+## 12. Deployment Strategy
+
+Reference implementation example:
+- `docs/examples/model-endpoint-phase1.md`
 
 ### Phase 1 (single machine)
 
@@ -474,7 +507,7 @@ Mac mini runs:
 - Qwen coding model
 - API
 - Memory
-- OpenClaw agent
+- Orchestration runtime (LangGraph)
 
 ### Phase 2 (two machines)
 
@@ -486,7 +519,7 @@ Mac mini runs:
 - Raspberry Pi handles voice
 - Full modular architecture
 
-## 12. Security Baseline
+## 13. Security Baseline
 
 - Token-based service authentication
 - Separate service accounts
@@ -494,15 +527,15 @@ Mac mini runs:
 - Audit logs
 - Encrypted backups
 
-## 13. End-State Role Assignment
+## 14. End-State Role Assignment
 
 | Machine      | Role                                             |
 | ------------ | ------------------------------------------------ |
 | GPU Box      | DeepSeek reasoning model                         |
-| Mac mini     | OpenClaw agent, APIs, memory, tools, fast models |
+| Mac mini     | LangGraph orchestration runtime, APIs, memory, tools, fast models |
 | Raspberry Pi | Voice interface                                  |
 
-## 14. Example Capabilities
+## 15. Example Capabilities
 
 - "What did I decide about the Tekkit backups last week?"
 - "Switch to work mode—draft a SOC2 response."
@@ -529,54 +562,9 @@ If confidence is low:
 - Ask clarification
 - Or search across multiple projects
 
-## 15. Network Layout
+## 16. Telemetry and Monitoring
 
-### Logical network
-
-- All machines on same LAN/VLAN
-- Token or mTLS between services
-- No public exposure of GPU machine
-
-### Trust zones
-
-| Zone    | Machine      | Role                   |
-| ------- | ------------ | ---------------------- |
-| Edge    | Raspberry Pi | Voice input/output     |
-| Control | Mac mini     | Orchestration + memory |
-| Compute | GPU box      | Model inference        |
-
-## 16. Deployment Strategy
-
-### Phase 1 (single machine)
-
-Mac mini runs:
-
-- Local model
-- API
-- Memory
-- Agent
-
-### Phase 2 (two machines)
-
-- GPU box hosts model
-- Mac mini runs control plane
-
-### Phase 3 (three machines)
-
-- Raspberry Pi handles voice
-- Full modular architecture
-
-## 17. Security Baseline
-
-- Token-based service authentication
-- Separate service accounts
-- Tool allow-list
-- Audit logs
-- Encrypted backups
-
-## 18. Telemetry and Monitoring
-
-### 18.1 Model-Level Metrics
+### 16.1 Model-Level Metrics
 
 - Request count per model (Llama/Qwen vs DeepSeek)
 - Response times and token counts
@@ -584,59 +572,43 @@ Mac mini runs:
 - Memory usage per inference request
 - Cache hit rates for local models
 
-### 18.2 User Interaction Metrics
+### 16.2 User Interaction Metrics
 
 - Voice-to-text latency
 - End-to-end request/response time
 - Routing decision accuracy (was DeepSeek escalation needed?)
 - User satisfaction signals (voice follow-ups, task completion)
 
-### 18.3 System Health
+### 16.3 System Health
 
 - Network latency between machines
 - Database query performance
 - Model warm-up times
-- Error rates and fallback triggers
+- Error rates and escalation triggers
 
-### 18.4 Cost Tracking
+### 16.4 Cost Tracking
 
 - Energy consumption per machine
 - GPU compute time cost estimates
 - Storage usage trends
 - Peak vs average resource utilization
 
-### 18.5 Implementation
+### 16.5 Implementation
 
 - Prometheus metrics on each machine
 - Simple dashboard in the Mac mini control plane
 - Alerts when DeepSeek usage spikes unusually
 - Weekly summaries of model usage patterns
 
-### 18.6 Key Focus: Routing Efficiency
+### 16.6 Key Focus: Routing Efficiency
 
 Track the system's ability to correctly choose local vs GPU models and analyze the tradeoffs between response time and accuracy.
 
-## 18. End-State Role Assignment
-
-| Machine      | Role                                             |
-| ------------ | ------------------------------------------------ |
-| GPU Box      | DeepSeek reasoning model                         |
-| Mac mini     | OpenClaw agent, APIs, memory, tools, fast models |
-| Raspberry Pi | Voice interface                                  |
-
-## 18. Example Capabilities
-
-- "What did I decide about the Tekkit backups last week?"
-- "Switch to work mode—draft a SOC2 response."
-- "Gym mode—suggest next week's lifts."
-- "Music mode—ideas for SKANZ Vol. 3."
-- "Server mode—summarize crash logs."
-
-## 19. Planned Extensions
+## 17. Planned Extensions
 
 The following sections describe high-level architectural concepts that will be designed in more detail in future iterations. These are included to guide the long-term evolution of the system without constraining the initial implementation.
 
-### 19.1 TV Node Architecture (Planned)
+### 17.1 TV Node Architecture (Planned)
 
 The system may include a dedicated TV node consisting of a small computer (mini PC or Raspberry Pi) connected to a television via HDMI. This node will run a Jarvis/Skyra agent and act as the primary media execution environment.
 
@@ -660,7 +632,7 @@ Provide reliable, scriptable media control.
 
 Hardware selection, browser automation, and media control logic will be designed in a later iteration.
 
-### 19.2 Mobile Interaction via Progressive Web App (Planned)
+### 17.2 Mobile Interaction via Progressive Web App (Planned)
 
 Jarvis will expose a secure web interface that can be installed on a phone as a Progressive Web App (PWA). This will provide a native-like experience without requiring a dedicated mobile application.
 
@@ -676,7 +648,7 @@ Optional push notifications.
 
 The exact UI design, authentication model, and notification system will be defined in a future version.
 
-### 19.3 Voice Authorization Model (Planned)
+### 17.3 Voice Authorization Model (Planned)
 
 The voice subsystem will include a speaker-aware authorization layer so that only approved users can control the system.
 
@@ -693,7 +665,7 @@ High-risk or destructive actions may require additional spoken confirmation.
 
 Specific models, thresholds, and security policies will be defined in a later design phase.
 
-### 19.4 Streaming Device Integration Strategy (Planned)
+### 17.4 Streaming Device Integration Strategy (Planned)
 
 The system will support multiple types of media devices, using the most appropriate control method for each platform.
 
@@ -708,7 +680,7 @@ Prefer a local TV node for full automation when APIs are limited.
 Media endpoints will be treated as device nodes with defined capabilities.
 Detailed control logic for each platform will be designed later.
 
-### 19.5 External Device Control Model (Planned)
+### 17.5 External Device Control Model (Planned)
 
 Not all devices will run native Jarvis agents. Some will be controlled through network protocols or automation bridges.
 
@@ -730,7 +702,7 @@ Multiple device types are supported under a unified abstraction.
 
 The device capability schema and integration patterns will be defined in a future design phase.
 
-### 19.6 Remote Access Model (Planned)
+### 17.6 Remote Access Model (Planned)
 
 Remote clients (such as phones or laptops outside the home network) will access Jarvis through a secure overlay network.
 
