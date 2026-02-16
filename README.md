@@ -27,6 +27,7 @@ The listener pipeline is always-on, while front-door LLM inference is event-driv
 - Listener service scaffold as separate service (`skyra/services/listener`)
 - Context compression engine for prompt budgeting (`skyra/internal/context/compress`)
 - Event ingress and ACK design with durable outbox/inbox contract (`docs/arch/v1/event-ingress-ack.md`)
+- Task Formation architecture and module scaffolding (`docs/arch/v1/task-formation.md`, `skyra/internal/taskformation`)
 
 ## Context Compression
 
@@ -49,6 +50,7 @@ Defaults:
 - Main architecture: `docs/arch/v1/scyra.md`
 - Model endpoint example: `docs/examples/model-endpoint-phase1.md`
 - Event ingress and ACK: `docs/arch/v1/event-ingress-ack.md`
+- Task Formation: `docs/arch/v1/task-formation.md`
 - Listener service: `skyra/services/listener/README.md`
 
 ## Next Steps
