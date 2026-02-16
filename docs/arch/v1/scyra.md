@@ -45,15 +45,20 @@ flowchart TB
     GATE[Intent Gate]
     LCACHE[Listener Context Cache]
     FDOOR[Front-Door Fast Model]
+    OBOX[Event Outbox]
     VCLIENT[Voice Client]
     WW --> VAD --> STT --> GATE --> FDOOR
     LCACHE --> FDOOR
     FDOOR --> VCLIENT
+    FDOOR --> OBOX
+    OBOX --> VCLIENT
   end
 
   %% Control Plane
   subgraph CTRL[Mac mini • Control Plane]
     APIGW[API Gateway]
+    INGRESS[Event Ingress]
+    INBOX[(SQLite Event Inbox)]
     ORCH[Orchestrator]
     CORE[Skyra Orchestration Core]
     CIX[Context Injector]
@@ -65,6 +70,9 @@ flowchart TB
     VDB[Vector DB]
 
     APIGW --> ORCH
+    APIGW --> INGRESS
+    INGRESS --> INBOX
+    INBOX --> ORCH
     ORCH --> CORE
     CORE --> CIX
     CORE --> CODER
@@ -98,9 +106,10 @@ flowchart TB
   end
 
   %% Connections
-  VCLIENT -->|delegated tasks| APIGW
+  VCLIENT -->|delegated tasks/events| APIGW
   ORCH -->|complex tasks| DEEP
   CIX -->|context package push| LCACHE
+  INBOX -->|ACK(event_id)| OBOX
   ORCH -->|high-level commands| LAGENT
   ORCH -->|high-level commands| DAGENT
   ORCH -->|high-level commands| SAGENT
@@ -267,14 +276,19 @@ flowchart LR
     GATE[Intent Gate\n(deterministic)]
     LCACHE[Listener Context Cache\n(base + live + injected)]
     FDOOR[Front-Door Fast Model\nLlama 3.2 3B]
+    OBOX[Local Event Outbox\n(durable + retry)]
     VCLIENT[Voice Client\nHTTP/gRPC to API]
     WW --> VAD --> STT --> GATE --> FDOOR
     LCACHE --> FDOOR
     FDOOR --> VCLIENT
+    FDOOR --> OBOX
+    OBOX --> VCLIENT
   end
 
   subgraph MAC[Mac mini (M4, 24GB) • Control Plane]
     APIGW[API Gateway\n(FastAPI/Node)\n/voice /chat /tools /memory]
+    INGRESS[Event Ingress\n(WS/gRPC receiver)]
+    INBOX[(SQLite Inbox\nPRIMARY KEY: event_id)]
     AGENT[Skyra Orchestration Runtime\nLangGraph Orchestrator + Router]
     CIX[Context Injector Service\n(Rank + Compress + Push)]
     CLASS[Project + Intent Classifier]
@@ -287,6 +301,9 @@ flowchart LR
     VDB[(Vector DB\nChroma\nsemantic index)]
 
     APIGW --> AGENT
+    APIGW --> INGRESS
+    INGRESS --> INBOX
+    INBOX --> AGENT
     AGENT --> CLASS
     AGENT --> CODER
     AGENT --> MEMSVC
@@ -303,8 +320,9 @@ flowchart LR
   end
 
   %% ===== Links between machines =====
-  VCLIENT -->|delegated request| APIGW
+  VCLIENT -->|delegated request/event| APIGW
   CIX -->|compressed context package| LCACHE
+  INBOX -->|ACK(event_id)| OBOX
   AGENT -->|complex task| LLM
   LLM -->|completion| AGENT
   APIGW -->|delegated result| VCLIENT
@@ -555,7 +573,26 @@ Mac mini runs:
 - Audit logs
 - Encrypted backups
 
-## 14. End-State Role Assignment
+## 14. Event Ingress and ACK Reliability
+
+Skyra uses an at-least-once event delivery contract between listener and control plane.
+
+Listener side:
+
+- Structured proposal/event is written to local outbox first.
+- Event is retried over transport (WebSocket or gRPC) until ACK.
+- Outbox record is deleted only after ACK for the same `event_id`.
+
+Control plane side:
+
+- Ingress receives event and writes to durable SQLite inbox.
+- Inbox uses `event_id` as PRIMARY KEY for duplicate-safe inserts.
+- ACK is sent only after durable commit succeeds.
+
+Reference design:
+- `docs/arch/v1/event-ingress-ack.md`
+
+## 15. End-State Role Assignment
 
 | Machine      | Role                                             |
 | ------------ | ------------------------------------------------ |
@@ -563,7 +600,7 @@ Mac mini runs:
 | Mac mini     | LangGraph orchestration runtime, APIs, memory, tools, fast models |
 | Raspberry Pi | Voice interface                                  |
 
-## 15. Example Capabilities
+## 16. Example Capabilities
 
 - "What did I decide about the Tekkit backups last week?"
 - "Switch to work mode—draft a SOC2 response."
@@ -590,9 +627,9 @@ If confidence is low:
 - Ask clarification
 - Or search across multiple projects
 
-## 16. Telemetry and Monitoring
+## 17. Telemetry and Monitoring
 
-### 16.1 Model-Level Metrics
+### 17.1 Model-Level Metrics
 
 - Request count per model (Llama/Qwen vs DeepSeek)
 - Response times and token counts
@@ -600,43 +637,43 @@ If confidence is low:
 - Memory usage per inference request
 - Cache hit rates for local models
 
-### 16.2 User Interaction Metrics
+### 17.2 User Interaction Metrics
 
 - Voice-to-text latency
 - End-to-end request/response time
 - Routing decision accuracy (was DeepSeek escalation needed?)
 - User satisfaction signals (voice follow-ups, task completion)
 
-### 16.3 System Health
+### 17.3 System Health
 
 - Network latency between machines
 - Database query performance
 - Model warm-up times
 - Error rates and escalation triggers
 
-### 16.4 Cost Tracking
+### 17.4 Cost Tracking
 
 - Energy consumption per machine
 - GPU compute time cost estimates
 - Storage usage trends
 - Peak vs average resource utilization
 
-### 16.5 Implementation
+### 17.5 Implementation
 
 - Prometheus metrics on each machine
 - Simple dashboard in the Mac mini control plane
 - Alerts when DeepSeek usage spikes unusually
 - Weekly summaries of model usage patterns
 
-### 16.6 Key Focus: Routing Efficiency
+### 17.6 Key Focus: Routing Efficiency
 
 Track the system's ability to correctly choose local vs GPU models and analyze the tradeoffs between response time and accuracy.
 
-## 17. Planned Extensions
+## 18. Planned Extensions
 
 The following sections describe high-level architectural concepts that will be designed in more detail in future iterations. These are included to guide the long-term evolution of the system without constraining the initial implementation.
 
-### 17.1 TV Node Architecture (Planned)
+### 18.1 TV Node Architecture (Planned)
 
 The system may include a dedicated TV node consisting of a small computer (mini PC or Raspberry Pi) connected to a television via HDMI. This node will run a Jarvis/Skyra agent and act as the primary media execution environment.
 
@@ -660,7 +697,7 @@ Provide reliable, scriptable media control.
 
 Hardware selection, browser automation, and media control logic will be designed in a later iteration.
 
-### 17.2 Mobile Interaction via Progressive Web App (Planned)
+### 18.2 Mobile Interaction via Progressive Web App (Planned)
 
 Jarvis will expose a secure web interface that can be installed on a phone as a Progressive Web App (PWA). This will provide a native-like experience without requiring a dedicated mobile application.
 
@@ -676,7 +713,7 @@ Optional push notifications.
 
 The exact UI design, authentication model, and notification system will be defined in a future version.
 
-### 17.3 Voice Authorization Model (Planned)
+### 18.3 Voice Authorization Model (Planned)
 
 The voice subsystem will include a speaker-aware authorization layer so that only approved users can control the system.
 
@@ -693,7 +730,7 @@ High-risk or destructive actions may require additional spoken confirmation.
 
 Specific models, thresholds, and security policies will be defined in a later design phase.
 
-### 17.4 Streaming Device Integration Strategy (Planned)
+### 18.4 Streaming Device Integration Strategy (Planned)
 
 The system will support multiple types of media devices, using the most appropriate control method for each platform.
 
@@ -708,7 +745,7 @@ Prefer a local TV node for full automation when APIs are limited.
 Media endpoints will be treated as device nodes with defined capabilities.
 Detailed control logic for each platform will be designed later.
 
-### 17.5 External Device Control Model (Planned)
+### 18.5 External Device Control Model (Planned)
 
 Not all devices will run native Jarvis agents. Some will be controlled through network protocols or automation bridges.
 
@@ -730,7 +767,7 @@ Multiple device types are supported under a unified abstraction.
 
 The device capability schema and integration patterns will be defined in a future design phase.
 
-### 17.6 Remote Access Model (Planned)
+### 18.6 Remote Access Model (Planned)
 
 Remote clients (such as phones or laptops outside the home network) will access Jarvis through a secure overlay network.
 

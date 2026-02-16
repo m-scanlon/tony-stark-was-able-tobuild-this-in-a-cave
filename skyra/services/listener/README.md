@@ -6,6 +6,7 @@ Scope for this service:
 - Always-on listener-facing API surface
 - Deterministic intent gate
 - Event-driven handoff to front-door LLM (not always running inference)
+- Durable local outbox for event delivery to control plane
 
 ## Recommended Front-Door Model (Small Device)
 
@@ -19,6 +20,20 @@ Use control-plane compression before passing retrieved memory back to listener/f
 
 - Package: `skyra/internal/context/compress`
 - Purpose: rank + trim + budget context for low-latency prompts
+
+## Event Delivery Reliability
+
+Listener uses a local outbox + ACK protocol for delegation events:
+
+1. Front-door produces a structured event.
+2. Listener writes event to local outbox.
+3. Listener sends event to control-plane ingress.
+4. Listener deletes outbox row only after ACK for matching `event_id`.
+
+This provides at-least-once delivery and duplicate-safe behavior.
+
+Design reference:
+- `docs/arch/v1/event-ingress-ack.md`
 
 ## Run locally
 
