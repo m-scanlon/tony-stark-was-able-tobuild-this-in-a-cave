@@ -39,6 +39,7 @@ Each computer (laptop, desktop, server) runs a lightweight "Jarvis Agent" that e
 flowchart TB
   %% Voice Node
   subgraph PI[Raspberry Pi • Voice Node]
+    direction LR
     WW[Wake Word]
     VAD[VAD]
     STT[Speech-to-Text]
@@ -56,9 +57,15 @@ flowchart TB
 
   %% Control Plane
   subgraph CTRL[Mac mini • Control Plane]
+    direction LR
     APIGW[API Gateway]
     INGRESS[Event Ingress]
     INBOX[(SQLite Event Inbox)]
+    ROUTE[Domain Routing]
+    FORM[Task Formation\n(WorkPlan / TaskSheet + Patch)]
+    REVIEW[Threshold Review\n(optional)]
+    TASKOBJ[Task Object Factory]
+    SCHED[Scheduler Intake]
     ORCH[Orchestrator]
     CORE[Skyra Orchestration Core]
     CIX[Context Injector]
@@ -69,10 +76,7 @@ flowchart TB
     OBJ[Object Store]
     VDB[Vector DB]
 
-    APIGW --> ORCH
-    APIGW --> INGRESS
-    INGRESS --> INBOX
-    INBOX --> ORCH
+    APIGW --> INGRESS --> INBOX --> ROUTE --> FORM --> REVIEW --> TASKOBJ --> SCHED --> ORCH
     ORCH --> CORE
     CORE --> CIX
     CORE --> CODER
@@ -107,9 +111,9 @@ flowchart TB
 
   %% Connections
   VCLIENT -->|delegated tasks/events| APIGW
+  INBOX -->|ACK(event_id)| OBOX
   ORCH -->|complex tasks| DEEP
   CIX -->|context package push| LCACHE
-  INBOX -->|ACK(event_id)| OBOX
   ORCH -->|high-level commands| LAGENT
   ORCH -->|high-level commands| DAGENT
   ORCH -->|high-level commands| SAGENT
@@ -269,6 +273,7 @@ The always-on path runs continuously and does not require continuous LLM inferen
 flowchart LR
   %% ===== Nodes =====
   subgraph PI[Raspberry Pi • Voice Node]
+    direction LR
     WW[Wake Word\n(openWakeWord/Porcupine)]
     VAD[Voice Activity Detection]
     STT[Speech-to-Text\n(Whisper small/base)]
@@ -286,9 +291,15 @@ flowchart LR
   end
 
   subgraph MAC[Mac mini (M4, 24GB) • Control Plane]
+    direction LR
     APIGW[API Gateway\n(FastAPI/Node)\n/voice /chat /tools /memory]
     INGRESS[Event Ingress\n(WS/gRPC receiver)]
     INBOX[(SQLite Inbox\nPRIMARY KEY: event_id)]
+    ROUTE[Domain Routing]
+    FORM[Task Formation\nWorkPlan / TaskSheet + Patch]
+    REVIEW[Threshold Review\n(optional)]
+    TASKOBJ[Task Object Factory]
+    SCHED[Scheduler Intake]
     AGENT[Skyra Orchestration Runtime\nLangGraph Orchestrator + Router]
     CIX[Context Injector Service\n(Rank + Compress + Push)]
     CLASS[Project + Intent Classifier]
@@ -300,10 +311,7 @@ flowchart LR
     OBJ[(Object Store\n.skyra/projects\nversioned state)]
     VDB[(Vector DB\nChroma\nsemantic index)]
 
-    APIGW --> AGENT
-    APIGW --> INGRESS
-    INGRESS --> INBOX
-    INBOX --> AGENT
+    APIGW --> INGRESS --> INBOX --> ROUTE --> FORM --> REVIEW --> TASKOBJ --> SCHED --> AGENT
     AGENT --> CLASS
     AGENT --> CODER
     AGENT --> MEMSVC
@@ -523,6 +531,28 @@ The orchestration runtime runs on the Mac mini as the central orchestrator and m
 8. Return final response
 
 Safety/policy enforcement for high-risk actions is intentionally deferred to a later iteration.
+
+### 10.1 Task Formation Pipeline
+
+Before scheduler intake, control plane performs task formation on accepted voice/chat events:
+
+1. Event arrives from ingress.
+2. Domain routing selects candidate project/domain context.
+3. Domain expert decides:
+   - no task
+   - ephemeral task (`WorkPlan`)
+   - stateful task (`TaskSheet` + `Patch`)
+4. Optional review pass for high-complexity or ambiguous formations.
+5. Canonical task object is created and handed to scheduler.
+
+Important boundary:
+
+- Scheduler design is still in progress.
+- Estimation is only one scheduler component, not the full scheduler.
+
+References:
+- `docs/arch/v1/task-formation.md`
+- `skyra/internal/taskformation`
 
 ## 11. Network Layout
 
