@@ -244,6 +244,43 @@ The always-on path runs continuously and does not require continuous LLM inferen
   - Immediate acknowledgement
   - Structured handoff data for orchestration when delegation is needed
 
+### 5.1 Speculate -> Delegate -> Reconcile Pattern
+
+The Pi front-door path is speculative and low-latency; Mac mini remains authoritative.
+
+Flow:
+
+1. Pi may produce a fast provisional response from local cache + fast model.
+2. Pi always forwards the event to Mac mini.
+3. Mac performs authoritative processing (task formation, routing, execution, memory commit).
+4. Mac returns authoritative result.
+5. Pi reconciles by replacing/extending provisional output when needed.
+
+Behavior by confidence:
+
+- high confidence and no tools: immediate spoken answer allowed
+- medium confidence: short provisional response allowed
+- low confidence: non-verbal ack only (earcon/LED), wait for Mac result
+
+### 5.2 Pi Triage Layer (Fast Gate)
+
+Before delegation, Pi runs an extremely fast triage stage (rules or tiny model).
+
+Triage outputs:
+
+- `latency_class`: `fast | medium | slow`
+- `needs_delegation`: `bool`
+- `needs_tools_guess`: `bool`
+- `hint_target`: `respond_only | control_plane | agent:<id> | gpu:<id>`
+- `ack_policy`: `silent | nonverbal | spoken_if_slow`
+- `confidence`: `0.0-1.0`
+
+Notes:
+
+- triage output is a hint, not final authority
+- triage does not replace Mac-side task formation or estimation
+- Mac remains source of truth
+
 ### Mac mini (orchestration + tools)
 
 **Coding / Tool Model**
@@ -279,13 +316,16 @@ flowchart LR
     STT[Speech to Text<br/>Whisper small or base]
     TTS[Text to Speech<br/>Piper or Coqui]
     GATE[Intent Gate<br/>deterministic]
+    TRIAGE[Pi Triage<br/>fast gate]
     LCACHE[Listener Context Cache<br/>base + live + injected]
     FDOOR[Front-Door Fast Model\nLlama 3.2 3B]
+    UACK[User Feedback ACK<br/>earcon led spoken hint]
     OBOX[Local Event Outbox<br/>durable plus retry]
     VCLIENT[Voice Client<br/>HTTP or gRPC to API]
-    WW --> VAD --> STT --> GATE --> FDOOR
+    WW --> VAD --> STT --> GATE --> TRIAGE --> FDOOR
+    TRIAGE --> UACK
     LCACHE --> FDOOR
-    FDOOR --> VCLIENT
+    FDOOR --> TTS
     FDOOR --> OBOX
     OBOX --> VCLIENT
   end
@@ -328,13 +368,14 @@ flowchart LR
   end
 
   %% ===== Links between machines =====
-  VCLIENT -->|delegated event| APIGW
+  VCLIENT -->|event plus triage hints| APIGW
+  PI -.->|optional audio stream for remote STT| APIGW
   CIX -->|compressed context package| LCACHE
-  INBOX -->|ACK event_id| OBOX
+  INBOX -->|transport ACK event_id| OBOX
   AGENT -->|complex task| LLM
   LLM -->|completion| AGENT
-  APIGW -->|delegated result| VCLIENT
-  VCLIENT -->|text for speech| TTS
+  APIGW -->|authoritative result| VCLIENT
+  VCLIENT -->|final speech output| TTS
 ```
 
 ## 7. Voice Request Flow
@@ -350,39 +391,150 @@ sequenceDiagram
 
   User->>Pi: "Hey Skyra..." (audio)
   Pi->>Pi: Wake word detect
+  Pi->>Pi: Earcon + LED listening
   Pi->>Pi: VAD start/stop
   Pi->>Pi: STT (audio → text)
-  Pi->>Pi: Intent gate (deterministic)
-  Pi->>Pi: Front-door model uses base + live + injected context
+  Pi->>Pi: Pi triage (latency_class, needs_delegation, needs_tools_guess, hint_target, ack_policy, confidence)
+  Pi->>Pi: Front-door uses base + live + injected context
   par Proactive context refresh
     CIX-->>Pi: Push compressed context package
-  and User-facing response path
-    Pi-->>User: Immediate acknowledgement (if simple)
+  and Speculative response path
+    alt High confidence + no tools guessed
+      Pi-->>User: Immediate local spoken answer
+    else Medium confidence
+      Pi-->>User: Short provisional response
+    else Low confidence
+      Pi->>Pi: Non-verbal ack only (earcon/LED)
+    end
   end
 
-  alt Delegation needed
-    Pi->>Mac: POST /voice {text, timestamp, intent_hint}
-    Mac->>Mac: Project/Intent classify
+  Pi->>Mac: POST /voice {event, triage_hints, provisional_response?}
+  Mac-->>Pi: Transport ACK(event_id) after durable inbox write
+
+  Mac->>Mac: Create job_envelope_v1
+  Mac->>Mac: Project/Intent classify
+  Mac->>Mac: Task formation (WorkPlan or TaskSheet + Patch)
+  Mac->>Mac: Estimation (scheduler input only)
+  Mac->>Mac: Route + execute
+  alt Complex reasoning required
+    Mac->>GPU: Send to DeepSeek
+    GPU-->>Mac: Completion
+  else Local/tool path
+    Mac->>Mac: Use local models/tools
+  end
     Mac->>DB: Retrieve relevant context
     DB-->>Mac: Context snippets
-
-    Mac->>Mac: LangGraph route task
-    alt Simple or coding task
-      Mac->>Mac: Use local model (Qwen/local tools)
-    else Complex reasoning task
-      Mac->>GPU: Send to DeepSeek
-      GPU-->>Mac: Completion
-    end
-
-    Mac->>DB: Write memory update
-    Mac-->>Pi: Response text
-    Pi->>Pi: Front-door merges delegated result
+  Mac->>DB: Write memory update
+    Mac-->>Pi: FINAL authoritative response
+    Pi->>Pi: Reconcile provisional response
     Pi->>Pi: TTS
     Pi-->>User: Spoken response
-  else No delegation needed
-    Pi->>Pi: Complete locally in front-door path
-  end
 ```
+
+### 7.1 Consistency and Reconciliation Model
+
+Problem: split-brain responses
+
+Because the Pi can speculate with cached/local context while Mac is authoritative, this failure mode can occur:
+
+1. Pi produces a provisional response.
+2. Mac processes with fuller context/tools/memory.
+3. Mac result contradicts provisional Pi response.
+4. User perceives inconsistency.
+
+Design principle: Speculate -> Delegate -> Reconcile
+
+1. Speculate (Pi): fast provisional response is allowed.
+2. Delegate (Pi -> Mac): event is always sent to Mac.
+3. Reconcile (Mac -> Pi): Mac returns authoritative result; Pi updates/replaces response.
+
+Pi speech guardrails
+
+Pi speculative output is always treated as provisional until confirmed by Mac:
+
+`provisional = true`
+
+Pi is allowed to:
+
+- status acknowledgements ("I'm checking...", "One sec...")
+- uncertain recall ("From what I remember...", "Last I saw...")
+
+Pi must not:
+
+- claim an action completed unless confirmed by Mac
+- claim state changes occurred unless confirmed by Mac
+- write or modify system memory
+
+Reconciliation protocol (Mac -> Pi)
+
+Mac responses include:
+
+- `message_type`: `FINAL | UPDATE | CLARIFY | ERROR`
+- `job_id`: `string`
+- `text`: `string`
+
+Message types:
+
+- `FINAL`
+  - authoritative response
+  - replaces any conflicting provisional Pi speech
+  - marks job complete
+- `UPDATE`
+  - intermediate progress or correction
+  - may refine or extend earlier provisional wording
+  - does not mark job complete
+- `CLARIFY`
+  - requests missing information from user
+  - Pi asks clarification instead of asserting uncertain content
+- `ERROR`
+  - authoritative failure result
+  - Pi should give concise failure output and next step
+
+Reconciliation behavior on Pi:
+
+- If `FINAL` contradicts provisional content, Pi explicitly corrects and continues with final result.
+- If `UPDATE` arrives first, Pi may emit short progress speech based on `ack_policy`.
+- If no provisional speech was emitted, Pi just speaks authoritative messages normally.
+
+### Optional: Remote STT Acceleration (Pi -> Mac Audio Streaming)
+
+Purpose:
+
+Allow the Raspberry Pi to stream captured audio to the Mac mini so speech-to-text can run on the more powerful control plane. This reduces time to first spoken response for short utterances.
+
+This feature is optional and not required for the base architecture.
+
+When enabled:
+
+1. Wake word is detected on Pi.
+2. Pi begins capturing audio.
+3. Pi streams audio chunks to Mac over a low-latency channel.
+4. Mac performs streaming or fast batch STT.
+5. Mac continues normal processing:
+   - job envelope creation
+   - triage
+   - task formation
+   - routing
+   - execution
+6. Mac returns response text to Pi.
+7. Pi performs TTS and speaks the result.
+
+Performance target:
+
+- Remote STT enabled: first substantive spoken response ~`500-900 ms` (best case).
+- Local Pi STT path: typical ~`900-1600 ms`.
+
+Transport options (implementation-agnostic):
+
+- WebSocket (preferred for simplicity)
+- gRPC streaming
+- QUIC or another low-latency protocol
+
+Audio format guidance:
+
+- mono
+- `16 kHz` or `24 kHz`
+- small chunked frames
 
 ## 8. Component Responsibilities
 
@@ -395,8 +547,10 @@ sequenceDiagram
 - Wake word detection
 - VAD (voice activity detection)
 - Speech-to-text (STT)
+- Optional remote audio streaming to Mac for accelerated STT
 - Text-to-speech (TTS)
 - Intent gate (deterministic rules + tiny classifier)
+- Pi triage layer (fast gate that emits routing/latency hints)
 - Front-door fast model (event-driven, not always-on inference)
 - Voice client that sends text to Mac mini
 
@@ -406,6 +560,15 @@ sequenceDiagram
 - Always powered on
 - Local network only
 - No heavy reasoning models on this node
+
+### 8.1.1 Pi Guardrails (Speculative Behavior)
+
+The Pi is allowed to respond quickly, but remains non-authoritative.
+
+- Pi may speak only from local cache or general knowledge.
+- Pi must not claim actions were executed unless confirmed by Mac.
+- Pi must not write memory or commit state.
+- Pi responses are provisional until authoritative result is returned.
 
 ### 8.2 Mac mini – Control Plane
 
@@ -514,21 +677,33 @@ The orchestration runtime runs on the Mac mini as the central orchestrator and m
 **Agent pipeline**:
 
 1. Receive message
-2. Run project and intent classifier
-3. Build structured job envelope:
-   - `project_id`
-   - `intent`
-   - `priority`
-   - `required_tools`
-   - `can_run_async`
-4. Retrieve memory context
-5. Route task:
-   - Llama (conversation)
+2. Build `job_envelope_v1`
+3. Run project and intent classifier
+4. Task formation:
+   - no task
+   - ephemeral task (`WorkPlan`)
+   - stateful task (`TaskSheet` + `Patch`)
+5. Estimation (input to scheduler only)
+6. Retrieve memory context
+7. Route task:
    - Qwen (coding/tools)
    - DeepSeek (GPU reasoning)
-6. Execute tools if needed
-7. Write memory updates
-8. Return final response
+8. Execute tools if needed
+9. Write memory updates
+10. Return final authoritative response
+
+`job_envelope_v1` includes:
+
+- `job_id`
+- `parent_job_id`
+- `project_id`
+- `intent`
+- `priority`
+- `required_tools`
+- `target` (`none | control_plane | gpu | agent:<id>`)
+- `risk_level` (`low | med | high`)
+- `expect_response_by`
+- `schema_version`
 
 Safety/policy enforcement for high-risk actions is intentionally deferred to a later iteration.
 
@@ -553,6 +728,26 @@ Important boundary:
 References:
 - `docs/arch/v1/task-formation.md`
 - `skyra/internal/taskformation`
+
+### 10.2 Canonical Processing Pipeline and Ownership
+
+Canonical pipeline:
+
+`event -> job_envelope_v1 -> task_object -> estimator -> scheduler -> execution`
+
+Pi responsibilities:
+
+- produce event
+- produce triage hints
+- optional provisional response
+
+Mac responsibilities:
+
+- own job envelopes
+- own task formation
+- own estimation and scheduling inputs
+- own execution routing/orchestration
+- own memory commits
 
 ## 11. Network Layout
 
@@ -621,6 +816,22 @@ Control plane side:
 
 Reference design:
 - `docs/arch/v1/event-ingress-ack.md`
+
+### 14.1 ACK Types
+
+Skyra uses two different acknowledgements that must not be conflated.
+
+Transport ACK (machine-to-machine):
+
+- sent from Mac to Pi only after durable inbox write
+- drives outbox delete behavior
+- never spoken to the user
+
+User Feedback ACK (human-facing):
+
+- earcon, LED, or optional short phrase
+- chosen by Pi using triage `ack_policy`
+- independent from transport reliability ACK
 
 ## 15. End-State Role Assignment
 
