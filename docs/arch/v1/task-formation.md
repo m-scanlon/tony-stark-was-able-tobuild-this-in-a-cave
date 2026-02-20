@@ -2,7 +2,9 @@
 
 ## 1. Overview
 
-The Task Formation System converts incoming events from voice or chat into structured task objects for downstream scheduling.
+The Task Formation System converts incoming events from voice or chat into structured task objects and execution-ready plans.
+
+Planning and execution are carried out by the same LLM session/context in the control plane.
 
 Formation outputs exactly one of:
 
@@ -79,6 +81,8 @@ Recommended fields:
 - `state_targets[]`
 - `constraints[]`
 - `validation_checks[]`
+- `assumptions[]`
+- `evidence[]` (citations for validated assumptions)
 - `commit_message_hint`
 - `requires_patch=true`
 
@@ -111,12 +115,18 @@ If confidence is low, formation enters ambiguity handling (see Section 11).
 
 The domain expert is the first-pass task shaper.
 
+Canonical Domain Expert spec:
+
+- `docs/arch/v1/domain-expert/README.md`
+
 Responsibilities:
 
 - decide no-task vs ephemeral vs stateful
 - identify `systems_affected`
 - create `WorkPlan` or `TaskSheet`
 - annotate assumptions and confidence
+- validate critical assumptions with tools when needed
+- include citations in TaskSheet evidence when external/docs lookup is used
 
 Expected output contract:
 
@@ -180,11 +190,33 @@ Idempotency:
 - task creation must be idempotent for duplicate source events
 - use stable key strategy (for example `source_event_id + task_variant`)
 
-## 10. Hand-off to Scheduler
+## 10. Queue, Scheduler, and Execution Start
 
-Task Formation hands a canonical task object to scheduler intake.
+Task formation and execution run in the same assigned LLM context after queueing and scheduler lane assignment.
 
-Handoff guarantees:
+Execution model:
+
+- task formation and execution are performed by the same LLM context
+- approval gates and queueing may pause/resume work, but do not require switching to a different LLM agent
+
+Approval gate:
+
+- for plan-backed execution, scheduler hand-off is blocked until user approval is received
+- control plane sends `PLAN_APPROVAL_REQUIRED` with plan summary and confidence/evidence
+- user response contract: `APPROVE | REVISE | CANCEL`
+- only `APPROVE` advances to execution
+- `REVISE` returns task to formation refinement
+- `CANCEL` terminates task before execution
+
+Planner event emission:
+
+- during formation, planner/domain expert may emit user-facing events via context engine
+- planner may invoke these via interaction tools (for example `ask_user`)
+- allowed planning events: `CLARIFY`, optional `PLAN_PROGRESS`, `PLAN_APPROVAL_REQUIRED`
+- events must be persisted on the event/context timeline before delivery
+- execution remains blocked until approval event resolves to `APPROVE`
+
+Execution start guarantees:
 
 - task type is explicit
 - artifact is structured and validated
@@ -192,7 +224,7 @@ Handoff guarantees:
 
 Important boundary:
 
-- scheduler is not fully designed yet
+- scheduler v1 is intentionally simple (single queue + lane assignment)
 - estimator is only one scheduler component, not the scheduler itself
 - formation does not decide final scheduling policy
 
@@ -218,16 +250,120 @@ Patch invalid/unavailable:
 - mark patch generation pending/failed
 - return to review path
 
+## 12. Assumption Validation and Citation Policy
+
+Canonical policy reference:
+
+- `docs/arch/v1/domain-expert/README.md`
+
+For stateful or high-impact plans, Domain Expert must validate critical assumptions before final TaskSheet emission.
+
+Reprompt directive (internal):
+
+- "Validate assumptions with documentation or internet sources."
+- "Cite sources in TaskSheet evidence."
+
+TaskSheet evidence minimums:
+
+- `claim`: assumption being validated
+- `status`: `validated | unresolved | conflicting`
+- `sources[]`: each with `title`, `url`, `retrieved_at`
+- `notes`: short interpretation of relevance
+
+If evidence is insufficient within attempt budget:
+
+- emit `CLARIFY`, or
+- emit `WorkPlan` with unresolved assumptions explicitly marked
+
 Duplicate source events:
 
 - deduplicate at task object creation boundary
 
-## 12. Future Work (Brief)
+## 13. Future Work (Brief)
 
 - formal task schema versioning
 - stronger ambiguity scoring
 - integration with finalized scheduler policies
 - richer review policies from production telemetry
+
+## 14. Related Docs
+
+- Executor runtime design (draft): `docs/arch/v1/executor.md`
+
+## 15. Appendix A: Estimator Documentation Agent Prompt
+
+Use this prompt when generating the Estimator design documentation for Skyra Task Formation.
+
+```text
+Write a comprehensive design document for the Estimator component of Skyra's Task Formation System, based on the following specifications. The Estimator is responsible for predicting task duration and resource needs, and for dynamically updating those predictions during execution. The job execution layer is not yet fully defined, so define interfaces abstractly.
+
+Context:
+Skyra processes events into tasks via a Task Formation pipeline (see attached task-formation.md). After the Domain Expert creates a WorkPlan or TaskSheet, the Estimator produces initial estimates. During task execution, the Estimator receives progress updates and refines estimates, which are used for user communication and scheduler hints.
+
+Requirements:
+
+Purpose
+
+Predict how long a task will take (initial estimate).
+
+Classify tasks into duration classes (instant, short, long, unknown) to guide scheduling and user interaction.
+
+Suggest checkpoint intervals for long tasks.
+
+Provide resource hints (GPU, network, etc.) to the scheduler.
+
+Dynamically re-estimate remaining time during execution based on progress.
+
+Inputs – Initial Estimation
+
+Hydrated job (after Domain Expert) including WorkPlan/TaskSheet, project context, user ID, etc.
+
+Snapshot of current system resources (GPU load, memory, network latency).
+
+Historical data: embeddings of similar past tasks with their actual durations and resource usage.
+
+Inputs – Dynamic Re‑estimation (during execution)
+
+Progress snapshots from the executor (abstractly defined): e.g., elapsed time, steps completed, current step, partial results, resource usage, errors.
+
+Original task features and initial estimate.
+
+Outputs
+
+Initial: duration class, estimated seconds (with confidence), checkpoint interval, resource hints, complexity score.
+
+Re‑estimation: updated remaining seconds, new confidence, optionally a reason for change.
+
+All outputs may be used by scheduler, threshold review, and user notification system.
+
+Learning & Adaptation
+
+Store features and actual outcomes (duration, resource consumption) for every completed task.
+
+Periodically retrain a model (e.g., gradient boosting, small neural net) to improve accuracy.
+
+Include progress snapshots in training to improve re‑estimation.
+
+Cold-start fallback rules until enough data exists.
+
+Architecture & Integration
+
+The Estimator is a service on the Mac mini, exposed via an internal API.
+
+Initial estimation occurs after Domain Expert, before threshold review (if any).
+
+During execution, the executor (to be defined) sends progress updates to the Estimator; the Estimator returns updated estimates.
+
+Estimates are attached to the task object and can be queried by the scheduler or notification system.
+
+Open Points
+
+The exact executor interface is TBD; define the expected progress snapshot schema.
+
+How frequently re‑estimation occurs (e.g., every 30 seconds, after each step) is configurable and may depend on duration class.
+
+Notification logic (when to inform the user) is outside this doc but should reference the estimator's outputs.
+```
 
 ## Task Formation Flow Diagram
 
