@@ -61,11 +61,10 @@ flowchart TB
     APIGW[API Gateway]
     INGRESS[Event Ingress]
     INBOX[(SQLite Event Inbox)]
-    ROUTE[Domain Routing]
-    FORM["Task Formation<br/>WorkPlan or TaskSheet plus Patch"]
-    REVIEW["Threshold Review<br/>optional"]
-    TASKOBJ[Task Object Factory]
-    SCHED[Scheduler Intake]
+    QUEUE[(Durable Request Queue)]
+    EST[Estimator]
+    SCHED[Scheduler]
+    SESSION[Assigned LLM Session]
     ORCH[Orchestrator]
     CORE[Skyra Orchestration Core]
     CIX[Context Injector]
@@ -76,7 +75,7 @@ flowchart TB
     OBJ[Object Store]
     VDB[Vector DB]
 
-    APIGW --> INGRESS --> INBOX --> ROUTE --> FORM --> REVIEW --> TASKOBJ --> SCHED --> ORCH
+    APIGW --> INGRESS --> INBOX --> QUEUE --> EST --> SCHED --> SESSION --> ORCH
     ORCH --> CORE
     CORE --> CIX
     CORE --> CODER
@@ -215,9 +214,18 @@ flowchart TB
 
 ---
 
-## 4. Concurrency and Job Model (Planned)
+## 4. Concurrency and Job Model (Simple v1)
 
-The system will eventually support multiple concurrent user requests across voice, chat, and agent interactions. A formal job queue, request lifecycle management, and concurrency limits will be designed in a future iteration to ensure proper resource allocation and response ordering. This portion of the architecture is intentionally deferred for a later version to focus on core functionality first.
+Skyra v1 uses a single durable request queue for inbound voice/chat events.
+
+Simple flow:
+
+1. Pi/chat ingress writes request to queue (`event_id` idempotent).
+2. Mac durably stores it, sends transport ACK, and the task remains queued for scheduling.
+3. Estimator annotates latency/cost/risk hints.
+4. Scheduler dequeues and assigns an execution lane (`fast_local` or `deep_reasoning`).
+5. The assigned LLM session performs both task planning and task execution in one continuous context.
+6. System emits `UPDATE|PLAN_PROGRESS|CLARIFY|PLAN_APPROVAL_REQUIRED|FINAL|ERROR` events as work progresses.
 
 ## 5. Model and Runtime Roles
 
@@ -244,23 +252,24 @@ The always-on path runs continuously and does not require continuous LLM inferen
   - Immediate acknowledgement
   - Structured handoff data for orchestration when delegation is needed
 
-### 5.1 Speculate -> Delegate -> Reconcile Pattern
+### 5.1 Delegate -> Authoritative -> Reconcile Pattern (Strict Mode)
 
-The Pi front-door path is speculative and low-latency; Mac mini remains authoritative.
+The Pi front-door path is non-authoritative. Pi captures input, emits transport/user ACKs, and relays context-rich JSON. Mac mini remains the only response authority.
 
 Flow:
 
-1. Pi may produce a fast provisional response from local cache + fast model.
+1. Pi captures audio, performs STT, and creates `voice_event_v1`.
 2. Pi always forwards the event to Mac mini.
 3. Mac performs authoritative processing (task formation, routing, execution, memory commit).
-4. Mac returns authoritative result.
-5. Pi reconciles by replacing/extending provisional output when needed.
+4. Mac may emit `UPDATE` or `CLARIFY` while work is in progress.
+5. Mac emits `FINAL` or `ERROR` as authoritative output.
+6. Pi speaks only Mac-authored content and updates local turn state.
 
 Behavior by confidence:
 
-- high confidence and no tools: immediate spoken answer allowed
-- medium confidence: short provisional response allowed
-- low confidence: non-verbal ack only (earcon/LED), wait for Mac result
+- high confidence: minimal user feedback ACK only (earcon/LED, optional "working on it")
+- medium confidence: short progress ACK only, no semantic answer
+- low confidence: non-verbal ACK only (earcon/LED), wait for Mac result
 
 ### 5.2 Pi Triage Layer (Fast Gate)
 
@@ -271,7 +280,7 @@ Triage outputs:
 - `latency_class`: `fast | medium | slow`
 - `needs_delegation`: `bool`
 - `needs_tools_guess`: `bool`
-- `hint_target`: `respond_only | control_plane | agent:<id> | gpu:<id>`
+- `hint_target`: `control_plane | agent:<id> | gpu:<id>`
 - `ack_policy`: `silent | nonverbal | spoken_if_slow`
 - `confidence`: `0.0-1.0`
 
@@ -304,6 +313,39 @@ Notes:
   - Deep debugging
   - Long-context tasks
 
+### 5.3 RTX 4090 + DeepSeek Model Selection Notes (Preliminary)
+
+Status:
+
+- Final production model/precision is not decided yet.
+- Priority for this decision path is correctness over speed.
+
+Comparison matrix (preliminary):
+
+| Option | Model size | Precision         | VRAM estimate               | Accuracy | Speed          | Notes                                               |
+| ------ | ---------- | ----------------- | --------------------------- | -------- | -------------- | --------------------------------------------------- |
+| A      | 70B        | NVFP4 (emulated)  | ~40GB (requires offload)    | ~99%     | Slow           | Best accuracy/performance balance on 4-bit path     |
+| B      | 70B        | FP8 / AWQ         | ~35-40GB                    | ~97-98%  | Moderate       | Reliable fallback if NVFP4 emulation is too slow    |
+| C      | 32B        | FP16 (no quant)   | ~65GB (requires offload)    | ~100%    | Fast           | Zero quantization risk                              |
+| D      | 32B        | 8-bit             | ~16-18GB (fits 4090 VRAM)   | ~98-99%  | Very fast      | Efficient and fully in-VRAM                         |
+
+NVFP4 note:
+
+- NVFP4 is expected to retain high accuracy on long-context and complex workloads versus generic 4-bit approaches.
+- RTX 4090 (Ada Lovelace) does not have native NVFP4 hardware support, but software emulation can be enabled:
+
+```bash
+export VLLM_USE_NVFP4_CT_EMULATIONS=1
+```
+
+- Emulation path keeps accuracy benefits with potential speed penalty.
+
+Correctness-first recommendation path:
+
+1. Try Option A first (70B NVFP4 emulation).
+2. If too slow, move to Option B (70B FP8/AWQ).
+3. If quantization risk must be minimized, use Option C (32B FP16) or Option D (32B 8-bit).
+
 ## 6. System Topology Diagram
 
 ```mermaid
@@ -335,11 +377,10 @@ flowchart LR
     APIGW[API Gateway<br/>FastAPI or Node<br/>voice chat tools memory]
     INGRESS[Event Ingress<br/>WS or gRPC receiver]
     INBOX[(SQLite Inbox<br/>PRIMARY KEY event_id)]
-    ROUTE[Domain Routing]
-    FORM["Task Formation<br/>WorkPlan or TaskSheet plus Patch"]
-    REVIEW["Threshold Review<br/>optional"]
-    TASKOBJ[Task Object Factory]
-    SCHED[Scheduler Intake]
+    QUEUE[(Durable Request Queue)]
+    EST[Estimator]
+    SCHED[Scheduler]
+    SESSION[Assigned LLM Session<br/>task formation + execution]
     AGENT[Skyra Orchestration Runtime<br/>LangGraph Orchestrator and Router]
     CIX[Context Injector Service<br/>Rank Compress Push]
     CLASS[Project + Intent Classifier]
@@ -351,7 +392,7 @@ flowchart LR
     OBJ[(Object Store<br/>.skyra projects<br/>versioned state)]
     VDB[(Vector DB<br/>Chroma<br/>semantic index)]
 
-    APIGW --> INGRESS --> INBOX --> ROUTE --> FORM --> REVIEW --> TASKOBJ --> SCHED --> AGENT
+    APIGW --> INGRESS --> INBOX --> QUEUE --> EST --> SCHED --> SESSION --> AGENT
     AGENT --> CLASS
     AGENT --> CODER
     AGENT --> MEMSVC
@@ -398,24 +439,17 @@ sequenceDiagram
   Pi->>Pi: Front-door uses base + live + injected context
   par Proactive context refresh
     CIX-->>Pi: Push compressed context package
-  and Speculative response path
-    alt High confidence + no tools guessed
-      Pi-->>User: Immediate local spoken answer
-    else Medium confidence
-      Pi-->>User: Short provisional response
-    else Low confidence
-      Pi->>Pi: Non-verbal ack only (earcon/LED)
-    end
+  and User feedback path (non-authoritative)
+    Pi->>Pi: Earcon/LED or short progress ACK only
   end
 
-  Pi->>Mac: POST /voice {event, triage_hints, provisional_response?}
+  Pi->>Mac: POST /voice {event, context_window, triage_hints}
   Mac-->>Pi: Transport ACK(event_id) after durable inbox write
 
-  Mac->>Mac: Create job_envelope_v1
-  Mac->>Mac: Project/Intent classify
-  Mac->>Mac: Task formation (WorkPlan or TaskSheet + Patch)
-  Mac->>Mac: Estimation (scheduler input only)
-  Mac->>Mac: Route + execute
+  Mac->>Mac: Create job_envelope_v1 + enqueue
+  Mac->>Mac: Estimation annotates scheduler hints
+  Mac->>Mac: Scheduler assigns execution lane
+  Mac->>Mac: Assigned LLM session does classify + task formation + execution
   alt Complex reasoning required
     Mac->>GPU: Send to DeepSeek
     GPU-->>Mac: Completion
@@ -426,41 +460,37 @@ sequenceDiagram
     DB-->>Mac: Context snippets
   Mac->>DB: Write memory update
     Mac-->>Pi: FINAL authoritative response
-    Pi->>Pi: Reconcile provisional response
+    Pi->>Pi: Reconcile turn state and context window
     Pi->>Pi: TTS
     Pi-->>User: Spoken response
 ```
 
 ### 7.1 Consistency and Reconciliation Model
 
-Problem: split-brain responses
+Problem: maintaining single-authoritative response semantics with asynchronous backend processing.
 
-Because the Pi can speculate with cached/local context while Mac is authoritative, this failure mode can occur:
+Failure mode to avoid:
 
-1. Pi produces a provisional response.
-2. Mac processes with fuller context/tools/memory.
-3. Mac result contradicts provisional Pi response.
-4. User perceives inconsistency.
+1. Pi emits semantic content before backend decision is complete.
+2. Backend result differs.
+3. User receives contradictory answers in one turn.
 
-Design principle: Speculate -> Delegate -> Reconcile
+Design principle: Delegate -> Authoritative -> Reconcile
 
-1. Speculate (Pi): fast provisional response is allowed.
-2. Delegate (Pi -> Mac): event is always sent to Mac.
-3. Reconcile (Mac -> Pi): Mac returns authoritative result; Pi updates/replaces response.
+1. Delegate (Pi -> Mac): event is always sent to Mac.
+2. Authoritative process (Mac): only Mac can produce semantic result.
+3. Reconcile (Mac -> Pi): Pi renders Mac messages and commits turn state.
 
 Pi speech guardrails
-
-Pi speculative output is always treated as provisional until confirmed by Mac:
-
-`provisional = true`
 
 Pi is allowed to:
 
 - status acknowledgements ("I'm checking...", "One sec...")
-- uncertain recall ("From what I remember...", "Last I saw...")
+- transport/progress signals (earcon, LED, short wait phrase)
 
 Pi must not:
 
+- generate semantic answers from local context
 - claim an action completed unless confirmed by Mac
 - claim state changes occurred unless confirmed by Mac
 - write or modify system memory
@@ -469,7 +499,7 @@ Reconciliation protocol (Mac -> Pi)
 
 Mac responses include:
 
-- `message_type`: `FINAL | UPDATE | CLARIFY | ERROR`
+- `message_type`: `FINAL | UPDATE | PLAN_PROGRESS | CLARIFY | PLAN_APPROVAL_REQUIRED | ERROR`
 - `job_id`: `string`
 - `text`: `string`
 
@@ -477,24 +507,149 @@ Message types:
 
 - `FINAL`
   - authoritative response
-  - replaces any conflicting provisional Pi speech
+  - supersedes any prior progress ACK text
   - marks job complete
 - `UPDATE`
-  - intermediate progress or correction
-  - may refine or extend earlier provisional wording
+  - intermediate progress
+  - may include user-facing status text
+  - does not mark job complete
+- `PLAN_PROGRESS`
+  - planning-stage progress update
+  - optional user-facing status text
   - does not mark job complete
 - `CLARIFY`
   - requests missing information from user
   - Pi asks clarification instead of asserting uncertain content
+- `PLAN_APPROVAL_REQUIRED`
+  - plan is ready and waiting for user decision
+  - expected user response: `APPROVE | REVISE | CANCEL`
 - `ERROR`
   - authoritative failure result
   - Pi should give concise failure output and next step
 
 Reconciliation behavior on Pi:
 
-- If `FINAL` contradicts provisional content, Pi explicitly corrects and continues with final result.
 - If `UPDATE` arrives first, Pi may emit short progress speech based on `ack_policy`.
-- If no provisional speech was emitted, Pi just speaks authoritative messages normally.
+- Pi may render `PLAN_PROGRESS` as short status.
+- Pi speaks `CLARIFY`, `PLAN_APPROVAL_REQUIRED`, `FINAL`, and `ERROR` as authoritative turn content.
+- Pi appends authoritative output to local context window and closes the turn on `FINAL|ERROR`.
+
+### 7.2 Formal Turn Loop Algorithm (Hear -> JSON Pi -> Backend -> Context Manager)
+
+This algorithm enforces that Pi cannot answer on its own.
+
+#### 7.2.1 State machine
+
+`IDLE -> LISTENING -> TRANSCRIBED -> FORWARDED -> ACKED -> RUNNING -> RESOLVED`
+
+`RUNNING -> RUNNING` on `UPDATE`  
+`RUNNING -> LISTENING` on `CLARIFY`  
+`RUNNING -> RESOLVED` on `FINAL|ERROR`
+
+#### 7.2.2 Pi-side pseudocode
+
+```python
+def on_user_utterance(audio_chunk_stream):
+    turn_id = new_turn_id()
+    transcript = stt(audio_chunk_stream)
+    triage = pi_fast_triage(transcript)
+    context_window = context_manager.snapshot_for_turn(turn_id)
+
+    event = {
+        "schema": "voice_event_v1",
+        "event_id": ulid(),
+        "turn_id": turn_id,
+        "ts": now_iso8601(),
+        "transcript": transcript,
+        "triage_hints": triage,
+        "context_window": context_window,
+    }
+
+    outbox.persist(event)  # durable before send
+    emit_user_ack(triage["ack_policy"])  # non-semantic ACK only
+    transport.send(event)
+
+    while True:
+        msg = transport.recv_for_turn(turn_id, timeout=TURN_TIMEOUT_S)
+        if msg is None:
+            transport.retry_from_outbox(event["event_id"])
+            continue
+
+        if msg["message_type"] in ("UPDATE", "PLAN_PROGRESS"):
+            maybe_speak_progress(msg["text"], triage["ack_policy"])
+            continue
+
+        if msg["message_type"] == "CLARIFY":
+            tts_speak(msg["text"])
+            context_manager.append_assistant(turn_id, msg["text"], authoritative=True)
+            return "needs_user_input"
+
+        if msg["message_type"] == "PLAN_APPROVAL_REQUIRED":
+            tts_speak(msg["text"])
+            context_manager.append_assistant(turn_id, msg["text"], authoritative=True)
+            return "awaiting_plan_approval"
+
+        if msg["message_type"] in ("FINAL", "ERROR"):
+            tts_speak(msg["text"])
+            context_manager.append_assistant(turn_id, msg["text"], authoritative=True)
+            outbox.delete_if_acked(event["event_id"])
+            return "resolved"
+```
+
+#### 7.2.3 Backend reconciliation contract
+
+Request (`Pi -> Mac`):
+
+```json
+{
+  "schema": "voice_event_v1",
+  "event_id": "01JS...",
+  "turn_id": "turn_8f4c",
+  "ts": "2026-02-20T18:10:12Z",
+  "transcript": "what did I decide about backups",
+  "triage_hints": {
+    "latency_class": "medium",
+    "needs_delegation": true,
+    "needs_tools_guess": false,
+    "hint_target": "control_plane",
+    "ack_policy": "spoken_if_slow",
+    "confidence": 0.72
+  },
+  "context_window": {
+    "session_summary": "...",
+    "recent_turns": [],
+    "active_project": "server_ops",
+    "injected_facts": []
+  }
+}
+```
+
+Response stream (`Mac -> Pi`):
+
+```json
+{
+  "schema": "voice_result_v1",
+  "event_id": "01JS...",
+  "turn_id": "turn_8f4c",
+  "message_type": "UPDATE|PLAN_PROGRESS|CLARIFY|PLAN_APPROVAL_REQUIRED|FINAL|ERROR",
+  "text": "authoritative text",
+  "memory_patch": {
+    "summary_delta": "...",
+    "facts_upsert": []
+  },
+  "commit": {
+    "project_id": "server_ops",
+    "commit_id": "cmt_12ab"
+  },
+  "ts": "2026-02-20T18:10:15Z"
+}
+```
+
+Rules:
+
+- `event_id` is idempotency key across retries.
+- Pi never fabricates `memory_patch` or `commit`.
+- Context Manager applies backend-authored `memory_patch` only after `FINAL|ERROR`.
 
 ### Optional: Remote STT Acceleration (Pi -> Mac Audio Streaming)
 
@@ -561,14 +716,15 @@ Audio format guidance:
 - Local network only
 - No heavy reasoning models on this node
 
-### 8.1.1 Pi Guardrails (Speculative Behavior)
+### 8.1.1 Pi Guardrails (Authoritative-Only Behavior)
 
-The Pi is allowed to respond quickly, but remains non-authoritative.
+The Pi remains a listener/transport/render node and is non-authoritative for semantic responses.
 
-- Pi may speak only from local cache or general knowledge.
+- Pi may emit non-semantic ACKs (earcon, LED, short wait phrase).
+- Pi must not generate semantic answers from local cache or models.
 - Pi must not claim actions were executed unless confirmed by Mac.
 - Pi must not write memory or commit state.
-- Pi responses are provisional until authoritative result is returned.
+- Pi speaks authoritative backend content only (`UPDATE|PLAN_PROGRESS|CLARIFY|PLAN_APPROVAL_REQUIRED|FINAL|ERROR`).
 
 ### 8.2 Mac mini – Control Plane
 
@@ -669,28 +825,29 @@ The Pi is allowed to respond quickly, but remains non-authoritative.
 
 The orchestration runtime runs on the Mac mini as the central orchestrator and model router.
 
+Service and agent catalog reference:
+
+- `docs/arch/v1/agents-services.md`
+
 **Framework decision**:
 
 - **LangGraph** is the primary orchestration runtime for stateful workflows, routing, retries, and checkpointed execution.
 - **LangChain** is used for integrations (model clients, retrievers, tool wrappers), not as the primary orchestration layer.
 
-**Agent pipeline**:
+**Agent pipeline (single queue, single-session execution)**:
 
 1. Receive message
 2. Build `job_envelope_v1`
-3. Run project and intent classifier
-4. Task formation:
+3. Persist to queue
+4. Estimator annotates scheduler hints
+5. Scheduler assigns LLM execution lane (`fast_local` or `deep_reasoning`)
+6. Assigned LLM session performs domain routing + task formation:
    - no task
    - ephemeral task (`WorkPlan`)
    - stateful task (`TaskSheet` + `Patch`)
-5. Estimation (input to scheduler only)
-6. Retrieve memory context
-7. Route task:
-   - Qwen (coding/tools)
-   - DeepSeek (GPU reasoning)
-8. Execute tools if needed
-9. Write memory updates
-10. Return final authoritative response
+7. Same LLM session executes tools/steps
+8. Write memory updates
+9. Return final authoritative response
 
 `job_envelope_v1` includes:
 
@@ -709,21 +866,24 @@ Safety/policy enforcement for high-risk actions is intentionally deferred to a l
 
 ### 10.1 Task Formation Pipeline
 
-Before scheduler intake, control plane performs task formation on accepted voice/chat events:
+Task formation runs inside the LLM session assigned by scheduler:
 
-1. Event arrives from ingress.
-2. Domain routing selects candidate project/domain context.
-3. Domain expert decides:
+1. Event arrives from ingress and is queued.
+2. Estimator adds scheduler hints.
+3. Scheduler assigns execution lane/model.
+4. Inside assigned session, domain routing selects candidate project/domain context.
+5. Domain expert decides:
    - no task
    - ephemeral task (`WorkPlan`)
    - stateful task (`TaskSheet` + `Patch`)
-4. Optional review pass for high-complexity or ambiguous formations.
-5. Canonical task object is created and handed to scheduler.
+6. Optional review pass for high-complexity or ambiguous formations.
+7. Canonical task object continues directly into execution in the same session.
 
 Important boundary:
 
-- Scheduler design is still in progress.
-- Estimation is only one scheduler component, not the full scheduler.
+- v1 scheduler is intentionally simple (single queue + lane assignment).
+- Estimation is one scheduler input.
+- transport ACK confirms durable ingest only; execution may occur later from queue.
 
 References:
 - `docs/arch/v1/task-formation.md`
@@ -733,13 +893,13 @@ References:
 
 Canonical pipeline:
 
-`event -> job_envelope_v1 -> task_object -> estimator -> scheduler -> execution`
+`event -> queue -> estimator -> scheduler -> assigned_llm_session(task_formation+execution)`
 
 Pi responsibilities:
 
 - produce event
 - produce triage hints
-- optional provisional response
+- optional non-semantic user feedback ACK
 
 Mac responsibilities:
 
@@ -832,6 +992,7 @@ User Feedback ACK (human-facing):
 - earcon, LED, or optional short phrase
 - chosen by Pi using triage `ack_policy`
 - independent from transport reliability ACK
+- may be emitted before queued execution starts
 
 ## 15. End-State Role Assignment
 
