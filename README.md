@@ -24,16 +24,16 @@ The second reason is bigger. I want an assistant that grows with me over my life
 
 ## What It Actually Does
 
-Skyra sits across three machines that work together:
+Skyra has three parts:
 
-**Raspberry Pi — always on, always listening**
-This is the voice layer. It detects when I'm talking, converts speech to text, and can give a quick answer from recent context while the heavier thinking happens in the background. It's always on, low power, and sits on my desk.
+**A control plane — the brain**
+One machine that owns everything. It receives what I said, figures out what I'm asking for, pulls in relevant context from memory, forms a plan, and coordinates execution. It knows all my active domains — work, home, servers, health, music — and decides what happens next.
 
-**Mac mini — the brain**
-This is where decisions get made. It receives what I said, figures out what I'm asking for, pulls in relevant context from memory, forms a plan, and coordinates execution. It knows all my active domains — work, home, servers, health, music — and can take actions on my behalf — running scripts, managing files, calling APIs, whatever the task needs.
+**GPUs — heavy thinking**
+For complex reasoning or anything that needs serious horsepower, the control plane hands off to one or more GPU machines running large language models locally. No cloud, no API keys, no usage limits. More GPUs means more capability.
 
-**GPU machine — heavy thinking**
-For complex reasoning, deep coding problems, or anything that needs serious horsepower, the Mac delegates to a dedicated GPU machine running a large language model locally. No cloud, no API keys, no usage limits.
+**Shards — Skyra's reach**
+A Shard is a small piece of software that runs on any device and gives Skyra a presence there. It figures out what that device can do — does it have a microphone? Can it run scripts? Is it a server? — and reports back. The control plane can then use that device as part of the system. The Raspberry Pi on my desk is a Shard that listens for my voice. My laptop is a Shard that can open apps and run code. Every device I add makes Skyra more capable.
 
 ---
 
