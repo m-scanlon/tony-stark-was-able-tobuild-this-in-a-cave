@@ -82,6 +82,83 @@ If a daemon is successfully installed, the Hardware Shard's role ends. The daemo
 
 ---
 
+## Probe Layers
+
+Probing is not limited to physical ports. A full probe runs across four layers, with each layer available depending on the Shard type and network context.
+
+### Physical (Hardware Shard only)
+
+| Interface | What you get |
+|---|---|
+| HDMI — EDID | Manufacturer, model, resolutions, HDR, audio. Always available, no cooperation needed. |
+| HDMI — CEC | Device type, power state, supported control commands (power, volume, input). |
+| HDMI — ARC/eARC | Audio return channel capability. |
+| USB — device descriptor | Vendor ID, product ID, manufacturer string, device class. |
+| USB — mass storage | Browsable filesystem if exposed. |
+| USB — CDC network | Local link, enables service discovery. |
+| USB — CDC serial | Attempt handshake, see if anything responds. |
+| USB — ADB | Android with debugging enabled — substantial access. |
+| IR | Learn remote codes via receiver. Control via blaster. Universal fallback for TVs, AV receivers, AC units. |
+
+### Wireless local
+
+| Interface | What you get |
+|---|---|
+| Bluetooth scan | BLE advertisements are passive and constant. Device name, manufacturer data, service UUIDs (reveals supported protocols), signal strength for proximity. Zero interaction required. |
+| WiFi scan | Nearby SSIDs, signal strength, channel, security type. Some devices embed their type in the SSID (Sonos-xxxx, HP-Printer-xxxx). No joining required. |
+| Zigbee / Z-Wave / Thread / Matter | With the right radio, direct discovery of smart home devices — lights, locks, sensors, plugs, thermostats. |
+
+### Network (trusted networks only — see Network Trust Boundary below)
+
+| Method | What you get |
+|---|---|
+| mDNS / Bonjour (passive) | Devices announce service types continuously. `_airplay._tcp`, `_googlecast._tcp`, `_hap._tcp` (HomeKit), `_raop._tcp`, `_ssh._tcp`, `_smb._tcp`. Rich, free, no scanning. |
+| SSDP / UPnP (passive) | Roku, smart TVs, media servers announce via UDP multicast. Roku ECP endpoint discovered this way. |
+| ARP scan | All IPs and MAC addresses on the subnet. MAC OUI prefix identifies manufacturer — cross-reference against OUI database to get probable device type before any direct communication. |
+| DHCP table | If accessible via router, gives full device list with IPs, MACs, and hostnames in one query. |
+| Port scan + known service probing | For non-announcing devices. Probe known ports: Roku 8060, Sonos 1400, Hue 80/443. Confirm service with handshake. |
+| HTTP fingerprinting | Hit common web ports, read response headers and SSL certificate data. Many devices identify themselves in HTTP responses. |
+| SSH banner | If port 22 is open, read the banner. Often contains OS and version. Non-intrusive, read-only. |
+| SNMP | Routers, switches, printers, servers. Query for device info, interface stats, system description. |
+
+### Application
+
+Once a device is identified, probe its specific API. Roku ECP, Chromecast local API, Sonos local API, HomeKit HAP, UPnP media control. This is where actual capability registration happens.
+
+---
+
+## Network Trust Boundary
+
+**A Hardware Shard on an unknown or unregistered network performs physical probes only — HDMI and USB on the target device. It does not scan the network.**
+
+Many consumer IoT devices have no authentication on their local API — Roku ECP, Chromecast, Sonos, and others are fully controllable by any device on the same network. Running network-wide discovery on someone else's WiFi (a friend's house, a hotel, a coffee shop) would constitute unauthorized access to their devices. This is a hard boundary in the design.
+
+Network-wide discovery runs only on networks explicitly registered as trusted by the user.
+
+---
+
+## Registration Wizard
+
+The user's phone is the consent layer. No network-wide access is granted automatically — the user explicitly approves what Skyra can see and control during a guided registration flow.
+
+Flow:
+
+```
+1. BLE provisioning — phone sends WiFi credentials to Hardware Shard
+2. Shard joins network, probes target device (physical only at this point)
+3. Wizard: "Found [device]. Scan for other devices on this network?"
+4. User approves → network discovery runs → discovered devices presented
+5. User selects what Skyra is allowed to access
+6. Confirmed grants registered with control plane as part of Shard profile
+7. Anything not explicitly granted = blocked by default
+```
+
+If the user is at someone else's house — no registration wizard for that network, no network discovery, physical probe of the target device only.
+
+Access grants are stored in the Shard's capability profile and enforced by the boundary layer. The same boundary model used for agent tool access applies here — explicit allow list, everything else denied.
+
+---
+
 ## Network Setup: WiFi Provisioning over BLE
 
 The Hardware Shard has no WiFi credentials on first boot. It uses Bluetooth to receive them from the user's phone before connecting to the local network.
