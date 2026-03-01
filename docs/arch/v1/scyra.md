@@ -42,7 +42,6 @@ flowchart TB
 
   %% Voice Node
   subgraph PI[Raspberry Pi • Voice Node]
-    direction LR
     WW[Wake Word]
     VAD[VAD]
     STT[Speech-to-Text]
@@ -55,10 +54,7 @@ flowchart TB
     TTS[Text to Speech]
     WW --> VAD --> STT --> GATE --> TRIAGE --> FDOOR
     LCACHE --> FDOOR
-    FDOOR -->|provisional| TTS
-    FDOOR --> OBOX
-    OBOX --> VCLIENT
-    VCLIENT --> TTS
+    FDOOR --> OBOX --> VCLIENT --> TTS
   end
 
   %% Control Plane
