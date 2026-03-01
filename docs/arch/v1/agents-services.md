@@ -59,15 +59,24 @@ Practical rule:
   - `skyra/internal/context/compress/engine.go`
   - `skyra/services/context-injector/README.md`
 
-### 2.6 Memory Services
+### 2.6 Project Service
 
-- Role: authoritative state/object commits + semantic retrieval store.
+Note: previously called "Memory Services". The Project Service supersedes that definition with a more clearly scoped responsibility model. See `skyra/internal/project/README.md`.
+
+- Role: single owner of all project state. Manages project registry, object store commits, rollback, audit trail, and the local tool registry.
+- Owns:
+  - Project Registry (SQLite) — fast index of all projects with status and last_active_at
+  - Object Store Interface — commits, HEAD, state.json, rollback
+  - Local Tool Registry (Vector DB) — per-project tools with `categories[]` (operation tags for boundary enforcement) and `requires_approval` flag, retrieved via vector search
 - Code:
-  - `skyra/internal/memory/store.go`
+  - `skyra/internal/project/`
   - `skyra/internal/memory/objectstore/fs/store.go`
-  - `skyra/internal/memory/project/registry.go`
+  - `skyra/internal/memory/objectstore/s3/store.go`
   - `skyra/internal/memory/vectorstore/chroma/store.go`
   - `skyra/internal/memory/vectorstore/qdrant/store.go`
+  - `skyra/internal/memory/commit/`
+- Design:
+  - `skyra/internal/project/README.md`
 
 ### 2.7 Tooling Services
 
@@ -116,7 +125,8 @@ v1 recommendation:
 ## 6. Ownership Summary
 
 - Pi listener: capture + transport + render
-- Control-plane services: classify + form tasks + orchestrate + commit memory
+- Control-plane services: classify + form tasks + orchestrate + commit project state
+- Project Service: own project registry, object store, local tool registry, commit history
 - Remote agents: execute commands only
 
 If you ask, "is Domain Expert an agent?":

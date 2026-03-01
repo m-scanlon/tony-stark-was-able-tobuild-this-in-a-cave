@@ -18,6 +18,7 @@ This service is a separate process from the control-plane API, but runs in the s
 
 ## Core Responsibilities
 
+- Receive `context_state` from Event Ingress on every Pi request (fan-out from `voice_event_v1`). Use `available_for_injection` as the live package budget. Fall back to static budget percentages on cold start (no state received yet).
 - Subscribe to events:
   - conversation turns
   - intent/project hints
@@ -29,14 +30,17 @@ This service is a separate process from the control-plane API, but runs in the s
 - Compress selected context to token budget.
 - Push versioned context package to listener cache.
 
+The Context Injector does not interface with Pi directly. Pi sends `context_state` to the Mac API Gateway as part of every `voice_event_v1`. Event Ingress fans this out internally to the Context Injector on Mac.
+
 ## Data Flow
 
-1. Listener emits lightweight events (`intent_hint`, `project_hint`, `turn_id`).
-2. Control-plane components emit task/memory/time events.
-3. Context Injector consumes events and updates session snapshot.
-4. Injector computes new package (rank + compress).
-5. Injector pushes package to listener context cache.
-6. Front-door model reads `base + live + injected` segments at inference time.
+1. Pi sends `voice_event_v1` to Mac API Gateway on every request. Event includes `context_state` (`available_for_injection` and token breakdown).
+2. Mac Event Ingress fans `context_state` out to Context Injector internally. Context Injector updates its live budget for the next package.
+3. Control-plane components emit task/memory/time events to Context Injector.
+4. Context Injector consumes events and updates session snapshot.
+5. Injector computes new package: rank + compress to fit `available_for_injection` tokens exactly.
+6. Injector pushes package to Pi listener context cache (LCACHE).
+7. Front-door model reads `base + live + injected` segments at inference time.
 
 ## Trigger Strategy
 
@@ -49,10 +53,17 @@ This service is a separate process from the control-plane API, but runs in the s
 - TTL refresh:
   - package TTL target `60-120s`
 
-## Context Budget (Recommended)
+## Context Budget
+
+The injected package budget is set dynamically from `context_state.available_for_injection` received via Event Ingress fan-out on every Pi request.
+
+`available_for_injection = total_context_tokens - system_tokens - live_conversation_tokens - response_reserve_tokens`
+
+Pi computes this. Context Injector uses it directly as the token budget for the next package. This means the package grows when conversation is sparse and shrinks as the conversation accumulates — always filling the available headroom exactly.
+
+**Cold start fallback** (no `context_state` received yet):
 
 For front-door model context window `T`:
-
 - `35%` system instructions
 - `25%` live conversation
 - `25%` injected context package
@@ -77,16 +88,20 @@ For front-door model context window `T`:
       "source": "object_store",
       "score": 0.93,
       "tokens": 120,
+      "retrieved_at": "2026-02-20T17:41:00Z",
       "content": "Last week you chose weekly Tekkit backup snapshots at 02:00 UTC."
     }
   ],
   "budget": {
+
     "injected_tokens": 2048,
     "used_tokens": 560
   },
   "confidence": 0.86
 }
 ```
+
+`retrieved_at` is required on every item. The Pi listener uses it to determine whether an item is fresh enough to support a provisional answer (threshold: 30 minutes). Items missing `retrieved_at` are treated as stale.
 
 ## Injection Event Schema (v0)
 

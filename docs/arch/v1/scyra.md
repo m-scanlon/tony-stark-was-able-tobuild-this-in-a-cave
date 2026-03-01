@@ -71,7 +71,7 @@ flowchart TB
 
     CODER[Coding Model]
 
-    MEM[Memory Service]
+    PROJ[Project Service]
     OBJ[Object Store]
     VDB[Vector DB]
 
@@ -79,9 +79,9 @@ flowchart TB
     ORCH --> CORE
     CORE --> CIX
     CORE --> CODER
-    CORE --> MEM
-    MEM --> OBJ
-    MEM --> VDB
+    CORE --> PROJ
+    PROJ --> OBJ
+    PROJ --> VDB
   end
 
   %% GPU Machine
@@ -387,20 +387,20 @@ flowchart LR
 
     CODER[Coding Tool Model<br/>Qwen2.5 Coder 7B]
 
-    MEMSVC[Memory Service<br/>Read Write Summaries]
+    PROJ[Project Service<br/>Registry Commits Tools]
     TOOLS[Tool Skills Runner<br/>SSH scripts Slack]
     OBJ[(Object Store<br/>.skyra projects<br/>versioned state)]
-    VDB[(Vector DB<br/>Chroma<br/>semantic index)]
+    VDB[(Vector DB<br/>Chroma<br/>semantic index + tool registry)]
 
     APIGW --> INGRESS --> INBOX --> QUEUE --> EST --> SCHED --> SESSION --> AGENT
     AGENT --> CLASS
     AGENT --> CODER
-    AGENT --> MEMSVC
-    MEMSVC --> CIX
+    AGENT --> PROJ
+    PROJ --> CIX
     CLASS --> CIX
     AGENT --> CIX
-    MEMSVC --> OBJ
-    MEMSVC --> VDB
+    PROJ --> OBJ
+    PROJ --> VDB
     AGENT --> TOOLS
   end
 
@@ -775,51 +775,81 @@ The Pi remains a listener/transport/render node and is non-authoritative for sem
 | ------------------- | -------------------- |
 | DeepSeek-Coder 33B+ | Main reasoning brain |
 
-## 9. Memory Architecture
+## 9. Project Architecture
 
-### 9.1 Object Store (System of Record)
+All project state is owned and managed by the Project Service. See `skyra/internal/project/README.md` for the full specification.
+
+### 9.1 Project Registry (SQLite)
+
+A lightweight fast-read index above the object store. Used by the context engine as a first gate before any deeper retrieval.
+
+```sql
+CREATE TABLE projects (
+  project_id     TEXT PRIMARY KEY,
+  name           TEXT NOT NULL,
+  status         TEXT NOT NULL DEFAULT 'active',
+  -- active | paused | archived
+  last_active_at TEXT NOT NULL
+);
+```
+
+### 9.2 Object Store (System of Record)
 
 **Structure**:
 
-- `.skyra/projects/{project}/`
-- HEAD.json (current commit pointer)
-- state.json (materialized current state)
-- commits/ (immutable commit objects)
-- attachments/ (files, documents)
+```
+.skyra/projects/{project_id}/
+  HEAD.json            ← pointer to current commit
+  state.json           ← materialized current state (four sections)
+  commits/             ← immutable commit history
+    {commit_id}.json
+  jobs/
+    {job_id}/
+      envelope.json    ← job_envelope_v1
+      tasks/
+        {task_id}/
+          tasksheet.json  or  workplan.json
+          notes.md
+```
+
+**state.json sections**:
+
+- `metadata` — name, status, created_at, last_active_at
+- `knowledge` — goals, assumptions, decisions, facts
+- `artifact` — what the project is and where it lives
+- `boundary` — structured operating constraints: `scope` (prose), `allowed_tool_categories`, `denied_tool_patterns`, and `restrictions[]` (each with `id`, `description`, `matches`). Enforced in code at two layers: hydration (lock status attached to tools before LLM sees them) and BoundaryValidator (permission prompt at runtime before execution). Not via prompt.
 
 **Usage**:
 
-- Versioned project state via commit objects
-- AI modifications through explicit commits only
-- File-based storage (local) or S3/MinIO (distributed)
+- Versioned project state via append-only commit objects
+- AI modifications through explicit commits only via Project Service
+- File-based storage (local Phase 1) or S3/MinIO (distributed Phase 2)
 
-### 9.3 Vector Store (Derived Data)
+### 9.3 Two-Level Status
 
-**Stores**:
+Job status exists at two distinct levels that must not be conflated:
 
-- Embedded project state snapshots
-- Embedded documents and attachments
-- Semantic index for fast retrieval
+- **Operational status** (scheduler jobs table): `queued | running | completed | failed` — owned by the scheduler, tracks machinery
+- **Semantic status** (tasksheet in object store): `forming | pending_approval | executing | done | cancelled` — owned by the Project Service, tracks meaning
 
-**Characteristics**:
+### 9.4 Vector Store (Derived Data)
 
-- Can be rebuilt from object store
-- Not source of truth
-- Used for semantic search only
+The vector DB serves two purposes:
 
-## 9.4. Retrieval Strategy (Commit + Semantic + Temporal)
+1. **Project state index** — embedded snapshots of project state for semantic retrieval. Derived from object store. Can be rebuilt at any time. Not source of truth.
+2. **Local tool registry** — per-project tools indexed for retrieval. Each tool carries `project_id`, `categories[]` (operation tags matched by boundary enforcement), and `requires_approval` as metadata fields.
 
-1. Classifier determines project domain.
+### 9.5 Retrieval Strategy (Commit + Semantic + Temporal)
+
+1. Context engine queries project registry (SQLite) — filters to active projects only.
 2. Vector store retrieves semantically similar content with temporal metadata.
-3. Object store provides recent commit context.
-4. Results are re-ranked by:
-   - Commit recency
-   - Semantic similarity
-   - Project relevance
-   - Temporal importance (recent events weighted higher)
-5. Top results injected into LLM prompt with timestamp context.
+3. Vector store retrieves local tools via semantic search over tool descriptions. Results above score threshold proceed to hydration.
+4. Project Service hydrates each tool with project boundary context — attaches `access` field (`status: allowed | locked`, `reason`). All tools returned to LLM, locked ones clearly marked.
+5. Object store provides recent commit context.
+6. Results re-ranked by commit recency, semantic similarity, project relevance, temporal weight.
+7. Top results + hydrated tools injected into LLM session.
 
-**Rule**: Vector store finds relevant content; object store provides authoritative state; temporal metadata adds context.
+**Rule**: Vector store finds relevant content and tools; object store provides authoritative state; project registry gates retrieval by project status.
 
 ## 10. Orchestration Layer
 

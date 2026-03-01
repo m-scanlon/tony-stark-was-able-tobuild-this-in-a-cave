@@ -46,6 +46,7 @@ The Executor must:
 6. Consult Resource Manager before constrained stages.
 7. Persist checkpoints for crash/restart recovery.
 8. Emit user-facing lifecycle notifications through Notifier.
+9. Run BoundaryValidator before each stage — check proposed tool calls against the project boundary. If a tool is locked, pause execution and send a permission prompt to the user. User responds `allow_always | allow_once | deny`. On `deny`, trigger bounded replan rather than halting the task.
 
 ## 6.4 Stage Execution Model
 
@@ -63,7 +64,8 @@ Each stage contains:
 Execution loop per stage:
 
 1. Pre-check resources with Resource Manager.
-2. Execute stage with specified tools/models.
+2. Run BoundaryValidator: check all tool calls in this stage against the project boundary (`categories[]`, `tool_patterns`). If a tool is locked, pause execution and send a permission prompt to the user (`tool`, `why`, `how`). User responds `allow_always | allow_once | deny`. `allow_always` commits a boundary update to `state.json` immediately before execution resumes. `deny` triggers bounded replan for the remaining stages.
+3. Execute stage with specified tools/models.
 3. Capture outputs + runtime metadata.
 4. Validate output against criteria.
 5. Check assumptions and environmental expectations.
@@ -78,7 +80,7 @@ Execution loop per stage:
 | Minor    | Missing optional field with safe default        | Adjust locally and continue                                     |
 | Moderate | Required file missing but can be generated      | Attempt local fix; if fix fails, replan affected remaining path |
 | Major    | Core assumption false (intent/goal mismatch)    | Pause and replan remaining stages                               |
-| Critical | Security risk or impossible/safety-unsafe stage | Halt task, notify user/system, abort                            |
+| Critical | Security risk, impossible/safety-unsafe stage, or user denied tool and no replan path exists | Halt task, notify user, abort                            |
 
 ## 6.6 Controlled Adaptation (Loop Prevention)
 
@@ -155,7 +157,7 @@ Long-running tasks must survive process/node interruptions.
 
 Requirements:
 
-- periodic and stage-boundary checkpoints to Memory Service
+- periodic and stage-boundary checkpoints to Project Service
 - restart recovery from last good checkpoint
 - idempotent stage replay behavior when checkpoint boundary is ambiguous
 
@@ -190,7 +192,7 @@ Notifier owns channel fanout (Pi voice, mobile, etc.).
 
 - `RevisePlan(replan_request) -> RevisedRemainingPlan`
 
-### Executor <-> Memory Service
+### Executor <-> Project Service
 
 - `SaveCheckpoint(checkpoint)`
 - `LoadCheckpoint(task_id) -> checkpoint`

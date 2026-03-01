@@ -45,7 +45,7 @@ Out of scope:
 
 Artifact:
 
-- `WorkPlan`
+- `WorkPlan` — persisted at `.skyra/projects/{project_id}/jobs/{job_id}/tasks/{task_id}/workplan.json`
 
 ### Stateful task
 
@@ -55,7 +55,7 @@ Artifact:
 
 Artifacts:
 
-- `TaskSheet`
+- `TaskSheet` — persisted at `.skyra/projects/{project_id}/jobs/{job_id}/tasks/{task_id}/tasksheet.json`
 - `Patch`
 
 ## 4. WorkPlan vs TaskSheet
@@ -127,6 +127,8 @@ Responsibilities:
 - annotate assumptions and confidence
 - validate critical assumptions with tools when needed
 - include citations in TaskSheet evidence when external/docs lookup is used
+
+Note: before local tools are returned to the Domain Expert, the Project Service runs a hydration step — each tool is enriched with an `access` field derived from the project boundary in `state.json`. The Domain Expert receives all retrieved tools, including locked ones, with their access status attached. Locked tools that the LLM proposes calling are caught by the BoundaryValidator at runtime before execution. See `skyra/internal/project/README.md` for the full hydration and enforcement model.
 
 Expected output contract:
 
@@ -207,6 +209,13 @@ Approval gate:
 - only `APPROVE` advances to execution
 - `REVISE` returns task to formation refinement
 - `CANCEL` terminates task before execution
+
+Note on `requires_approval` vs `PLAN_APPROVAL_REQUIRED`:
+
+These are two distinct concepts and must not be confused.
+
+- `PLAN_APPROVAL_REQUIRED` — a plan-level gate. The entire plan waits for user approval before any execution begins. This is what is described above.
+- `requires_approval` on a local tool — a tool-level flag in the tool registry. It means the tool is surfaced and highlighted to the user during plan review so they can see it clearly. It does NOT pause execution mid-run. The user approves the full plan once and execution continues uninterrupted.
 
 Planner event emission:
 
@@ -289,6 +298,8 @@ Duplicate source events:
 ## 14. Related Docs
 
 - Executor runtime design (draft): `docs/arch/v1/executor.md`
+- Project Service (object store, commits, tool registry): `skyra/internal/project/README.md`
+- Scheduler Service (job lifecycle, lane assignment): `skyra/internal/scheduler/README.md`
 
 ## 15. Appendix A: Estimator Documentation Agent Prompt
 
