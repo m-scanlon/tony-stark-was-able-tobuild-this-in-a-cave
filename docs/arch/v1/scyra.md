@@ -50,11 +50,15 @@ flowchart TB
     LCACHE[Listener Context Cache]
     FDOOR[Front-Door Fast Model]
     OBOX[Event Outbox]
-    VCLIENT[Voice Client]
-    TTS[Text to Speech]
+    subgraph PIOUT[ ]
+      direction LR
+      TTS[Text to Speech]
+      VCLIENT[Voice Client]
+    end
     WW --> VAD --> STT --> GATE --> TRIAGE --> FDOOR
     LCACHE --> FDOOR
-    FDOOR --> OBOX --> VCLIENT --> TTS
+    FDOOR --> OBOX --> VCLIENT
+    VCLIENT --> TTS
   end
 
   %% Control Plane
