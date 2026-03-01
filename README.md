@@ -37,7 +37,7 @@ Each area of life is an Agent: work, home, health, servers, music. Each one has 
 **Shards — Skyra's presence on every device**
 A Shard is a small piece of software that runs on any device. When it starts up, it figures out what that device can do — does it have a microphone? A GPU? Can it run scripts? — and registers those capabilities with the control plane. The control plane then knows what it has available and routes work accordingly.
 
-The Raspberry Pi on the desk is a Shard. The laptop is a Shard. The GPU machine running the large language model is a Shard. They're all the same thing — devices that showed up, said what they can do, and became part of the system. Every device added makes Skyra more capable without changing how anything works.
+Every device added extends Skyra's capabilities without changing the underlying system.
 
 ---
 
