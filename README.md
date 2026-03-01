@@ -1,4 +1,4 @@
-# Skyra — Personal AI Assistant
+# Skyra — Personal AI OS
 
 ## The Idea
 
