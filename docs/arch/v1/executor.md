@@ -28,9 +28,9 @@ Event -> JobEnvelope v1 -> Task Formation -> Task Object -> Estimator (initial) 
 
 Authority boundary:
 
-- Pi front-door can provide provisional responses but does not execute authoritative task pipelines.
+- Pi Shard can provide provisional responses but does not execute authoritative task pipelines.
 - Mac mini control plane owns orchestration authority and coordinates Executor runs.
-- GPU and agent nodes are execution targets selected by scheduler/runtime policy.
+- GPU and Shard nodes are execution targets selected by scheduler/runtime policy.
 
 The Scheduler remains responsible for placement policy. The Executor runs the selected task and reports progress/outcomes.
 
@@ -138,7 +138,7 @@ Before resource-sensitive stages, Executor checks:
 - GPU utilization and free VRAM
 - system memory pressure
 - network latency / rate limit health
-- agent machine availability
+- Shard availability
 
 If constrained:
 
@@ -149,7 +149,7 @@ If constrained:
 Placement note:
 
 - Executor control loop runs on the Mac mini control plane.
-- Individual stages may execute locally or be delegated to GPU/agent targets.
+- Individual stages may execute locally or be delegated to GPU/Shard targets.
 
 ## 6.9 Persistence and Fault Tolerance
 

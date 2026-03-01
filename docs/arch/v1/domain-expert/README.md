@@ -24,7 +24,7 @@ Code references:
 Inputs:
 
 - user request/event text
-- domain routing result (`domain_id`, confidence, candidates)
+- agent routing result (`domain_id`, confidence, candidates)
 - context window + memory retrieval results
 - tool registry/allowlist + policies
 
@@ -62,11 +62,11 @@ Each domain configuration includes:
 
 The Domain Expert operates within a two-layer tool system:
 
-**Global tools** — always injected into every LLM session. Owned by the Project Service. Cover all project state operations (read state, propose commit, rollback, list projects, etc.). Never retrieved — always present.
+**Global tools** — always injected into every LLM session. Owned by the Agent Service. Cover all agent state operations (read state, propose commit, rollback, list agents, etc.). Never retrieved — always present.
 
 **Local tools** — per-project tools stored in the vector DB tool registry. Retrieved via vector search based on the current request. Each local tool carries `categories[]` (operation tags for boundary enforcement) and a `requires_approval` field.
 
-Before local tools are returned to the Domain Expert, the Project Service runs a hydration step: each tool is joined against the project's boundary in `state.json` and enriched with an `access` field (`status: allowed | locked`, `reason`). The Domain Expert receives all retrieved tools — including locked ones — with their access status clearly attached. No tools are hidden. The LLM can reason over what is available and what is restricted.
+Before local tools are returned to the Domain Expert, the Agent Service runs a hydration step: each tool is joined against the agent's boundary in `state.json` and enriched with an `access` field (`status: allowed | locked`, `reason`). The Domain Expert receives all retrieved tools — including locked ones — with their access status clearly attached. No tools are hidden. The LLM can reason over what is available and what is restricted.
 
 Locked tools that the LLM attempts to call are caught at runtime by the BoundaryValidator before execution. See `skyra/internal/project/README.md` for the full enforcement model.
 
@@ -155,4 +155,4 @@ Tool mapping:
 - `docs/arch/v1/task-formation.md`
 - `docs/arch/v1/agents-services.md`
 - `docs/arch/v1/scyra.md`
-- `skyra/internal/project/README.md` — project service, global tools, local tool registry
+- `skyra/internal/project/README.md` — agent service, global tools, local tool registry

@@ -1,35 +1,35 @@
-# Project Service
+# Agent Service
 
 ## What It Is
 
-The Project Service is the single owner of all project state in Skyra. Nothing reads or writes project state without going through this service. It is the foundational layer that all other services interface with.
+The Agent Service is the single owner of all agent state in Skyra. Nothing reads or writes agent state without going through this service. It is the foundational layer that all other services interface with.
 
-Note: earlier architecture docs refer to this as the **Memory Service**. The Project Service supersedes that definition with a more clearly scoped responsibility model.
+Note: earlier architecture docs refer to this as the **Project Service** or **Memory Service**. The Agent Service supersedes those definitions with a more clearly scoped responsibility model.
 
 ## Core Principles
 
-- **Single source of truth** — all project data lives in exactly one canonical location. The AI never edits state directly. All changes occur through explicit commits.
-- **Append-only commit history** — project changes are immutable commit objects. Each commit contains a full snapshot, links to its parent, and can be used for rollback.
-- **Vector index is derived data** — the vector DB is not the source of truth. It indexes project state for semantic retrieval and can be deleted and rebuilt at any time.
+- **Single source of truth** — all agent data lives in exactly one canonical location. The AI never edits state directly. All changes occur through explicit commits.
+- **Append-only commit history** — agent changes are immutable commit objects. Each commit contains a full snapshot, links to its parent, and can be used for rollback.
+- **Vector index is derived data** — the vector DB is not the source of truth. It indexes agent state for semantic retrieval and can be deleted and rebuilt at any time.
 
 ## What It Owns
 
-**Project Registry (SQLite)**
-A lightweight index of all projects. Used by the context engine as a fast first gate before any deeper retrieval.
-- Project identity and metadata
+**Agent Registry (SQLite)**
+A lightweight index of all agents. Used by the context engine as a fast first gate before any deeper retrieval.
+- Agent identity and metadata
 - Status: `active | paused | archived`
 - Last active timestamp
 
 **Object Store Interface**
-The only entry point for reading and mutating project state on disk. Filesystem in Phase 1, S3/MinIO in Phase 2 with no structural changes required.
+The only entry point for reading and mutating agent state on disk. Filesystem in Phase 1, S3/MinIO in Phase 2 with no structural changes required.
 
-- Current project state (knowledge, artifact mapping, boundary definition)
+- Current agent state (knowledge, artifact mapping, boundary definition)
 - Immutable commit history
 - HEAD pointer management
 - Rollback and audit trail
 
 **Local Tool Registry (Vector DB)**
-Each project has a set of local tools registered and indexed semantically. The tool description is embedded and indexed — vector search runs against these embeddings using the current request as the query. Tools are retrieved by semantic similarity, not injected wholesale.
+Each agent has a set of local tools registered and indexed semantically. The tool description is embedded and indexed — vector search runs against these embeddings using the current request as the query. Tools are retrieved by semantic similarity, not injected wholesale.
 
 Each tool record in the registry:
 
@@ -47,18 +47,18 @@ Each tool record in the registry:
     },
     "required": ["path", "content"]
   },
-  "project_id": "jarvis",
+  "agent_id": "jarvis",
   "categories": ["filesystem_write"],
   "requires_approval": true
 }
 ```
 
-`score` is the semantic similarity score from the vector search. The Project Service applies a score threshold before hydration — results below the threshold are dropped. Lock status is not stored on the tool record. It is computed at hydration time by joining the tool record against the project boundary in `state.json`.
+`score` is the semantic similarity score from the vector search. The Agent Service applies a score threshold before hydration — results below the threshold are dropped. Lock status is not stored on the tool record. It is computed at hydration time by joining the tool record against the agent boundary in `state.json`.
 
 ## Object Store Structure
 
 ```
-.skyra/projects/{project_id}/
+.skyra/agents/{agent_id}/
   HEAD.json            ← pointer to current commit
   state.json           ← materialized current state (four sections below)
   commits/             ← immutable commit history
@@ -93,7 +93,7 @@ Each tool record in the registry:
     "location": "..."
   },
   "boundary": {
-    "scope": "Human-readable description of this project and what Skyra is allowed to do in it.",
+    "scope": "Human-readable description of this agent and what Skyra is allowed to do in it.",
     "allowed_tool_categories": ["category_a", "category_b"],
     "denied_tool_patterns": ["pattern_*"],
     "restrictions": [
@@ -117,7 +117,7 @@ Each commit is immutable and append-only.
 ```json
 {
   "commit_id": "2026-02-09T21-10-33Z",
-  "project": "jarvis",
+  "agent": "jarvis",
   "parent": "2026-02-09T20-55-12Z",
   "actor": {
     "type": "ai",
@@ -140,28 +140,28 @@ Each commit is immutable and append-only.
 ## What It Exposes
 
 ### Global Tools
-Available to every LLM session regardless of project. Always injected directly into the session. Never retrieved — always present.
+Available to every LLM session regardless of agent. Always injected directly into the session. Never retrieved — always present.
 
-- `get_project_state` — read current state for a project
-- `get_project_facts` — read facts and assumptions
+- `get_agent_state` — read current state for an agent
+- `get_agent_facts` — read facts and assumptions
 - `get_commit_history` — read the commit log
-- `list_projects` — read the registry
+- `list_agents` — read the registry
 - `get_job_tasks` — read tasks under a job
-- `create_project` — register a new project
-- `propose_commit` — submit a patch against project state
+- `create_agent` — register a new agent
+- `propose_commit` — submit a patch against agent state
 - `apply_commit` — apply an approved patch and update HEAD
 - `rollback_commit` — revert to a previous commit
-- `update_project_status` — set active / paused / archived
+- `update_agent_status` — set active / paused / archived
 - `update_last_active` — called by scheduler on job completion
 
 ### Local Tool Registry
-Per-project tools registered at project setup. Retrieved via vector search — not injected directly. The LLM sees all retrieved tools, including locked ones, with their access status attached.
+Per-agent tools registered at agent setup. Retrieved via vector search — not injected directly. The LLM sees all retrieved tools, including locked ones, with their access status attached.
 
 ## Tool Hydration
 
-Tool hydration is the intermediary step between raw vector DB results and what the LLM session receives. The Project Service runs hydration on every tool in the result set before returning anything to the Domain Expert.
+Tool hydration is the intermediary step between raw vector DB results and what the LLM session receives. The Agent Service runs hydration on every tool in the result set before returning anything to the Domain Expert.
 
-Hydration joins the raw tool record against the project boundary in `state.json` and computes the `access` field:
+Hydration joins the raw tool record against the agent boundary in `state.json` and computes the `access` field:
 
 ```json
 {
@@ -170,17 +170,17 @@ Hydration joins the raw tool record against the project boundary in `state.json`
   "name": "write_file",
   "description": "Writes content to a file at the specified path.",
   "input_schema": { ... },
-  "project_id": "jarvis",
+  "agent_id": "jarvis",
   "categories": ["filesystem_write"],
   "requires_approval": true,
   "access": {
     "status": "locked",
-    "reason": "Filesystem writes are restricted for this project."
+    "reason": "Filesystem writes are restricted for this agent."
   }
 }
 ```
 
-`access.status` is either `allowed` or `locked`. Lock status is always derived fresh at hydration time — it is never stored on the tool record itself, because the same tool may be locked in one project and open in another.
+`access.status` is either `allowed` or `locked`. Lock status is always derived fresh at hydration time — it is never stored on the tool record itself, because the same tool may be locked in one agent and open in another.
 
 The LLM receives the full hydrated list. It can see and reason over all tools — including locked ones — but the BoundaryValidator enforces what actually executes.
 
@@ -190,11 +190,11 @@ The `boundary` section in `state.json` is enforced in code at two layers. Plain-
 
 ### Layer 1: Hydration (retrieval time)
 
-After vector search returns results, the Project Service hydrates each tool with its access status for the current project. No tools are hidden. The LLM sees everything, with locked tools clearly marked. This gives the LLM full situational awareness — it knows what exists and what it can use.
+After vector search returns results, the Agent Service hydrates each tool with its access status for the current agent. No tools are hidden. The LLM sees everything, with locked tools clearly marked. This gives the LLM full situational awareness — it knows what exists and what it can use.
 
 ### Layer 2: BoundaryValidator (runtime)
 
-Before any tool call is dispatched to execution, the BoundaryValidator checks the proposed call against the project boundary. This is pure code — no LLM in the loop.
+Before any tool call is dispatched to execution, the BoundaryValidator checks the proposed call against the agent boundary. This is pure code — no LLM in the loop.
 
 If the tool is locked, execution pauses and a permission prompt is sent to the user. The prompt clearly states what Skyra wants to do and why:
 
@@ -216,13 +216,13 @@ If the tool is locked, execution pauses and a permission prompt is sent to the u
 
 | Decision | Behavior | Persisted? |
 |---|---|---|
-| `allow_always` | Tool is permanently unlocked for this project. An immediate commit is written to `state.json` before execution resumes. | Yes — boundary updated via commit |
+| `allow_always` | Tool is permanently unlocked for this agent. An immediate commit is written to `state.json` before execution resumes. | Yes — boundary updated via commit |
 | `allow_once` | This single invocation is allowed for the stated reason. Boundary is unchanged. | No — ephemeral |
 | `deny` | Tool call is blocked. Skyra replans around the denied tool and attempts to complete the task another way. | No — ephemeral |
 
 ### What `scope` and `description` Are For
 
-`boundary.scope` and each restriction's `description` are human-readable fields. They may be included in system prompts as a soft context hint, but enforcement never relies on them. They exist for human auditing, project setup review, and operator understanding — not for controlling LLM behavior.
+`boundary.scope` and each restriction's `description` are human-readable fields. They may be included in system prompts as a soft context hint, but enforcement never relies on them. They exist for human auditing, agent setup review, and operator understanding — not for controlling LLM behavior.
 
 ## What It Does Not Do
 
@@ -242,16 +242,16 @@ These are two distinct concepts:
 
 ## Who Calls It
 
-- Context engine — reads registry and project state
+- Context engine — reads registry and agent state
 - Scheduler — updates `last_active_at` on job completion
 - Orchestrator — applies task outcomes via commits
 - LLM session — calls global tools directly
-- Domain Expert — reads project state during task formation
+- Domain Expert — reads agent state during task formation
 
 ## Related Docs
 
 - `docs/arch/v1/scyra.md` — system architecture and canonical pipeline
-- `docs/arch/v1/agents-services.md` — full service catalog
-- `docs/arch/v1/task-formation.md` — how tasks are formed against project state
+- `docs/arch/v1/agents-services.md` — full service and shard catalog
+- `docs/arch/v1/task-formation.md` — how tasks are formed against agent state
 - `docs/arch/v1/domain-expert/README.md` — domain expert and plan approval gate
 - `skyra/internal/scheduler/README.md` — scheduler service

@@ -1,17 +1,19 @@
 # Skyra Agents and Services Catalog (v1)
 
-This document defines what counts as an `agent` vs a `service` in Skyra and lists the components used in v1.
+This document defines what counts as a `shard`, an `agent`, and a `service` in Skyra and lists the components used in v1.
 
 ## 1. Definitions
 
 - `Service`: a long-running backend component with a clear API/contract.
-- `Agent`: a constrained executor that performs actions from control-plane commands.
-- `Domain Expert`: a control-plane service module used during task formation. It is not a remote machine agent.
+- `Shard`: a lightweight daemon that Skyra deploys onto a device. It boots, fingerprints the device's hardware and software environment, registers its capabilities with the control plane, and listens for commands.
+- `Agent`: a scoped domain of the user's life (e.g. home, work, health, music, servers). Agents have their own memory, tools, boundaries, and state. They are the conceptual and intelligence layer.
+- `Domain Expert`: a control-plane service module used during task formation. It is not a remote shard.
 
 Practical rule:
 
 - If it makes routing/task decisions in Mac runtime, treat it as a service module.
-- If it executes allowlisted commands on a target machine, treat it as an agent.
+- If it is a daemon deployed onto a device that executes commands from the control plane, treat it as a shard.
+- If it is a scoped domain of the user's life with its own state and tools, it is an agent.
 
 ## 2. Core Control-Plane Services (Mac mini)
 
@@ -32,7 +34,7 @@ Practical rule:
 
 ### 2.3 Classifier + Domain Routing Service
 
-- Role: chooses domain/project candidate set and confidence.
+- Role: chooses domain/agent candidate set and confidence.
 - Code:
   - `skyra/internal/controlplane/classifier.go`
   - `skyra/internal/taskformation/routing.go`
@@ -59,15 +61,15 @@ Practical rule:
   - `skyra/internal/context/compress/engine.go`
   - `skyra/services/context-injector/README.md`
 
-### 2.6 Project Service
+### 2.6 Agent Service
 
-Note: previously called "Memory Services". The Project Service supersedes that definition with a more clearly scoped responsibility model. See `skyra/internal/project/README.md`.
+Note: previously called "Project Service" and before that "Memory Service". The Agent Service supersedes those definitions with a more clearly scoped responsibility model. See `skyra/internal/project/README.md`.
 
-- Role: single owner of all project state. Manages project registry, object store commits, rollback, audit trail, and the local tool registry.
+- Role: single owner of all agent state. Manages agent registry, object store commits, rollback, audit trail, and the local tool registry.
 - Owns:
-  - Project Registry (SQLite) — fast index of all projects with status and last_active_at
+  - Agent Registry (SQLite) — fast index of all agents with status and last_active_at
   - Object Store Interface — commits, HEAD, state.json, rollback
-  - Local Tool Registry (Vector DB) — per-project tools with `categories[]` (operation tags for boundary enforcement) and `requires_approval` flag, retrieved via vector search
+  - Local Tool Registry (Vector DB) — per-agent tools with `categories[]` (operation tags for boundary enforcement) and `requires_approval` flag, retrieved via vector search
 - Code:
   - `skyra/internal/project/`
   - `skyra/internal/memory/objectstore/fs/store.go`
@@ -87,49 +89,62 @@ Note: previously called "Memory Services". The Project Service supersedes that d
   - `skyra/internal/tools/exec/shell.go`
   - `skyra/internal/tools/audit/log.go`
 
-## 3. Edge Service (Raspberry Pi)
+## 3. Shards
 
-### 3.1 Listener Service
+A Shard is a lightweight daemon deployed by Skyra onto a device. Every device in the Skyra network runs a Shard. The Shard boots, fingerprints its hardware and software environment, registers its capabilities with the control plane, and listens for commands.
 
-- Role: wake word, VAD, STT/TTS, triage, outbox transport.
+The control plane treats all Shards uniformly. A Shard is identified by its capability profile — not by its hardware type.
+
+### 3.1 Pi Shard (Voice Capability Profile)
+
+The Raspberry Pi runs a Shard with a voice-specific capability profile:
+
+- `microphone`: always-on audio capture
+- `wake_word`: openWakeWord or Porcupine
+- `vad`: voice activity detection
+- `stt`: speech-to-text (Whisper small/base)
+- `tts`: text-to-speech (Piper or Coqui)
+- `front_door_model`: fast local LLM (Llama 3.2 3B Instruct Q4_K_M)
+- `outbox`: durable event outbox with retry sender
+
+The Pi Shard is not architecturally special. It is a Shard that happens to have voice capabilities. The control plane treats it as a Shard whose capability profile includes audio input and output.
+
 - Code:
   - `skyra/services/listener/app/main.py`
   - `skyra/services/listener/README.md`
 
 Boundary:
 
-- Pi listener is non-authoritative for semantic responses.
+- Pi Shard is non-authoritative for semantic responses.
 - Pi emits ACK/progress and renders backend-authored `UPDATE|PLAN_PROGRESS|CLARIFY|PLAN_APPROVAL_REQUIRED|FINAL|ERROR`.
 
-## 4. Remote Execution Agents
+### 3.2 Machine Shards (Laptop/Desktop/Server)
 
-### 4.1 Machine Agents (Laptop/Desktop/Server)
+General-purpose Shards deployed on workstations and servers. Capability profile includes command execution.
 
 - Role: execute allowlisted commands sent by control plane.
 - Code:
   - `skyra/cmd/skyra-agent/main.go`
-  - `skyra/internal/agent/client.go`
-  - `skyra/internal/agent/executor.go`
-  - `skyra/internal/agent/security.go`
+  - `skyra/internal/executor/client.go`
+  - `skyra/internal/executor/executor.go`
+  - `skyra/internal/executor/security.go`
 
-These are true `agents` in the architecture.
-
-## 5. Single vs Multiple Vector DBs
+## 4. Single vs Multiple Vector DBs
 
 v1 recommendation:
 
 - one shared vector infrastructure
-- strict metadata scoping per query (`project_id`, `domain_id`, `memory_type`, `time_window`)
+- strict metadata scoping per query (`agent_id`, `domain_id`, `memory_type`, `time_window`)
 - optional domain namespaces only when scale/noise requires it
 
-## 6. Ownership Summary
+## 5. Ownership Summary
 
-- Pi listener: capture + transport + render
-- Control-plane services: classify + form tasks + orchestrate + commit project state
-- Project Service: own project registry, object store, local tool registry, commit history
-- Remote agents: execute commands only
+- Pi Shard: capture + transport + render (voice capability profile)
+- Machine Shards: execute commands only
+- Control-plane services: classify + form tasks + orchestrate + commit agent state
+- Agent Service: own agent registry, object store, local tool registry, commit history
 
-If you ask, "is Domain Expert an agent?":
+If you ask, "is Domain Expert a shard?":
 
-- In v1 terminology, it is a control-plane service module, not a remote executor agent.
+- No. Domain Expert is a control-plane service module, not a device daemon.
 - Domain Expert details live in `docs/arch/v1/domain-expert/README.md`.

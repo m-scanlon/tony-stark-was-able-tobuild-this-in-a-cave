@@ -3,7 +3,7 @@
 ## 1. Goals
 
 - Always-on personal assistant with voice interaction.
-- Project-centric memory (gym, work, music, servers, etc.).
+- Agent-centric memory (gym, work, music, servers, etc.).
 - Private, local-first inference.
 - Modular hardware that can scale over time.
 - Fast local responses with automatic escalation to a high-reasoning GPU model.
@@ -12,25 +12,25 @@
 
 The system is composed of three main machines:
 
-- **Raspberry Pi** → Voice interface (wake word, STT, TTS)
+- **Raspberry Pi** → Voice Shard (wake word, STT, TTS, front-door fast model)
 - **Mac mini** → Control plane (API, orchestration runtime, memory, tools, fast local models)
 - **GPU Machine** → Heavy reasoning model (DeepSeek LLM server)
 
 Each machine has a clear responsibility.
 
-## 3. Distributed Agent Architecture
+## 3. Distributed Shard Architecture
 
-### 3.1 Agent Model Overview
+### 3.1 Shard Model Overview
 
-Each computer (laptop, desktop, server) runs a lightweight "Jarvis Agent" that extends the system's reach beyond the central control plane. The Mac mini remains the central orchestrator, sending high-level commands to agents for execution.
+Every device in the Skyra network runs a lightweight Shard daemon. A Shard boots, fingerprints the device's hardware and software environment, registers its capabilities with the control plane, and listens for commands. The Mac mini remains the central orchestrator, sending high-level commands to Shards for execution.
 
-**Jarvis Agents are execution-only components and do not perform reasoning, memory access, or model inference.**
+**Shards are execution-only components and do not perform reasoning, memory access, or model inference** (except the Pi Shard's front-door fast model, which is a registered capability of that Shard and runs only as a non-authoritative voice interface).
 
 **Key Concepts:**
 
 - **Control Plane**: Mac mini maintains intelligence, memory, and decision-making
-- **Jarvis Agents**: Lightweight services on target machines
-- **Command Distribution**: High-level intents sent to agents for execution
+- **Shards**: Lightweight daemons on target devices, identified by capability profile
+- **Command Distribution**: High-level intents sent to Shards for execution
 - **Secure Execution**: Allowlisted actions only, with authenticated connections
 
 ### 3.2 Distributed System Diagram
@@ -70,7 +70,7 @@ flowchart TB
     ORCH[Orchestrator]
     CIX[Context Injector]
     CODER[Coding Model]
-    PROJ[Project Service]
+    PROJ[Agent Service]
     OBJ[Object Store]
     VDB[Vector DB]
 
@@ -88,20 +88,20 @@ flowchart TB
   end
 
   %% Agent Machines
-  subgraph LAPTOP[Laptop • Agent]
-    LAGENT[Jarvis Agent\nWebSocket Client]
+  subgraph LAPTOP[Laptop • Shard]
+    LAGENT[Shard\nWebSocket Client]
     LEXEC[Command Executor]
     LAGENT --> LEXEC
   end
 
-  subgraph DESKTOP[Desktop • Agent]
-    DAGENT[Jarvis Agent\nWebSocket Client]
+  subgraph DESKTOP[Desktop • Shard]
+    DAGENT[Shard\nWebSocket Client]
     DEXEC[Command Executor]
     DAGENT --> DEXEC
   end
 
-  subgraph SERVER[Server • Agent]
-    SAGENT[Jarvis Agent\nWebSocket Client]
+  subgraph SERVER[Server • Shard]
+    SAGENT[Shard\nWebSocket Client]
     SEXEC[Command Executor]
     SAGENT --> SEXEC
   end
@@ -123,19 +123,19 @@ flowchart TB
   ORCH -->|high-level commands| DAGENT
   ORCH -->|high-level commands| SAGENT
 
-  %% Secure outbound connections
+  %% Secure outbound connections (Shards initiate)
   LAGENT -.->|outbound WSS| CTRL
   DAGENT -.->|outbound WSS| CTRL
   SAGENT -.->|outbound WSS| CTRL
 ```
 
-### 3.3 Agent Security Model
+### 3.3 Shard Security Model
 
 #### Authentication & Authorization
 
 - **Token-based authentication** using mTLS or JWT tokens
-- **Allowlisted commands only** - agents reject unknown actions
-- **Non-root execution** - agents run as unprivileged users
+- **Allowlisted commands only** - Shards reject unknown actions
+- **Non-root execution** - Shards run as unprivileged users
 - **Audit logging** - all commands logged with timestamps and results
 
 #### Command Allowlist
@@ -173,12 +173,12 @@ flowchart TB
 
 #### Network Security
 
-- **Outbound connections only** - agents initiate contact with control plane
+- **Outbound connections only** - Shards initiate contact with control plane
 - **WebSocket or HTTPS** for secure command channels
-- **No inbound ports** - reduces attack surface on agent machines
+- **No inbound ports** - reduces attack surface on Shard machines
 - **Command validation** - parameters validated against schemas
 
-### 3.4 Agent Communication Protocol
+### 3.4 Shard Communication Protocol
 
 #### Command Format
 
@@ -209,13 +209,13 @@ flowchart TB
 
 ### 3.5 Example Command Flow
 
-**User**: "Jarvis, open VS Code on my laptop."
+**User**: "Skyra, open VS Code on my laptop."
 
-1. **Voice node** captures audio → sends text to control plane
-2. **Orchestrator** selects target: laptop, action: open_vscode
-3. **Control plane** sends command to laptop Jarvis Agent
-4. **Agent** executes local command (`code .`)
-5. **Agent** returns result to control plane
+1. **Pi Shard** captures audio → sends text to control plane
+2. **Orchestrator** selects target: laptop Shard, action: open_vscode
+3. **Control plane** sends command to laptop Shard
+4. **Shard** executes local command (`code .`)
+5. **Shard** returns result to control plane
 6. **Control plane** responds to user: "VS Code opened on your laptop"
 
 ---
@@ -285,7 +285,7 @@ Triage outputs:
 
 - `latency_class`: `fast | medium | slow`
 - `needs_delegation`: `bool`
-- `hint_target`: `control_plane | agent:<id> | gpu:<id>`
+- `hint_target`: `control_plane | shard:<id> | gpu:<id>`
 - `ack_policy`: `silent | nonverbal | spoken_if_slow`
 - `confidence`: `0.0-1.0`
 - `provisional_eligible`: `bool`
@@ -394,7 +394,7 @@ flowchart LR
 
     CODER[Coding Tool Model<br/>Qwen2.5 Coder 7B]
 
-    PROJ[Project Service<br/>Registry Commits Tools]
+    PROJ[Agent Service<br/>Registry Commits Tools]
     TOOLS[Tool Skills Runner<br/>SSH scripts Slack]
     OBJ[(Object Store<br/>.skyra projects<br/>versioned state)]
     VDB[(Vector DB<br/>Chroma<br/>semantic index + tool registry)]
@@ -433,7 +433,7 @@ sequenceDiagram
   participant Pi as Raspberry Pi (Listener + Front Door)
   participant CIX as Context Injector
   participant Mac as Mac mini (Orchestrator)
-  participant PROJ as Project Service
+  participant PROJ as Agent Service
   participant GPU as GPU Box (DeepSeek)
 
   User->>Pi: "Hey Skyra..." (audio)
@@ -628,7 +628,7 @@ Request (`Pi -> Mac`):
   "context_window": {
     "session_summary": "...",
     "recent_turns": [],
-    "active_project": "server_ops",
+    "active_agent": "server_ops",
     "injected_facts": []
   },
   "context_state": {
@@ -661,7 +661,7 @@ Response stream (`Mac -> Pi`):
     "facts_upsert": []
   },
   "commit": {
-    "project_id": "server_ops",
+    "agent_id": "server_ops",
     "commit_id": "cmt_12ab"
   },
   "ts": "2026-02-20T18:10:15Z"
@@ -757,9 +757,9 @@ The Pi remains a listener/transport/render node and is non-authoritative for sem
 
 - API gateway (/chat, /voice, /tools, /memory)
 - Orchestration runtime (LangGraph orchestrator + router)
-- Project classifier
+- Agent classifier
 - Model router
-- Project Service
+- Agent Service
 - Tool execution engine
 - Databases
 - Local conversational model
@@ -773,7 +773,7 @@ The Pi remains a listener/transport/render node and is non-authoritative for sem
 
 **Datastores**:
 
-- Relational DB (projects, events, preferences)
+- Relational DB (agents, events, preferences)
 - Vector DB (embeddings)
 - Object storage (documents)
 
@@ -798,17 +798,17 @@ The Pi remains a listener/transport/render node and is non-authoritative for sem
 | ------------------- | -------------------- |
 | DeepSeek-Coder 33B+ | Main reasoning brain |
 
-## 9. Project Architecture
+## 9. Agent Architecture
 
-All project state is owned and managed by the Project Service. See `skyra/internal/project/README.md` for the full specification.
+All agent state is owned and managed by the Agent Service. See `skyra/internal/project/README.md` for the full specification.
 
-### 9.1 Project Registry (SQLite)
+### 9.1 Agent Registry (SQLite)
 
 A lightweight fast-read index above the object store. Used by the context engine as a first gate before any deeper retrieval.
 
 ```sql
-CREATE TABLE projects (
-  project_id     TEXT PRIMARY KEY,
+CREATE TABLE agents (
+  agent_id       TEXT PRIMARY KEY,
   name           TEXT NOT NULL,
   status         TEXT NOT NULL DEFAULT 'active',
   -- active | paused | archived
@@ -821,7 +821,7 @@ CREATE TABLE projects (
 **Structure**:
 
 ```
-.skyra/projects/{project_id}/
+.skyra/agents/{agent_id}/
   HEAD.json            ← pointer to current commit
   state.json           ← materialized current state (four sections)
   commits/             ← immutable commit history
@@ -839,13 +839,13 @@ CREATE TABLE projects (
 
 - `metadata` — name, status, created_at, last_active_at
 - `knowledge` — goals, assumptions, decisions, facts
-- `artifact` — what the project is and where it lives
+- `artifact` — what the agent is and where it lives
 - `boundary` — structured operating constraints: `scope` (prose), `allowed_tool_categories`, `denied_tool_patterns`, and `restrictions[]` (each with `id`, `description`, `matches`). Enforced in code at two layers: hydration (lock status attached to tools before LLM sees them) and BoundaryValidator (permission prompt at runtime before execution). Not via prompt.
 
 **Usage**:
 
-- Versioned project state via append-only commit objects
-- AI modifications through explicit commits only via Project Service
+- Versioned agent state via append-only commit objects
+- AI modifications through explicit commits only via Agent Service
 - File-based storage (local Phase 1) or S3/MinIO (distributed Phase 2)
 
 ### 9.3 Two-Level Status
@@ -853,32 +853,32 @@ CREATE TABLE projects (
 Job status exists at two distinct levels that must not be conflated:
 
 - **Operational status** (scheduler jobs table): `queued | running | completed | failed` — owned by the scheduler, tracks machinery
-- **Semantic status** (tasksheet in object store): `forming | pending_approval | executing | done | cancelled` — owned by the Project Service, tracks meaning
+- **Semantic status** (tasksheet in object store): `forming | pending_approval | executing | done | cancelled` — owned by the Agent Service, tracks meaning
 
 ### 9.4 Vector Store (Derived Data)
 
 The vector DB serves two purposes:
 
-1. **Project state index** — embedded snapshots of project state for semantic retrieval. Derived from object store. Can be rebuilt at any time. Not source of truth.
-2. **Local tool registry** — per-project tools indexed for retrieval. Each tool carries `project_id`, `categories[]` (operation tags matched by boundary enforcement), and `requires_approval` as metadata fields.
+1. **Agent state index** — embedded snapshots of agent state for semantic retrieval. Derived from object store. Can be rebuilt at any time. Not source of truth.
+2. **Local tool registry** — per-agent tools indexed for retrieval. Each tool carries `agent_id`, `categories[]` (operation tags matched by boundary enforcement), and `requires_approval` as metadata fields.
 
 ### 9.5 Retrieval Strategy (Commit + Semantic + Temporal)
 
-1. Context engine queries project registry (SQLite) — filters to active projects only.
+1. Context engine queries agent registry (SQLite) — filters to active agents only.
 2. Vector store retrieves semantically similar content with temporal metadata.
 3. Vector store retrieves local tools via semantic search over tool descriptions. Results above score threshold proceed to hydration.
-4. Project Service hydrates each tool with project boundary context — attaches `access` field (`status: allowed | locked`, `reason`). All tools returned to LLM, locked ones clearly marked.
+4. Agent Service hydrates each tool with agent boundary context — attaches `access` field (`status: allowed | locked`, `reason`). All tools returned to LLM, locked ones clearly marked.
 5. Object store provides recent commit context.
-6. Results re-ranked by commit recency, semantic similarity, project relevance, temporal weight.
+6. Results re-ranked by commit recency, semantic similarity, agent relevance, temporal weight.
 7. Top results + hydrated tools injected into LLM session.
 
-**Rule**: Vector store finds relevant content and tools; object store provides authoritative state; project registry gates retrieval by project status.
+**Rule**: Vector store finds relevant content and tools; object store provides authoritative state; agent registry gates retrieval by agent status.
 
 ## 10. Orchestration Layer
 
 The orchestration runtime runs on the Mac mini as the central orchestrator and model router.
 
-Service and agent catalog reference:
+Service and shard catalog reference:
 
 - `docs/arch/v1/agents-services.md`
 
@@ -887,7 +887,7 @@ Service and agent catalog reference:
 - **LangGraph** is the primary orchestration runtime for stateful workflows, routing, retries, and checkpointed execution.
 - **LangChain** is used for integrations (model clients, retrievers, tool wrappers), not as the primary orchestration layer.
 
-**Agent pipeline (single queue, single-session execution)**:
+**Execution pipeline (single queue, single-session execution)**:
 
 1. Receive message
 2. Build `job_envelope_v1`
@@ -906,11 +906,11 @@ Service and agent catalog reference:
 
 - `job_id`
 - `parent_job_id`
-- `project_id`
+- `agent_id`
 - `intent`
 - `priority`
 - `required_tools`
-- `target` (`none | control_plane | gpu | agent:<id>`)
+- `target` (`none | control_plane | gpu | shard:<id>`)
 - `risk_level` (`low | med | high`)
 - `expect_response_by`
 - `schema_version`
@@ -974,7 +974,7 @@ Mac responsibilities:
 
 | Zone    | Machine      | Role                                 |
 | ------- | ------------ | ------------------------------------ |
-| Edge    | Raspberry Pi | Voice input/output                   |
+| Edge    | Raspberry Pi | Voice Shard (input/output)           |
 | Control | Mac mini     | Orchestration + memory + fast models |
 | Compute | GPU box      | Deep reasoning model                 |
 
@@ -1053,7 +1053,7 @@ User Feedback ACK (human-facing):
 | ------------ | ------------------------------------------------ |
 | GPU Box      | DeepSeek reasoning model                         |
 | Mac mini     | LangGraph orchestration runtime, APIs, memory, tools, fast models |
-| Raspberry Pi | Voice interface                                  |
+| Raspberry Pi | Voice Shard (always-on listener, front-door model, TTS) |
 
 ## 16. Example Capabilities
 
@@ -1069,18 +1069,18 @@ For every request:
 
 - User message
 - Recent chat history
-- Project registry
+- Agent registry
 
 **Output**:
 
-- project_id
+- agent_id
 - intent
 - confidence score
 
 If confidence is low:
 
 - Ask clarification
-- Or search across multiple projects
+- Or search across multiple agents
 
 ## 17. Telemetry and Monitoring
 
@@ -1130,7 +1130,7 @@ The following sections describe high-level architectural concepts that will be d
 
 ### 18.1 TV Node Architecture (Planned)
 
-The system may include a dedicated TV node consisting of a small computer (mini PC or Raspberry Pi) connected to a television via HDMI. This node will run a Jarvis/Skyra agent and act as the primary media execution environment.
+The system may include a dedicated TV node consisting of a small computer (mini PC or Raspberry Pi) connected to a television via HDMI. This node will run a Skyra Shard and act as the primary media execution environment.
 
 In this model:
 
@@ -1202,7 +1202,7 @@ Detailed control logic for each platform will be designed later.
 
 ### 18.5 External Device Control Model (Planned)
 
-Not all devices will run native Jarvis agents. Some will be controlled through network protocols or automation bridges.
+Not all devices will run native Shards. Some will be controlled through network protocols or automation bridges.
 
 High-level concepts:
 

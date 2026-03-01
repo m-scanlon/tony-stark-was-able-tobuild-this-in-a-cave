@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS jobs (
   job_id        TEXT PRIMARY KEY,
   event_id      TEXT NOT NULL,
-  project_id    TEXT,
+  agent_id      TEXT,
 
   status        TEXT NOT NULL DEFAULT 'queued',
   -- queued | running | completed | failed
@@ -15,4 +15,4 @@ CREATE TABLE IF NOT EXISTS jobs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
-CREATE INDEX IF NOT EXISTS idx_jobs_project ON jobs(project_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_agent ON jobs(agent_id);

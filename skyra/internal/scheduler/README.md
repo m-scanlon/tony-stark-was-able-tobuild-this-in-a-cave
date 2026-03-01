@@ -62,11 +62,11 @@ Each job entering the scheduler carries a `job_envelope_v1`:
 
 - `job_id`
 - `parent_job_id`
-- `project_id`
+- `agent_id`
 - `intent`
 - `priority`
 - `required_tools`
-- `target` (`none | control_plane | gpu | agent:<id>`)
+- `target` (`none | control_plane | gpu | shard:<id>`)
 - `risk_level` (`low | med | high`)
 - `expect_response_by`
 - `schema_version`
@@ -82,7 +82,7 @@ The jobs table is operational state only. Owned exclusively by the Scheduler.
 Access rules:
 - Scheduler: read + write
 - Estimator: read only
-- Context Injector: read only (`status`, `project_id`)
+- Context Injector: read only (`status`, `agent_id`)
 
 ## v1 Constraints
 

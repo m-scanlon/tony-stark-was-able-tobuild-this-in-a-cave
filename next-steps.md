@@ -16,7 +16,7 @@ Every user request starts on the Pi as a `voice_event_v1`. This is the only even
 
 - `transcript` — what the user said
 - `triage_hints` — latency class, provisional eligibility, confidence
-- `context_window` — session summary, recent turns, active project
+- `context_window` — session summary, recent turns, active agent
 - `context_state` — how much token headroom the Pi's model has (Mac uses this to size the context package it sends back)
 - `session_state` — whether this is a new job or a continuation of an existing one
 - `pi_gave_provisional` / `provisional_text` — whether Pi already said something, so Mac can reconcile
@@ -43,14 +43,14 @@ Mac's Event Ingress reads `session_state` and routes accordingly. No separate cl
 
 The Pi does **not** decide the task type. That's the Domain Expert's job (the planning phase on Mac) after it has:
 
-- Retrieved project context
+- Retrieved agent context
 - Retrieved relevant tools
 - Understood the intent
 
 | Task type | When | Artifact |
 |---|---|---|
 | `WorkPlan` | Ephemeral — no state commit needed | `workplan.json` |
-| `TaskSheet + Patch` | Stateful — requires project state commit | `tasksheet.json` + patch |
+| `TaskSheet + Patch` | Stateful — requires agent state commit | `tasksheet.json` + patch |
 
 ### 4. Job Lifecycle Phases
 
@@ -69,13 +69,13 @@ planning → executing → validating → replanning → done
 
 These are **semantic phases** tracked in the tasksheet. The scheduler's jobs table tracks operational status separately (queued / running / completed / failed).
 
-### 5. Open Question: Project Routing
+### 5. Open Question: Agent Routing
 
-How does Mac know which project a new request belongs to? The Pi carries `active_project` in `context_window`, but this comes from the Pi's local cache — it could be stale.
+How does Mac know which agent a new request belongs to? The Pi carries `active_agent` in `context_window`, but this comes from the Pi's local cache — it could be stale.
 
 This is unresolved. Options discussed but not decided:
-- Trust Pi's `active_project` as authoritative (simple, but stale risk)
-- Mac re-derives project from the transcript + context on every request (slower, more reliable)
+- Trust Pi's `active_agent` as authoritative (simple, but stale risk)
+- Mac re-derives agent from the transcript + context on every request (slower, more reliable)
 - Pi and Mac stay in sync via context package pushes from the Context Injector (preferred direction — already in the design, needs formalization)
 
 ---
@@ -92,7 +92,21 @@ To design the executor loop, we need to answer:
 
 4. **How does the executor emit progress to the user?** — `UPDATE` and `PLAN_PROGRESS` events flow back to Pi during execution. When are they emitted? Who controls the cadence?
 
-5. **How does a state commit happen mid-execution?** — the executor calls `propose_commit` → `apply_commit` through the Project Service global tools. Is this per-step or at the end of the plan?
+5. **How does a state commit happen mid-execution?** — the executor calls `propose_commit` → `apply_commit` through the Agent Service global tools. Is this per-step or at the end of the plan?
+
+---
+
+---
+
+## How to Approach the Data Model
+
+The flow is already designed. The next hard thing is the data model — and the right way in is:
+
+1. **Walk the pipeline stage by stage** — for each service/component in the canonical flow (`event → inbox → queue → estimator → scheduler → assigned LLM session`), write down exactly what it needs as input and what it produces as output.
+2. **Let the objects emerge from that** — once every handoff has a clear input/output requirement, the schema of each object (`job_envelope_v1`, task object, WorkPlan, TaskSheet, etc.) becomes a direct consequence of what the services on both sides need. Don't design the schema in isolation.
+3. **Lock the handoff contracts first** — the riskiest gap is the scheduler→session handoff (`job_envelope_v1`). That's the one everything depends on. Start there.
+
+The instinct to start with the object schema is wrong. Start with what each service needs, and the schema writes itself.
 
 ---
 
@@ -101,5 +115,5 @@ To design the executor loop, we need to answer:
 - `docs/arch/v1/scyra.md` — full system architecture
 - `docs/arch/v1/executor.md` — executor design (current state, incomplete)
 - `docs/arch/v1/domain-expert/README.md` — planning phase, plan approval gate
-- `skyra/internal/project/README.md` — project service, tool hydration, boundary enforcement
+- `skyra/internal/project/README.md` — agent service, tool hydration, boundary enforcement
 - `skyra/internal/scheduler/README.md` — scheduler, job lifecycle, lanes
