@@ -12,13 +12,15 @@ The vision is simple: **one system that everything runs through**. Every product
 
 ---
 
-## Why It Exists
+## Why I Built It
 
 Two reasons.
 
-The first is practical — a system built to actually be hard. Not a tutorial project. Something with real moving parts, real design decisions, and real trade-offs to live with. Distributed systems, AI orchestration, voice interfaces, local inference. The kind of thing that looks good because it actually is good.
+The first is practical — I wanted to actually build something hard. Not a tutorial project. Something with real moving parts, real design decisions, and real trade-offs I have to live with. Distributed systems, AI orchestration, voice interfaces, local inference. The kind of thing that looks good because it actually is good.
 
-The second reason is bigger. An assistant that grows with the user over a lifetime. The hardware will get faster. The AI models will get smarter. But the memory — the context it has about the user's life, their decisions, every domain they care about — that only gets richer over time. Most people will never have that because they're always starting over on someone else's platform.
+The second reason is bigger. I want an assistant that grows with me over my lifetime. The hardware will get faster. The AI models will get smarter. But the memory — the context it has about my life, my decisions, every domain I care about — that only gets richer over time. Most people will never have that because they're always starting over on someone else's platform.
+
+I also think this is where the world is going, whether the big companies want it to or not. Right now, software is built around frontends that companies control — they decide what you see, how you interact, and what you're allowed to do with your own data. I think that model breaks down. What replaces it is an OS layer that sits on top of your data, where the interface isn't something a company designed for you but something that renders based on what your data actually looks like. Skyra is built around that idea. The thing Skyra operates on is the data — your decisions, your history, your domains. The frontend is almost secondary. In a world where AI is cheap enough to run locally and powerful enough to be genuinely useful, there's no reason that intelligence has to live on someone else's server. Decentralized AI for everyday use isn't a distant idea — it's what happens when the hardware catches up with the ambition. I'm building for that world.
 
 ---
 
