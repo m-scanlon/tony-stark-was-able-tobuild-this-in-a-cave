@@ -3,7 +3,6 @@ package controlplane
 import (
 	"bytes"
 	"context"
-	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,25 +20,22 @@ import (
 type Server struct {
 	Orch Orchestrator
 
-	mu       sync.Mutex
-	limiters map[string]*ipWindow
-}
-
-type ipWindow struct {
-	windowStart time.Time
-	count       int
+	runtimeOnce sync.Once
+	runtimeErr  error
+	eventDB     *eventStore
+	ingestQueue chan int64
 }
 
 const (
 	maxJSONBodyBytes = 1 << 20 // 1 MiB
-	rateLimitWindow  = time.Minute
-	rateLimitMaxReq  = 30
 	chatTimeout      = 30 * time.Second
 	modelRetryCount  = 2
 	retryBackoffBase = 200 * time.Millisecond
 	defaultTemp      = 0.2
 	defaultMaxTokens = 512
 	maxMaxTokens     = 4096
+	defaultEventDB   = "skyra_events.jsonl"
+	ingestQueueSize  = 1024
 )
 
 var thinkBlockRE = regexp.MustCompile(`(?s)<think>.*?</think>`)
@@ -54,8 +50,7 @@ func (s *Server) Routes() http.Handler {
 	// versioned API
 	s.registerV1Routes(mux)
 
-	// wrap everything in middleware
-	return s.withMiddleware(mux)
+	return mux
 }
 
 //
@@ -71,104 +66,25 @@ func (s *Server) registerV1Routes(mux *http.ServeMux) {
 	mux.HandleFunc("/v1/voice", s.handleVoice)
 }
 
-//
-// Middleware
-//
+func (s *Server) ensureIngestRuntime() error {
+	s.runtimeOnce.Do(func() {
+		dbPath := strings.TrimSpace(os.Getenv("SKYRA_EVENTS_DB_PATH"))
+		if dbPath == "" {
+			dbPath = defaultEventDB
+		}
 
-func (s *Server) withMiddleware(next http.Handler) http.Handler {
-	if s.limiters == nil {
-		s.limiters = make(map[string]*ipWindow)
+		s.eventDB = &eventStore{path: dbPath}
+		s.ingestQueue = make(chan int64, ingestQueueSize)
+		go s.runIngestQueueWorker()
+	})
+
+	return s.runtimeErr
+}
+
+func (s *Server) runIngestQueueWorker() {
+	for eventID := range s.ingestQueue {
+		log.Printf("ingest_queue event_id=%d queued", eventID)
 	}
-
-	return s.loggingMiddleware(
-		s.recoverMiddleware(
-			s.rateLimitMiddleware(
-				s.authMiddleware(next),
-			),
-		),
-	)
-}
-
-func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
-
-		next.ServeHTTP(sw, r)
-
-		log.Printf(
-			"%s %s %d %s",
-			r.Method,
-			r.URL.Path,
-			sw.status,
-			time.Since(start),
-		)
-	})
-}
-
-func (s *Server) recoverMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if err := recover(); err != nil {
-				log.Printf("panic: %v", err)
-				http.Error(w, "internal error", http.StatusInternalServerError)
-			}
-		}()
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (s *Server) authMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasPrefix(r.URL.Path, "/v1/") {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		expected := strings.TrimSpace(os.Getenv("SKYRA_API_KEY"))
-		if expected == "" {
-			http.Error(w, "server not configured", http.StatusServiceUnavailable)
-			return
-		}
-
-		provided := extractAPIKey(r)
-		if subtle.ConstantTimeCompare([]byte(expected), []byte(provided)) != 1 {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (s *Server) rateLimitMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasPrefix(r.URL.Path, "/v1/") {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		ip := clientIP(r)
-		now := time.Now()
-
-		s.mu.Lock()
-		win, ok := s.limiters[ip]
-		if !ok || now.Sub(win.windowStart) >= rateLimitWindow {
-			win = &ipWindow{windowStart: now, count: 0}
-			s.limiters[ip] = win
-		}
-		win.count++
-		limited := win.count > rateLimitMaxReq
-		s.mu.Unlock()
-
-		if limited {
-			w.Header().Set("Retry-After", "60")
-			http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
 }
 
 //
@@ -181,28 +97,55 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
-	if !requireJSONPost(w, r) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	if err := s.ensureIngestRuntime(); err != nil {
+		http.Error(w, "ingest runtime unavailable", http.StatusServiceUnavailable)
+		return
+	}
+
 	r.Body = http.MaxBytesReader(w, r.Body, maxJSONBodyBytes)
-
-	req, err := decodeChatRequest(r.Body)
+	payload, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "unable to read body", http.StatusBadRequest)
+		return
+	}
+	if len(payload) == 0 {
+		payload = []byte("{}")
+	}
+
+	eventID := time.Now().UnixNano()
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+
+	if err := s.eventDB.append(chatIngestEvent{
+		EventID:    eventID,
+		ReceivedAt: now,
+		Status:     "received",
+		Payload:    json.RawMessage(payload),
+	}); err != nil {
+		http.Error(w, "failed to persist event", http.StatusInternalServerError)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), chatTimeout)
-	defer cancel()
+	s.ingestQueue <- eventID
 
-	resp, statusCode, err := s.generateChatResponse(ctx, req)
-	if err != nil {
-		log.Printf("chat generation failed: %v", err)
-		http.Error(w, http.StatusText(statusCode), statusCode)
+	if err := s.eventDB.append(chatIngestEvent{
+		EventID:    eventID,
+		ReceivedAt: time.Now().UTC().Format(time.RFC3339Nano),
+		Status:     "queued",
+		Payload:    json.RawMessage(payload),
+	}); err != nil {
+		http.Error(w, "failed to persist queue status", http.StatusInternalServerError)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, resp)
+	writeJSON(w, http.StatusOK, chatIngestAck{
+		OK:      true,
+		EventID: eventID,
+	})
 }
 
 func (s *Server) handleVoice(w http.ResponseWriter, r *http.Request) {
@@ -473,6 +416,38 @@ type statusWriter struct {
 func (w *statusWriter) WriteHeader(statusCode int) {
 	w.status = statusCode
 	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+type chatIngestEvent struct {
+	EventID    int64           `json:"event_id"`
+	ReceivedAt string          `json:"received_at"`
+	Status     string          `json:"status"`
+	Payload    json.RawMessage `json:"payload_json"`
+}
+
+type chatIngestAck struct {
+	OK      bool  `json:"ok"`
+	EventID int64 `json:"event_id"`
+}
+
+type eventStore struct {
+	mu   sync.Mutex
+	path string
+}
+
+func (s *eventStore) append(evt chatIngestEvent) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	f, err := os.OpenFile(s.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	enc := json.NewEncoder(f)
+	enc.SetEscapeHTML(false)
+	return enc.Encode(evt)
 }
 
 type chatRequest struct {

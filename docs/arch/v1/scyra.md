@@ -37,6 +37,9 @@ Each computer (laptop, desktop, server) runs a lightweight "Jarvis Agent" that e
 
 ```mermaid
 flowchart TB
+  %% User
+  USER([User])
+
   %% Voice Node
   subgraph PI[Raspberry Pi • Voice Node]
     direction LR
@@ -44,15 +47,18 @@ flowchart TB
     VAD[VAD]
     STT[Speech-to-Text]
     GATE[Intent Gate]
+    TRIAGE[Pi Triage]
     LCACHE[Listener Context Cache]
     FDOOR[Front-Door Fast Model]
     OBOX[Event Outbox]
     VCLIENT[Voice Client]
-    WW --> VAD --> STT --> GATE --> FDOOR
+    TTS[Text to Speech]
+    WW --> VAD --> STT --> GATE --> TRIAGE --> FDOOR
     LCACHE --> FDOOR
-    FDOOR --> VCLIENT
+    FDOOR -->|provisional| TTS
     FDOOR --> OBOX
     OBOX --> VCLIENT
+    VCLIENT --> TTS
   end
 
   %% Control Plane
@@ -66,22 +72,18 @@ flowchart TB
     SCHED[Scheduler]
     SESSION[Assigned LLM Session]
     ORCH[Orchestrator]
-    CORE[Skyra Orchestration Core]
     CIX[Context Injector]
-
     CODER[Coding Model]
-
-    MEM[Memory Service]
+    PROJ[Project Service]
     OBJ[Object Store]
     VDB[Vector DB]
 
     APIGW --> INGRESS --> INBOX --> QUEUE --> EST --> SCHED --> SESSION --> ORCH
-    ORCH --> CORE
-    CORE --> CIX
-    CORE --> CODER
-    CORE --> MEM
-    MEM --> OBJ
-    MEM --> VDB
+    INGRESS -->|context_state fan-out| CIX
+    ORCH --> CODER
+    ORCH --> PROJ
+    PROJ --> OBJ
+    PROJ --> VDB
   end
 
   %% GPU Machine
@@ -108,9 +110,17 @@ flowchart TB
     SAGENT --> SEXEC
   end
 
-  %% Connections
-  VCLIENT -->|delegated events| APIGW
+  %% Request path
+  USER -->|audio| WW
+  VCLIENT -->|voice_event_v1| APIGW
   INBOX -->|ACK event_id| OBOX
+
+  %% Response path
+  ORCH -->|FINAL / UPDATE / ERROR| APIGW
+  APIGW -->|mac response| VCLIENT
+  TTS -->|speech| USER
+
+  %% Compute and agents
   ORCH -->|complex tasks| DEEP
   CIX -->|context package push| LCACHE
   ORCH -->|high-level commands| LAGENT
@@ -279,10 +289,11 @@ Triage outputs:
 
 - `latency_class`: `fast | medium | slow`
 - `needs_delegation`: `bool`
-- `needs_tools_guess`: `bool`
 - `hint_target`: `control_plane | agent:<id> | gpu:<id>`
 - `ack_policy`: `silent | nonverbal | spoken_if_slow`
 - `confidence`: `0.0-1.0`
+- `provisional_eligible`: `bool`
+- `cache_age_seconds`: `int | null`
 
 Notes:
 
@@ -387,20 +398,19 @@ flowchart LR
 
     CODER[Coding Tool Model<br/>Qwen2.5 Coder 7B]
 
-    MEMSVC[Memory Service<br/>Read Write Summaries]
+    PROJ[Project Service<br/>Registry Commits Tools]
     TOOLS[Tool Skills Runner<br/>SSH scripts Slack]
     OBJ[(Object Store<br/>.skyra projects<br/>versioned state)]
-    VDB[(Vector DB<br/>Chroma<br/>semantic index)]
+    VDB[(Vector DB<br/>Chroma<br/>semantic index + tool registry)]
 
     APIGW --> INGRESS --> INBOX --> QUEUE --> EST --> SCHED --> SESSION --> AGENT
+    INGRESS -->|context_state fan-out| CIX
     AGENT --> CLASS
     AGENT --> CODER
-    AGENT --> MEMSVC
-    MEMSVC --> CIX
+    AGENT --> PROJ
     CLASS --> CIX
-    AGENT --> CIX
-    MEMSVC --> OBJ
-    MEMSVC --> VDB
+    PROJ --> OBJ
+    PROJ --> VDB
     AGENT --> TOOLS
   end
 
@@ -409,7 +419,7 @@ flowchart LR
   end
 
   %% ===== Links between machines =====
-  VCLIENT -->|event plus triage hints| APIGW
+  VCLIENT -->|voice_event_v1 + context_state| APIGW
   PI -.->|optional audio stream for remote STT| APIGW
   CIX -->|compressed context package| LCACHE
   INBOX -->|transport ACK event_id| OBOX
@@ -427,7 +437,7 @@ sequenceDiagram
   participant Pi as Raspberry Pi (Listener + Front Door)
   participant CIX as Context Injector
   participant Mac as Mac mini (Orchestrator)
-  participant DB as Memory (SQL+Vector+Docs)
+  participant PROJ as Project Service
   participant GPU as GPU Box (DeepSeek)
 
   User->>Pi: "Hey Skyra..." (audio)
@@ -435,34 +445,37 @@ sequenceDiagram
   Pi->>Pi: Earcon + LED listening
   Pi->>Pi: VAD start/stop
   Pi->>Pi: STT (audio → text)
-  Pi->>Pi: Pi triage (latency_class, needs_delegation, needs_tools_guess, hint_target, ack_policy, confidence)
+  Pi->>Pi: Pi triage (latency_class, needs_delegation, provisional_eligible, cache_age_seconds, ack_policy, confidence)
   Pi->>Pi: Front-door uses base + live + injected context
   par Proactive context refresh
     CIX-->>Pi: Push compressed context package
   and User feedback path (non-authoritative)
-    Pi->>Pi: Earcon/LED or short progress ACK only
+    Pi->>Pi: Provisional answer if eligible, else earcon/LED ACK only
   end
 
-  Pi->>Mac: POST /voice {event, context_window, triage_hints}
+  Pi->>Mac: POST /voice {voice_event_v1 + context_state + session_state}
+  Note over Pi,Mac: event_id stamped by Pi outbox before send
   Mac-->>Pi: Transport ACK(event_id) after durable inbox write
+  Mac->>CIX: Fan-out context_state (available_for_injection)
 
   Mac->>Mac: Create job_envelope_v1 + enqueue
   Mac->>Mac: Estimation annotates scheduler hints
   Mac->>Mac: Scheduler assigns execution lane
-  Mac->>Mac: Assigned LLM session does classify + task formation + execution
+  Mac->>Mac: Assigned LLM session — planning phase
+  Mac->>PROJ: Retrieve project state + hydrated tools
+  PROJ-->>Mac: Project state + tools with access status
+  Mac->>Mac: Execution phase — stage by stage
   alt Complex reasoning required
     Mac->>GPU: Send to DeepSeek
     GPU-->>Mac: Completion
   else Local/tool path
     Mac->>Mac: Use local models/tools
   end
-    Mac->>DB: Retrieve relevant context
-    DB-->>Mac: Context snippets
-  Mac->>DB: Write memory update
-    Mac-->>Pi: FINAL authoritative response
-    Pi->>Pi: Reconcile turn state and context window
-    Pi->>Pi: TTS
-    Pi-->>User: Spoken response
+  Mac->>PROJ: propose_commit / apply_commit
+  Mac-->>Pi: FINAL authoritative response
+  Pi->>Pi: Reconcile — confirm, add detail, or correct provisional
+  Pi->>Pi: TTS
+  Pi-->>User: Spoken response
 ```
 
 ### 7.1 Consistency and Reconciliation Model
@@ -557,7 +570,6 @@ def on_user_utterance(audio_chunk_stream):
 
     event = {
         "schema": "voice_event_v1",
-        "event_id": ulid(),
         "turn_id": turn_id,
         "ts": now_iso8601(),
         "transcript": transcript,
@@ -565,7 +577,7 @@ def on_user_utterance(audio_chunk_stream):
         "context_window": context_window,
     }
 
-    outbox.persist(event)  # durable before send
+    outbox.persist(event)  # outbox stamps event_id before send
     emit_user_ack(triage["ack_policy"])  # non-semantic ACK only
     transport.send(event)
 
@@ -603,26 +615,41 @@ Request (`Pi -> Mac`):
 ```json
 {
   "schema": "voice_event_v1",
-  "event_id": "01JS...",
   "turn_id": "turn_8f4c",
   "ts": "2026-02-20T18:10:12Z",
   "transcript": "what did I decide about backups",
   "triage_hints": {
     "latency_class": "medium",
     "needs_delegation": true,
-    "needs_tools_guess": false,
     "hint_target": "control_plane",
     "ack_policy": "spoken_if_slow",
-    "confidence": 0.72
+    "confidence": 0.72,
+    "provisional_eligible": false,
+    "cache_age_seconds": null
   },
+  "pi_gave_provisional": false,
+  "provisional_text": null,
   "context_window": {
     "session_summary": "...",
     "recent_turns": [],
     "active_project": "server_ops",
     "injected_facts": []
+  },
+  "context_state": {
+    "total_context_tokens": 8192,
+    "system_tokens": 1420,
+    "live_conversation_tokens": 980,
+    "response_reserve_tokens": 512,
+    "available_for_injection": 5280
+  },
+  "session_state": {
+    "pending_job_id": null,
+    "waiting_for": null
   }
 }
 ```
+
+Note: `event_id` is NOT part of `voice_event_v1`. It is stamped onto the event by the Pi outbox layer before sending and used by Mac's Event Ingress as the idempotency key.
 
 Response stream (`Mac -> Pi`):
 
@@ -736,7 +763,7 @@ The Pi remains a listener/transport/render node and is non-authoritative for sem
 - Orchestration runtime (LangGraph orchestrator + router)
 - Project classifier
 - Model router
-- Memory service
+- Project Service
 - Tool execution engine
 - Databases
 - Local conversational model
@@ -775,51 +802,81 @@ The Pi remains a listener/transport/render node and is non-authoritative for sem
 | ------------------- | -------------------- |
 | DeepSeek-Coder 33B+ | Main reasoning brain |
 
-## 9. Memory Architecture
+## 9. Project Architecture
 
-### 9.1 Object Store (System of Record)
+All project state is owned and managed by the Project Service. See `skyra/internal/project/README.md` for the full specification.
+
+### 9.1 Project Registry (SQLite)
+
+A lightweight fast-read index above the object store. Used by the context engine as a first gate before any deeper retrieval.
+
+```sql
+CREATE TABLE projects (
+  project_id     TEXT PRIMARY KEY,
+  name           TEXT NOT NULL,
+  status         TEXT NOT NULL DEFAULT 'active',
+  -- active | paused | archived
+  last_active_at TEXT NOT NULL
+);
+```
+
+### 9.2 Object Store (System of Record)
 
 **Structure**:
 
-- `.skyra/projects/{project}/`
-- HEAD.json (current commit pointer)
-- state.json (materialized current state)
-- commits/ (immutable commit objects)
-- attachments/ (files, documents)
+```
+.skyra/projects/{project_id}/
+  HEAD.json            ← pointer to current commit
+  state.json           ← materialized current state (four sections)
+  commits/             ← immutable commit history
+    {commit_id}.json
+  jobs/
+    {job_id}/
+      envelope.json    ← job_envelope_v1
+      tasks/
+        {task_id}/
+          tasksheet.json  or  workplan.json
+          notes.md
+```
+
+**state.json sections**:
+
+- `metadata` — name, status, created_at, last_active_at
+- `knowledge` — goals, assumptions, decisions, facts
+- `artifact` — what the project is and where it lives
+- `boundary` — structured operating constraints: `scope` (prose), `allowed_tool_categories`, `denied_tool_patterns`, and `restrictions[]` (each with `id`, `description`, `matches`). Enforced in code at two layers: hydration (lock status attached to tools before LLM sees them) and BoundaryValidator (permission prompt at runtime before execution). Not via prompt.
 
 **Usage**:
 
-- Versioned project state via commit objects
-- AI modifications through explicit commits only
-- File-based storage (local) or S3/MinIO (distributed)
+- Versioned project state via append-only commit objects
+- AI modifications through explicit commits only via Project Service
+- File-based storage (local Phase 1) or S3/MinIO (distributed Phase 2)
 
-### 9.3 Vector Store (Derived Data)
+### 9.3 Two-Level Status
 
-**Stores**:
+Job status exists at two distinct levels that must not be conflated:
 
-- Embedded project state snapshots
-- Embedded documents and attachments
-- Semantic index for fast retrieval
+- **Operational status** (scheduler jobs table): `queued | running | completed | failed` — owned by the scheduler, tracks machinery
+- **Semantic status** (tasksheet in object store): `forming | pending_approval | executing | done | cancelled` — owned by the Project Service, tracks meaning
 
-**Characteristics**:
+### 9.4 Vector Store (Derived Data)
 
-- Can be rebuilt from object store
-- Not source of truth
-- Used for semantic search only
+The vector DB serves two purposes:
 
-## 9.4. Retrieval Strategy (Commit + Semantic + Temporal)
+1. **Project state index** — embedded snapshots of project state for semantic retrieval. Derived from object store. Can be rebuilt at any time. Not source of truth.
+2. **Local tool registry** — per-project tools indexed for retrieval. Each tool carries `project_id`, `categories[]` (operation tags matched by boundary enforcement), and `requires_approval` as metadata fields.
 
-1. Classifier determines project domain.
+### 9.5 Retrieval Strategy (Commit + Semantic + Temporal)
+
+1. Context engine queries project registry (SQLite) — filters to active projects only.
 2. Vector store retrieves semantically similar content with temporal metadata.
-3. Object store provides recent commit context.
-4. Results are re-ranked by:
-   - Commit recency
-   - Semantic similarity
-   - Project relevance
-   - Temporal importance (recent events weighted higher)
-5. Top results injected into LLM prompt with timestamp context.
+3. Vector store retrieves local tools via semantic search over tool descriptions. Results above score threshold proceed to hydration.
+4. Project Service hydrates each tool with project boundary context — attaches `access` field (`status: allowed | locked`, `reason`). All tools returned to LLM, locked ones clearly marked.
+5. Object store provides recent commit context.
+6. Results re-ranked by commit recency, semantic similarity, project relevance, temporal weight.
+7. Top results + hydrated tools injected into LLM session.
 
-**Rule**: Vector store finds relevant content; object store provides authoritative state; temporal metadata adds context.
+**Rule**: Vector store finds relevant content and tools; object store provides authoritative state; project registry gates retrieval by project status.
 
 ## 10. Orchestration Layer
 

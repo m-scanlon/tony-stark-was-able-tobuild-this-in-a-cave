@@ -14,7 +14,7 @@ This document tracks known architecture gaps that must be resolved before produc
 | --- | --- | --- | --- | --- |
 | G1 | `job_envelope_v1` schema not fully locked | P0 | Cross-node compatibility and routing correctness depend on one canonical contract. | Control Plane |
 | G2 | End-to-end idempotency beyond ingress is incomplete | P0 | Retries can create duplicate tasks, duplicate side effects, or duplicate commits. | Ingress + Task Formation + Executor |
-| G3 | Stateful commit safety boundary is underdefined | P0 | Risk of corrupt/partial state changes without strict pre-commit checks and conflict handling. | Task Formation + Memory/Object Store |
+| G3 | Stateful commit safety boundary is underdefined | P0 | Risk of corrupt/partial state changes without strict pre-commit checks and conflict handling. Two-level status (operational in scheduler jobs table vs semantic in tasksheet) must be coordinated on failure/rollback. | Task Formation + Project Service |
 | G4 | Reconciliation UX policy is not fully specified | P1 | Split-brain user experience if Pi provisional speech conflicts with Mac final answer. | Voice Node + Control Plane |
 | G5 | AuthN/AuthZ model is not concretely implemented | P0 | Device/agent channels remain security-sensitive attack surface. | Platform/Security |
 | G6 | Backpressure and overload policies are undefined | P1 | Queue growth and latency spikes can collapse responsiveness under load. | Ingress + Scheduler |
@@ -22,6 +22,9 @@ This document tracks known architecture gaps that must be resolved before produc
 | G8 | Observability and SLOs are not defined end-to-end | P1 | Hard to debug reliability and latency regressions without traceability and targets. | Platform/Operations |
 | G9 | Degradation and cold-start behavior is incomplete | P1 | Unclear runtime behavior when STT/model/estimator/context systems fail or lag. | Voice Node + Orchestrator |
 | G10 | Data lifecycle and retention policy is missing | P1 | Inbox/checkpoints/transcripts can grow unbounded and violate privacy expectations. | Memory + Platform |
+| G11 | Project Registry and Scheduler Jobs table schemas not locked | P0 | Two separate SQLite tables. Schemas must be finalized before any service can be built against them. | Project Service + Scheduler |
+| G12 | ~~Project state (state.json) four-section schema not locked~~ **CLOSED** | P0 | Schema locked: `metadata/knowledge/artifact/boundary`. Boundary carries `allowed_tool_categories`, `denied_tool_patterns`, `restrictions[]` (no enforcement field — all locked tool attempts prompt the user). Enforced in code via two layers: hydration (lock status attached to tools before LLM sees them) and BoundaryValidator (permission prompt at runtime). See `skyra/internal/project/README.md`. | Project Service |
+| G13 | ~~Tool system two-layer contract not finalized~~ **CLOSED** | P1 | Global vs local tools, `requires_approval` behavior, and local tool `categories[]` field for boundary enforcement are now fully specified. See `skyra/internal/project/README.md`. | Project Service + Domain Expert |
 
 ## Recommended Next Actions
 

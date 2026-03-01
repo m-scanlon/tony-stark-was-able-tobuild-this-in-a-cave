@@ -58,6 +58,20 @@ Each domain configuration includes:
 - `interaction_tools`: user-interaction tools (for example `ask_user`)
 - `attempt_budget`: max retries/time budget before fallback
 
+### Tool System Layers
+
+The Domain Expert operates within a two-layer tool system:
+
+**Global tools** — always injected into every LLM session. Owned by the Project Service. Cover all project state operations (read state, propose commit, rollback, list projects, etc.). Never retrieved — always present.
+
+**Local tools** — per-project tools stored in the vector DB tool registry. Retrieved via vector search based on the current request. Each local tool carries `categories[]` (operation tags for boundary enforcement) and a `requires_approval` field.
+
+Before local tools are returned to the Domain Expert, the Project Service runs a hydration step: each tool is joined against the project's boundary in `state.json` and enriched with an `access` field (`status: allowed | locked`, `reason`). The Domain Expert receives all retrieved tools — including locked ones — with their access status clearly attached. No tools are hidden. The LLM can reason over what is available and what is restricted.
+
+Locked tools that the LLM attempts to call are caught at runtime by the BoundaryValidator before execution. See `skyra/internal/project/README.md` for the full enforcement model.
+
+`requires_approval` on a local tool means the tool is surfaced and highlighted to the user during plan review. It does NOT pause execution mid-run. See Section 8 for the distinction between this and `PLAN_APPROVAL_REQUIRED`.
+
 ## 5. Tool Reprompt Policy
 
 When assumptions are not grounded in retrieved context, Domain Expert must reprompt itself:
@@ -111,6 +125,8 @@ Each evidence item:
 
 After planning is complete, execution is paused behind an explicit user approval step.
 
+Note: `PLAN_APPROVAL_REQUIRED` (this gate) and `requires_approval` on a local tool are two distinct concepts. `PLAN_APPROVAL_REQUIRED` is a plan-level gate that pauses all execution until the user approves the full plan. `requires_approval` on a tool is a display flag that highlights that tool in the plan review — it does not add a separate approval step.
+
 Flow:
 
 1. Domain Expert emits plan artifact (`WorkPlan` or `TaskSheet+Patch`) with confidence/evidence.
@@ -139,3 +155,4 @@ Tool mapping:
 - `docs/arch/v1/task-formation.md`
 - `docs/arch/v1/agents-services.md`
 - `docs/arch/v1/scyra.md`
+- `skyra/internal/project/README.md` — project service, global tools, local tool registry
