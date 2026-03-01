@@ -1,71 +1,64 @@
-# Skyra Explained (For Friends)
+# Skyra — For Friends
 
-## What Skyra Is
+## The Idea
 
-Skyra is a personal AI assistant I am building to help with day-to-day life and projects.
+Most people rent their tools. They use assistants built by companies, running on company servers, storing their data in company databases. When the company changes direction, raises prices, or shuts down — your history goes with it.
 
-Think of it like a custom "Jarvis" that can:
+Skyra is the opposite of that.
 
-- listen and talk naturally
-- remember important context
-- help with coding, planning, and problem-solving
-- run tasks on different machines depending on how heavy the work is
+It's a personal AI system I'm building from scratch, running on my own hardware, that I'll use for the rest of my life. Every conversation, every decision, every project lives in a database I own. Nobody can deprecate it. Nobody can monetize my data. Nobody can take it away.
 
-## The Simple Version of How It Works
+The vision is simple: **one system that everything runs through**. Every product I build, every task I need done, every light I turn on, every decision I need to make — it all goes through Skyra. Over time it learns how I think, how I work, and what I care about. The longer it runs, the more useful it gets. And that value compounds with me, not with someone else.
 
-Skyra has 3 "brains" working together:
+---
 
-1. **Fast Listener (Raspberry Pi)**
-- Always on.
-- Hears wake word, converts speech to text, gives quick responses.
-- Great for speed and instant feedback.
+## Why I Built It
 
-2. **Main Brain (Mac mini)**
-- The decision center.
-- Handles memory, planning, and task coordination.
-- Makes the final/authoritative decisions.
+Two reasons.
 
-3. **Heavy Brain (GPU Machine)**
-- Used only for hard, expensive thinking.
-- Handles deeper reasoning and bigger coding/analysis tasks.
+The first is practical — I wanted to actually build something hard. Not a tutorial project. Something with real moving parts, real design decisions, and real trade-offs I have to live with. Distributed systems, AI orchestration, voice interfaces, local inference. The kind of thing that looks good because it actually is good.
 
-## Why It Feels Fast
+The second reason is bigger. I want an assistant that grows with me over my lifetime. The hardware will get faster. The AI models will get smarter. But the memory — the context it has about my life, my projects, my decisions — that only gets richer over time. Most people will never have that because they're always starting over on someone else's platform. I won't be.
 
-Skyra can give a quick "provisional" response from the fast listener, then ask the main brain to verify and finish the job.
+---
 
-So in practice:
+## What It Actually Does
 
-- you get a fast response right away
-- then you get the final, correct answer from the main system
+Skyra sits across three machines that work together:
 
-## Why This Matters
+**Raspberry Pi — always on, always listening**
+This is the voice layer. It detects when I'm talking, converts speech to text, and can give a quick answer from recent context while the heavier thinking happens in the background. It's always on, low power, and sits on my desk.
 
-Most assistants are generic. Skyra is personal and built for real daily use.
+**Mac mini — the brain**
+This is where decisions get made. It receives what I said, figures out what I'm asking for, pulls in relevant context from memory, forms a plan, and coordinates execution. It knows all my active projects and can take actions on my behalf — running scripts, managing files, calling APIs, whatever the task needs.
 
-Goals:
+**GPU machine — heavy thinking**
+For complex reasoning, deep coding problems, or anything that needs serious horsepower, the Mac delegates to a dedicated GPU machine running a large language model locally. No cloud, no API keys, no usage limits.
 
-- reduce mental load
-- keep momentum on work/school/projects
-- make complex tasks feel manageable
-- be reliable over the long run
+---
 
-## Current Status
+## How It Feels to Use
 
-Skyra is actively being built and tested.
+I talk to it like I'd talk to someone who knows me and my work deeply.
 
-What already exists:
+"What did I decide about the server backups last month?" — it knows.
 
-- architecture and reliability design
-- voice listener service
-- control-plane API foundation
-- event reliability pipeline (so requests are not lost)
+"Draft a plan for the next phase of this project" — it pulls up everything relevant, forms a plan, and asks me to approve before doing anything.
 
-What is being improved next:
+"Turn off the lights and set a reminder for tomorrow" — it runs the tools, confirms it's done.
 
-- better task formation and routing
-- stronger memory and context handling
-- smoother voice experience and faster response quality
+The key thing is that I stay in control. Skyra proposes, I approve. For low-stakes tasks it just runs. For anything significant it surfaces the plan first. I've designed exactly how much autonomy it has, and I can tune that per project.
+
+---
+
+## Where It's At
+
+Skyra is actively being built. The architecture and core systems are designed and partially implemented — voice pipeline, event delivery, memory model, control plane. The next phase is wiring it all together into a working end-to-end loop.
+
+The first milestone is simple: I say something, it thinks, it responds. From there it's iteration.
+
+---
 
 ## In One Sentence
 
-Skyra is my personal, always-improving AI partner designed to help me think clearer, build faster, and stay consistent.
+Skyra is a personal operating environment that executes my intent across machines, owns my history, and gets smarter the longer I run it.
