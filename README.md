@@ -41,15 +41,9 @@ Every device added extends Skyra's capabilities without changing the underlying 
 
 ## How It Feels to Use
 
-The user talks to it like they'd talk to someone who knows them and their work deeply.
+You talk to it like someone who knows you and your work deeply. Ask what you decided last month — it knows. Ask it to draft a plan — it pulls up everything relevant, forms it, and waits for approval before doing anything. Tell it to turn off the lights and set a reminder — it runs the tools and confirms it's done.
 
-"What did I decide about the server backups last month?" — it knows.
-
-"Draft a plan for the next phase of this" — it knows which domain the user is in, pulls up everything relevant, forms a plan, and asks for approval before doing anything.
-
-"Turn off the lights and set a reminder for tomorrow" — it runs the tools, confirms it's done.
-
-The key thing is that the user stays in control. Skyra proposes, the user approves. For low-stakes tasks it just runs. For anything significant it surfaces the plan first. Autonomy is tunable per domain.
+Skyra proposes, the user approves. For low-stakes tasks it just runs. For anything significant it surfaces the plan first. How much autonomy it has is tunable per domain.
 
 ---
 
