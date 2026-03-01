@@ -6,19 +6,19 @@ Most people rent their tools. They use assistants built by companies, running on
 
 Skyra is the opposite of that.
 
-It's a personal AI system I'm building from scratch, running on my own hardware, that I'll use for the rest of my life. Every conversation, every decision, every domain of my life lives in a database I own. Nobody can deprecate it. Nobody can monetize my data. Nobody can take it away.
+It's a personal AI system built from scratch, running on the user's own hardware, designed to last a lifetime. Every conversation, every decision, every domain of the user's life lives in a database they own. Nobody can deprecate it. Nobody can monetize the data. Nobody can take it away.
 
-The vision is simple: **one system that everything runs through**. Every product I build, every task I need done, every light I turn on, every decision I need to make — it all goes through Skyra. Over time it learns how I think, how I work, and what I care about. The longer it runs, the more useful it gets. And that value compounds with me, not with someone else.
+The vision is simple: **one system that everything runs through**. Every product built, every task that needs doing, every light that gets turned on, every decision that needs making — it all goes through Skyra. Over time it learns how the user thinks, how they work, and what they care about. The longer it runs, the more useful it gets. And that value compounds with the user, not with someone else.
 
 ---
 
-## Why I Built It
+## Why It Exists
 
 Two reasons.
 
-The first is practical — I wanted to actually build something hard. Not a tutorial project. Something with real moving parts, real design decisions, and real trade-offs I have to live with. Distributed systems, AI orchestration, voice interfaces, local inference. The kind of thing that looks good because it actually is good.
+The first is practical — a system built to actually be hard. Not a tutorial project. Something with real moving parts, real design decisions, and real trade-offs to live with. Distributed systems, AI orchestration, voice interfaces, local inference. The kind of thing that looks good because it actually is good.
 
-The second reason is bigger. I want an assistant that grows with me over my lifetime. The hardware will get faster. The AI models will get smarter. But the memory — the context it has about my life, my decisions, every domain I care about — that only gets richer over time. Most people will never have that because they're always starting over on someone else's platform. I won't be.
+The second reason is bigger. An assistant that grows with the user over a lifetime. The hardware will get faster. The AI models will get smarter. But the memory — the context it has about the user's life, their decisions, every domain they care about — that only gets richer over time. Most people will never have that because they're always starting over on someone else's platform.
 
 ---
 
@@ -27,29 +27,29 @@ The second reason is bigger. I want an assistant that grows with me over my life
 Skyra is built on three concepts:
 
 **A control plane — the brain**
-One machine that owns everything. It receives what I said, figures out what I'm asking for, pulls in relevant context from memory, forms a plan, and coordinates execution. It knows all my active domains — work, home, servers, health, music — and decides what happens next.
+One machine that owns everything. It receives what the user said, figures out what they're asking for, pulls in relevant context from memory, forms a plan, and coordinates execution. It knows all active domains — work, home, servers, health, music — and decides what happens next.
 
-**Agents — the domains of my life**
-Each area of my life is an Agent: work, home, health, servers, music. Each one has its own memory, its own set of tools, and its own rules for what Skyra is allowed to do inside it. When I ask something, Skyra figures out which domain I'm in and works from there.
+**Agents — the domains of the user's life**
+Each area of life is an Agent: work, home, health, servers, music. Each one has its own memory, its own set of tools, and its own rules for what Skyra is allowed to do inside it. When the user asks something, Skyra figures out which domain they're in and works from there.
 
 **Shards — Skyra's presence on every device**
 A Shard is a small piece of software that runs on any device. When it starts up, it figures out what that device can do — does it have a microphone? A GPU? Can it run scripts? — and registers those capabilities with the control plane. The control plane then knows what it has available and routes work accordingly.
 
-The Raspberry Pi on my desk is a Shard. My laptop is a Shard. The GPU machine running the large language model is a Shard. They're all the same thing — devices that showed up, said what they can do, and became part of the system. Every device I add makes Skyra more capable without changing how anything works.
+The Raspberry Pi on the desk is a Shard. The laptop is a Shard. The GPU machine running the large language model is a Shard. They're all the same thing — devices that showed up, said what they can do, and became part of the system. Every device added makes Skyra more capable without changing how anything works.
 
 ---
 
 ## How It Feels to Use
 
-I talk to it like I'd talk to someone who knows me and my work deeply.
+The user talks to it like they'd talk to someone who knows them and their work deeply.
 
 "What did I decide about the server backups last month?" — it knows.
 
-"Draft a plan for the next phase of this" — it knows which domain I'm in, pulls up everything relevant, forms a plan, and asks me to approve before doing anything.
+"Draft a plan for the next phase of this" — it knows which domain the user is in, pulls up everything relevant, forms a plan, and asks for approval before doing anything.
 
 "Turn off the lights and set a reminder for tomorrow" — it runs the tools, confirms it's done.
 
-The key thing is that I stay in control. Skyra proposes, I approve. For low-stakes tasks it just runs. For anything significant it surfaces the plan first. I've designed exactly how much autonomy it has, and I can tune that per domain.
+The key thing is that the user stays in control. Skyra proposes, the user approves. For low-stakes tasks it just runs. For anything significant it surfaces the plan first. Autonomy is tunable per domain.
 
 ---
 
@@ -57,13 +57,13 @@ The key thing is that I stay in control. Skyra proposes, I approve. For low-stak
 
 Skyra is actively being built. The architecture and core systems are designed and partially implemented — voice pipeline, event delivery, memory and agent model, control plane, tool execution. The current focus is the executor loop: the phase where a planned job actually runs, tools get called, state gets updated, and replanning happens when something goes sideways.
 
-The first milestone is simple: I say something, it thinks, it responds. From there it's iteration.
+The first milestone is simple: the user says something, it thinks, it responds. From there it's iteration.
 
 ---
 
 ## In One Sentence
 
-Skyra is a personal operating environment that executes my intent across machines, owns my history, and gets smarter the longer I run it.
+Skyra is a personal operating environment that executes the user's intent across machines, owns their history, and gets smarter the longer it runs.
 
 ---
 
@@ -76,6 +76,6 @@ For the architecture and implementation details:
 - Domain expert / planning phase: `docs/arch/v1/domain-expert/README.md`
 - Event ingress and ACK: `docs/arch/v1/event-ingress-ack.md`
 - Task formation: `docs/arch/v1/task-formation.md`
-- Project service: `skyra/internal/project/README.md`
+- Agent service: `skyra/internal/project/README.md`
 - Scheduler: `skyra/internal/scheduler/README.md`
 - Open gaps: `docs/arch/v1/gaps.md`
