@@ -37,6 +37,9 @@ Each computer (laptop, desktop, server) runs a lightweight "Jarvis Agent" that e
 
 ```mermaid
 flowchart TB
+  %% User
+  USER([User])
+
   %% Voice Node
   subgraph PI[Raspberry Pi • Voice Node]
     direction LR
@@ -44,15 +47,18 @@ flowchart TB
     VAD[VAD]
     STT[Speech-to-Text]
     GATE[Intent Gate]
+    TRIAGE[Pi Triage]
     LCACHE[Listener Context Cache]
     FDOOR[Front-Door Fast Model]
     OBOX[Event Outbox]
     VCLIENT[Voice Client]
-    WW --> VAD --> STT --> GATE --> FDOOR
+    TTS[Text to Speech]
+    WW --> VAD --> STT --> GATE --> TRIAGE --> FDOOR
     LCACHE --> FDOOR
-    FDOOR --> VCLIENT
+    FDOOR -->|provisional| TTS
     FDOOR --> OBOX
     OBOX --> VCLIENT
+    VCLIENT --> TTS
   end
 
   %% Control Plane
@@ -66,20 +72,16 @@ flowchart TB
     SCHED[Scheduler]
     SESSION[Assigned LLM Session]
     ORCH[Orchestrator]
-    CORE[Skyra Orchestration Core]
     CIX[Context Injector]
-
     CODER[Coding Model]
-
     PROJ[Project Service]
     OBJ[Object Store]
     VDB[Vector DB]
 
     APIGW --> INGRESS --> INBOX --> QUEUE --> EST --> SCHED --> SESSION --> ORCH
-    ORCH --> CORE
-    CORE --> CIX
-    CORE --> CODER
-    CORE --> PROJ
+    INGRESS -->|context_state fan-out| CIX
+    ORCH --> CODER
+    ORCH --> PROJ
     PROJ --> OBJ
     PROJ --> VDB
   end
@@ -108,9 +110,17 @@ flowchart TB
     SAGENT --> SEXEC
   end
 
-  %% Connections
-  VCLIENT -->|delegated events| APIGW
+  %% Request path
+  USER -->|audio| WW
+  VCLIENT -->|voice_event_v1| APIGW
   INBOX -->|ACK event_id| OBOX
+
+  %% Response path
+  ORCH -->|FINAL / UPDATE / ERROR| APIGW
+  APIGW -->|mac response| VCLIENT
+  TTS -->|speech| USER
+
+  %% Compute and agents
   ORCH -->|complex tasks| DEEP
   CIX -->|context package push| LCACHE
   ORCH -->|high-level commands| LAGENT
@@ -279,10 +289,11 @@ Triage outputs:
 
 - `latency_class`: `fast | medium | slow`
 - `needs_delegation`: `bool`
-- `needs_tools_guess`: `bool`
 - `hint_target`: `control_plane | agent:<id> | gpu:<id>`
 - `ack_policy`: `silent | nonverbal | spoken_if_slow`
 - `confidence`: `0.0-1.0`
+- `provisional_eligible`: `bool`
+- `cache_age_seconds`: `int | null`
 
 Notes:
 
@@ -393,12 +404,11 @@ flowchart LR
     VDB[(Vector DB<br/>Chroma<br/>semantic index + tool registry)]
 
     APIGW --> INGRESS --> INBOX --> QUEUE --> EST --> SCHED --> SESSION --> AGENT
+    INGRESS -->|context_state fan-out| CIX
     AGENT --> CLASS
     AGENT --> CODER
     AGENT --> PROJ
-    PROJ --> CIX
     CLASS --> CIX
-    AGENT --> CIX
     PROJ --> OBJ
     PROJ --> VDB
     AGENT --> TOOLS
@@ -409,7 +419,7 @@ flowchart LR
   end
 
   %% ===== Links between machines =====
-  VCLIENT -->|event plus triage hints| APIGW
+  VCLIENT -->|voice_event_v1 + context_state| APIGW
   PI -.->|optional audio stream for remote STT| APIGW
   CIX -->|compressed context package| LCACHE
   INBOX -->|transport ACK event_id| OBOX
@@ -427,7 +437,7 @@ sequenceDiagram
   participant Pi as Raspberry Pi (Listener + Front Door)
   participant CIX as Context Injector
   participant Mac as Mac mini (Orchestrator)
-  participant DB as Memory (SQL+Vector+Docs)
+  participant PROJ as Project Service
   participant GPU as GPU Box (DeepSeek)
 
   User->>Pi: "Hey Skyra..." (audio)
@@ -435,34 +445,37 @@ sequenceDiagram
   Pi->>Pi: Earcon + LED listening
   Pi->>Pi: VAD start/stop
   Pi->>Pi: STT (audio → text)
-  Pi->>Pi: Pi triage (latency_class, needs_delegation, needs_tools_guess, hint_target, ack_policy, confidence)
+  Pi->>Pi: Pi triage (latency_class, needs_delegation, provisional_eligible, cache_age_seconds, ack_policy, confidence)
   Pi->>Pi: Front-door uses base + live + injected context
   par Proactive context refresh
     CIX-->>Pi: Push compressed context package
   and User feedback path (non-authoritative)
-    Pi->>Pi: Earcon/LED or short progress ACK only
+    Pi->>Pi: Provisional answer if eligible, else earcon/LED ACK only
   end
 
-  Pi->>Mac: POST /voice {event, context_window, triage_hints}
+  Pi->>Mac: POST /voice {voice_event_v1 + context_state + session_state}
+  Note over Pi,Mac: event_id stamped by Pi outbox before send
   Mac-->>Pi: Transport ACK(event_id) after durable inbox write
+  Mac->>CIX: Fan-out context_state (available_for_injection)
 
   Mac->>Mac: Create job_envelope_v1 + enqueue
   Mac->>Mac: Estimation annotates scheduler hints
   Mac->>Mac: Scheduler assigns execution lane
-  Mac->>Mac: Assigned LLM session does classify + task formation + execution
+  Mac->>Mac: Assigned LLM session — planning phase
+  Mac->>PROJ: Retrieve project state + hydrated tools
+  PROJ-->>Mac: Project state + tools with access status
+  Mac->>Mac: Execution phase — stage by stage
   alt Complex reasoning required
     Mac->>GPU: Send to DeepSeek
     GPU-->>Mac: Completion
   else Local/tool path
     Mac->>Mac: Use local models/tools
   end
-    Mac->>DB: Retrieve relevant context
-    DB-->>Mac: Context snippets
-  Mac->>DB: Write memory update
-    Mac-->>Pi: FINAL authoritative response
-    Pi->>Pi: Reconcile turn state and context window
-    Pi->>Pi: TTS
-    Pi-->>User: Spoken response
+  Mac->>PROJ: propose_commit / apply_commit
+  Mac-->>Pi: FINAL authoritative response
+  Pi->>Pi: Reconcile — confirm, add detail, or correct provisional
+  Pi->>Pi: TTS
+  Pi-->>User: Spoken response
 ```
 
 ### 7.1 Consistency and Reconciliation Model
@@ -750,7 +763,7 @@ The Pi remains a listener/transport/render node and is non-authoritative for sem
 - Orchestration runtime (LangGraph orchestrator + router)
 - Project classifier
 - Model router
-- Memory service
+- Project Service
 - Tool execution engine
 - Databases
 - Local conversational model
