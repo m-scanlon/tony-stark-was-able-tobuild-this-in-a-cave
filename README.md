@@ -24,16 +24,18 @@ The second reason is bigger. I want an assistant that grows with me over my life
 
 ## What It Actually Does
 
-Skyra has three parts:
+Skyra is built on three concepts:
 
 **A control plane — the brain**
 One machine that owns everything. It receives what I said, figures out what I'm asking for, pulls in relevant context from memory, forms a plan, and coordinates execution. It knows all my active domains — work, home, servers, health, music — and decides what happens next.
 
-**GPUs — heavy thinking**
-For complex reasoning or anything that needs serious horsepower, the control plane hands off to one or more GPU machines running large language models locally. No cloud, no API keys, no usage limits. More GPUs means more capability.
+**Agents — the domains of my life**
+Each area of my life is an Agent: work, home, health, servers, music. Each one has its own memory, its own set of tools, and its own rules for what Skyra is allowed to do inside it. When I ask something, Skyra figures out which domain I'm in and works from there.
 
-**Shards — Skyra's reach**
-A Shard is a small piece of software that runs on any device and gives Skyra a presence there. It figures out what that device can do — does it have a microphone? Can it run scripts? Is it a server? — and reports back. The control plane can then use that device as part of the system. The Raspberry Pi on my desk is a Shard that listens for my voice. My laptop is a Shard that can open apps and run code. Every device I add makes Skyra more capable.
+**Shards — Skyra's presence on every device**
+A Shard is a small piece of software that runs on any device. When it starts up, it figures out what that device can do — does it have a microphone? A GPU? Can it run scripts? — and registers those capabilities with the control plane. The control plane then knows what it has available and routes work accordingly.
+
+The Raspberry Pi on my desk is a Shard. My laptop is a Shard. The GPU machine running the large language model is a Shard. They're all the same thing — devices that showed up, said what they can do, and became part of the system. Every device I add makes Skyra more capable without changing how anything works.
 
 ---
 
