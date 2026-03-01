@@ -157,7 +157,6 @@ If `provisional_eligible` is false or the front-door model cannot form a confide
 ```json
 {
   "schema": "voice_event_v1",
-  "event_id": "01JS...",
   "turn_id": "turn_8f4c",
   "ts": "2026-02-20T18:10:12Z",
   "transcript": "what did I decide about the Tekkit backups",

@@ -66,7 +66,7 @@ The Domain Expert operates within a two-layer tool system:
 
 **Local tools** — per-project tools stored in the vector DB tool registry. Retrieved via vector search based on the current request. Each local tool carries `categories[]` (operation tags for boundary enforcement) and a `requires_approval` field.
 
-Before local tools are returned to the Domain Expert, the Project Service runs a hydration step: each tool is joined against the project's boundary in `state.json` and enriched with an `access` field (`status: allowed | locked`, `reason`, `enforcement: prompt_user`). The Domain Expert receives all retrieved tools — including locked ones — with their access status clearly attached. No tools are hidden. The LLM can reason over what is available and what is restricted.
+Before local tools are returned to the Domain Expert, the Project Service runs a hydration step: each tool is joined against the project's boundary in `state.json` and enriched with an `access` field (`status: allowed | locked`, `reason`). The Domain Expert receives all retrieved tools — including locked ones — with their access status clearly attached. No tools are hidden. The LLM can reason over what is available and what is restricted.
 
 Locked tools that the LLM attempts to call are caught at runtime by the BoundaryValidator before execution. See `skyra/internal/project/README.md` for the full enforcement model.
 

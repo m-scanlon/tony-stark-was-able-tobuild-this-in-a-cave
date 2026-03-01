@@ -557,7 +557,6 @@ def on_user_utterance(audio_chunk_stream):
 
     event = {
         "schema": "voice_event_v1",
-        "event_id": ulid(),
         "turn_id": turn_id,
         "ts": now_iso8601(),
         "transcript": transcript,
@@ -565,7 +564,7 @@ def on_user_utterance(audio_chunk_stream):
         "context_window": context_window,
     }
 
-    outbox.persist(event)  # durable before send
+    outbox.persist(event)  # outbox stamps event_id before send
     emit_user_ack(triage["ack_policy"])  # non-semantic ACK only
     transport.send(event)
 
@@ -603,26 +602,41 @@ Request (`Pi -> Mac`):
 ```json
 {
   "schema": "voice_event_v1",
-  "event_id": "01JS...",
   "turn_id": "turn_8f4c",
   "ts": "2026-02-20T18:10:12Z",
   "transcript": "what did I decide about backups",
   "triage_hints": {
     "latency_class": "medium",
     "needs_delegation": true,
-    "needs_tools_guess": false,
     "hint_target": "control_plane",
     "ack_policy": "spoken_if_slow",
-    "confidence": 0.72
+    "confidence": 0.72,
+    "provisional_eligible": false,
+    "cache_age_seconds": null
   },
+  "pi_gave_provisional": false,
+  "provisional_text": null,
   "context_window": {
     "session_summary": "...",
     "recent_turns": [],
     "active_project": "server_ops",
     "injected_facts": []
+  },
+  "context_state": {
+    "total_context_tokens": 8192,
+    "system_tokens": 1420,
+    "live_conversation_tokens": 980,
+    "response_reserve_tokens": 512,
+    "available_for_injection": 5280
+  },
+  "session_state": {
+    "pending_job_id": null,
+    "waiting_for": null
   }
 }
 ```
+
+Note: `event_id` is NOT part of `voice_event_v1`. It is stamped onto the event by the Pi outbox layer before sending and used by Mac's Event Ingress as the idempotency key.
 
 Response stream (`Mac -> Pi`):
 

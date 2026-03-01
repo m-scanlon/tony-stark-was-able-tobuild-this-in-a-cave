@@ -175,8 +175,7 @@ Hydration joins the raw tool record against the project boundary in `state.json`
   "requires_approval": true,
   "access": {
     "status": "locked",
-    "reason": "Filesystem writes are restricted for this project.",
-    "enforcement": "prompt_user"
+    "reason": "Filesystem writes are restricted for this project."
   }
 }
 ```
