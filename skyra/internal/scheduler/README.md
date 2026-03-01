@@ -40,7 +40,7 @@ Canonical pipeline reference: `docs/arch/v1/scyra.md` section 10.2
 | Lane | Used For |
 |---|---|
 | `fast_local` | Short, low-cost requests handled by local Mac models |
-| `deep_reasoning` | Complex requests routed to the GPU machine |
+| `deep_reasoning` | Complex requests routed to a Shard with deep_reasoning capability |
 
 The Estimator provides lane hints. The Scheduler makes the final assignment.
 
@@ -66,7 +66,7 @@ Each job entering the scheduler carries a `job_envelope_v1`:
 - `intent`
 - `priority`
 - `required_tools`
-- `target` (`none | control_plane | gpu | shard:<id>`)
+- `target` (`none | control_plane | shard:<id>`)
 - `risk_level` (`low | med | high`)
 - `expect_response_by`
 - `schema_version`

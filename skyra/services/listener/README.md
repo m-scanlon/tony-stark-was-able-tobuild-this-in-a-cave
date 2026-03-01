@@ -25,7 +25,7 @@ Pi must not:
 - Generate semantic answers without fresh cached context
 - Claim an action completed unless confirmed by Mac
 - Claim state changes occurred unless confirmed by Mac
-- Write or modify system memory or project state
+- Write or modify system memory or agent state
 
 ---
 
@@ -67,7 +67,7 @@ Runs after intent gate passes. Fast rules or tiny classifier. Produces routing a
 {
   "latency_class": "fast | medium | slow",
   "needs_delegation": true,
-  "hint_target": "control_plane | agent:<id> | gpu:<id>",
+  "hint_target": "control_plane | shard:<id>",
   "ack_policy": "silent | nonverbal | spoken_if_slow",
   "confidence": 0.84,
   "provisional_eligible": true,
@@ -174,7 +174,7 @@ If `provisional_eligible` is false or the front-door model cannot form a confide
   "context_window": {
     "session_summary": "...",
     "recent_turns": [],
-    "active_project": "server_ops",
+    "active_agent": "server_ops",
     "injected_facts": []
   },
   "context_state": {
@@ -347,7 +347,7 @@ This is a drop-in addition before the front-door model invocation. Nothing in th
 - `skyra/services/context-injector/README.md` — context package format, push strategy, trigger model
 - `docs/arch/v1/scyra.md` — full system architecture and voice request flow
 - `docs/arch/v1/event-ingress-ack.md` — outbox/inbox reliability contract
-- `skyra/internal/project/README.md` — project service, boundary enforcement
+- `skyra/internal/project/README.md` — agent service, boundary enforcement
 
 ---
 

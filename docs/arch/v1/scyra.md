@@ -6,17 +6,16 @@
 - Agent-centric memory (gym, work, music, servers, etc.).
 - Private, local-first inference.
 - Modular hardware that can scale over time.
-- Fast local responses with automatic escalation to a high-reasoning GPU model.
+- Fast local responses with automatic escalation to Shards with deep_reasoning capability.
 
 ## 2. High-Level Architecture
 
-The system is composed of three main machines:
+The system is composed of:
 
-- **Raspberry Pi** → Voice Shard (wake word, STT, TTS, front-door fast model)
 - **Mac mini** → Control plane (API, orchestration runtime, memory, tools, fast local models)
-- **GPU Machine** → Heavy reasoning model (DeepSeek LLM server)
+- **Shards** → Any device that registers its capabilities with the control plane (Pi, laptops, desktops, servers, GPU machines)
 
-Each machine has a clear responsibility.
+Every device in the Skyra network runs a Shard. The Pi Shard has voice capabilities. GPU Shards have deep_reasoning capability. The control plane routes work based on what each Shard advertises — not what kind of machine it is.
 
 ## 3. Distributed Shard Architecture
 
@@ -82,12 +81,11 @@ flowchart TB
     PROJ --> VDB
   end
 
-  %% GPU Machine
-  subgraph GPU[GPU Machine • Compute]
+  %% Shards — any device that registers capabilities
+  subgraph GPUSHARD[GPU Shard • deep_reasoning]
     DEEP[DeepSeek Model]
   end
 
-  %% Agent Machines
   subgraph LAPTOP[Laptop • Shard]
     LAGENT[Shard\nWebSocket Client]
     LEXEC[Command Executor]
@@ -116,8 +114,8 @@ flowchart TB
   APIGW -->|mac response| VCLIENT
   TTS -->|speech| USER
 
-  %% Compute and agents
-  ORCH -->|complex tasks| DEEP
+  %% Shard routing
+  ORCH -->|deep_reasoning tasks| DEEP
   CIX -->|context package push| LCACHE
   ORCH -->|high-level commands| LAGENT
   ORCH -->|high-level commands| DAGENT
@@ -285,7 +283,7 @@ Triage outputs:
 
 - `latency_class`: `fast | medium | slow`
 - `needs_delegation`: `bool`
-- `hint_target`: `control_plane | shard:<id> | gpu:<id>`
+- `hint_target`: `control_plane | shard:<id>`
 - `ack_policy`: `silent | nonverbal | spoken_if_slow`
 - `confidence`: `0.0-1.0`
 - `provisional_eligible`: `bool`
@@ -308,11 +306,13 @@ Notes:
   - Tool execution
   - CLI-style tasks
 
-### GPU Machine (heavy reasoning model)
+### Deep Reasoning Shards
 
 **Primary Reasoning Model**
 
-- Example: DeepSeek-Coder 33B+
+Shards that register with `deep_reasoning` capability run large local models for complex inference.
+
+- Example: DeepSeek-Coder 33B+ on a GPU machine
 - Handles:
   - Complex coding
   - Architecture decisions
@@ -410,7 +410,7 @@ flowchart LR
     AGENT --> TOOLS
   end
 
-  subgraph GPU[GPU Machine • Compute Plane]
+  subgraph GPUSHARD[GPU Shard • deep_reasoning]
     LLM[DeepSeek Reasoning Model<br/>33B plus<br/>LLM Server]
   end
 
@@ -419,7 +419,7 @@ flowchart LR
   PI -.->|optional audio stream for remote STT| APIGW
   CIX -->|compressed context package| LCACHE
   INBOX -->|transport ACK event_id| OBOX
-  AGENT -->|complex task| LLM
+  AGENT -->|deep_reasoning task| LLM
   LLM -->|completion| AGENT
   APIGW -->|authoritative result| VCLIENT
   VCLIENT -->|final speech output| TTS
@@ -434,7 +434,7 @@ sequenceDiagram
   participant CIX as Context Injector
   participant Mac as Mac mini (Orchestrator)
   participant PROJ as Agent Service
-  participant GPU as GPU Box (DeepSeek)
+  participant GPU as GPU Shard (DeepSeek)
 
   User->>Pi: "Hey Skyra..." (audio)
   Pi->>Pi: Wake word detect
@@ -777,9 +777,11 @@ The Pi remains a listener/transport/render node and is non-authoritative for sem
 - Vector DB (embeddings)
 - Object storage (documents)
 
-### 8.3 GPU Machine – Compute Plane
+### 8.3 Deep Reasoning Shards
 
-**Purpose**: Heavy reasoning and large-model inference.
+**Purpose**: Heavy reasoning and large-model inference. Any device that registers with `deep_reasoning` capability becomes a deep reasoning Shard. The scheduler routes `deep_reasoning` lane jobs to whichever is available.
+
+**Currently**: one GPU machine running DeepSeek-Coder 33B+.
 
 **Services**:
 
@@ -910,7 +912,7 @@ Service and shard catalog reference:
 - `intent`
 - `priority`
 - `required_tools`
-- `target` (`none | control_plane | gpu | shard:<id>`)
+- `target` (`none | control_plane | shard:<id>`)
 - `risk_level` (`low | med | high`)
 - `expect_response_by`
 - `schema_version`
@@ -972,11 +974,10 @@ Mac responsibilities:
 
 ### Trust zones
 
-| Zone    | Machine      | Role                                 |
-| ------- | ------------ | ------------------------------------ |
-| Edge    | Raspberry Pi | Voice Shard (input/output)           |
-| Control | Mac mini     | Orchestration + memory + fast models |
-| Compute | GPU box      | Deep reasoning model                 |
+| Zone    | Devices                                              | Role                                              |
+| ------- | ---------------------------------------------------- | ------------------------------------------------- |
+| Control | Mac mini                                             | Orchestration + memory + fast models              |
+| Shard   | Pi, laptops, desktops, servers, GPU machines         | Device execution layer — capability-driven        |
 
 ## 12. Deployment Strategy
 

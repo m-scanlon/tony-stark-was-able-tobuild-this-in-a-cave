@@ -28,7 +28,7 @@ Heuristic rules (keywords, manual intent buckets) drift quickly in mixed persona
 Estimator position in runtime:
 
 ```text
-Listener -> Front-door -> Estimator -> Orchestrator -> Agents/GPU
+Listener -> Front-door -> Estimator -> Orchestrator -> Shards
 ```
 
 Detailed path:
@@ -47,7 +47,7 @@ Detailed path:
                                                             |
                                                             v
                                                     +------------------+
-                                                    | Agents / GPU     |
+                                                    | Shards           |
                                                     +------------------+
 ```
 
@@ -107,12 +107,12 @@ Embed a compact request representation:
 
 - normalized user text
 - optional front-door intent hint
-- optional project/domain hint (high-confidence only)
+- optional agent hint (high-confidence only)
 
 Canonical input format:
 
 ```text
-intent_hint|project_hint|normalized_user_text
+intent_hint|agent_hint|normalized_user_text
 ```
 
 ### Why full context is not embedded
@@ -243,7 +243,7 @@ Request:
   "user_text": "summarize crash logs from last night and suggest root cause",
   "tokens_in_est": 740,
   "intent_hint": "ops.log_analysis",
-  "project_hint": "servers"
+  "agent_hint": "servers"
 }
 ```
 
@@ -268,7 +268,7 @@ Response:
     "interrupt_rate": 0.05
   },
   "recommended_execution_mode": "async",
-  "recommended_lane": "gpu"
+  "recommended_lane": "deep_reasoning"
 }
 ```
 
@@ -282,7 +282,7 @@ Request:
   "timestamp": "2026-02-16T22:00:00Z",
   "user_text": "summarize crash logs from last night and suggest root cause",
   "tokens_in_est": 740,
-  "lane_chosen": "gpu",
+  "lane_chosen": "deep_reasoning",
   "execution_mode": "async",
   "model_target": "deepseek-r1-32b"
 }

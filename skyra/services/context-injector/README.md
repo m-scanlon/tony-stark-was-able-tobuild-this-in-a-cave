@@ -80,7 +80,7 @@ For front-door model context window `T`:
   "ttl_seconds": 90,
   "stale": false,
   "intent_hint": "work.soc2_draft",
-  "project_hint": "work",
+  "agent_hint": "work",
   "items": [
     {
       "id": "mem_91",

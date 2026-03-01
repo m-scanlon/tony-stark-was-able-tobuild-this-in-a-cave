@@ -30,7 +30,7 @@ Authority boundary:
 
 - Pi Shard can provide provisional responses but does not execute authoritative task pipelines.
 - Mac mini control plane owns orchestration authority and coordinates Executor runs.
-- GPU and Shard nodes are execution targets selected by scheduler/runtime policy.
+- Shards with appropriate capabilities are execution targets selected by scheduler/runtime policy.
 
 The Scheduler remains responsible for placement policy. The Executor runs the selected task and reports progress/outcomes.
 
@@ -149,7 +149,7 @@ If constrained:
 Placement note:
 
 - Executor control loop runs on the Mac mini control plane.
-- Individual stages may execute locally or be delegated to GPU/Shard targets.
+- Individual stages may execute locally or be delegated to Shards with matching capability profiles.
 
 ## 6.9 Persistence and Fault Tolerance
 
