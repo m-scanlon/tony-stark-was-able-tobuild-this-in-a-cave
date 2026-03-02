@@ -97,16 +97,66 @@ Level 1 is the near-term target. Level 4 means Skyra provisioning her own cloud 
 
 ---
 
+## Build Horizon
+
+This infrastructure layer is a future horizon — not the current build. The Mac mini is the brain, it is hardcoded, and that is correct for now.
+
+**What "designing toward this" means in practice:**
+
+You do not need to implement any of this to start building. You need to avoid decisions that would have to be torn out later. Specifically:
+
+- Do not assume there is only one control plane node in the code
+- Keep the object store append-only and replayable — it is already shaped correctly
+- Keep capability profiles as a first-class concept from day one
+- Put a thin abstraction between the control plane and "where state lives" so the backing store can be swapped
+
+These are cheap to do now and expensive to retrofit later. None of them require implementing Raft.
+
+---
+
+## Infrastructure Layer: Build vs Use
+
+The infrastructure layer — consensus, replication, health checking, cluster membership — should not be built from scratch. This is solved engineering. Two serious open source options:
+
+### etcd
+
+Distributed key-value store with Raft built in. Battle-tested, Go native. Used by Kubernetes as its cluster state store. Handles consensus, leader election, and watch/notify out of the box.
+
+Run etcd as the infrastructure layer. Everything else sits on top of it. Clean separation.
+
+### NATS with JetStream
+
+Lighter weight than etcd, and more interesting for Skyra specifically because it solves two problems at once. NATS is a messaging system — Skyra needs a message bus for events between services anyway. JetStream adds persistence and clustering. One dependency instead of two.
+
+**NATS is the more likely direction.** It covers the event bus that the current architecture already needs and adds clustering on top. Evaluate seriously before committing.
+
+### The interface that matters
+
+Whichever is chosen, the control plane and Shards should only ever talk to a thin abstraction over it. The interface is small:
+
+```
+Am I the current leader?
+Store this state
+Get current state
+Watch for state changes
+Who are the current healthy nodes and their capabilities?
+```
+
+Swap the implementation underneath without touching anything above.
+
+---
+
 ## What Needs Much More Design
 
 Almost everything here is directional. None of it is specified.
 
-- **Raft vs simpler alternatives** — full Raft is complex to implement correctly. For a small personal cluster (3-5 nodes), a simpler leader election mechanism may be sufficient. This needs evaluation.
-- **Replication protocol** — how commits are streamed from Leader to Followers. Frequency, consistency guarantees, conflict handling.
-- **Capability floor definition** — what are the minimum specs for a node to be eligible as brain? This will vary as Skyra's services evolve.
-- **Placement engine design** — the algorithm that matches workloads to nodes. How does it weight RAM vs CPU vs GPU vs latency? How does it handle colocation requirements?
-- **Migration orchestration** — who coordinates a migration? The current Leader? A separate orchestrator? What happens if migration fails mid-transfer?
-- **Split-brain handling** — if the network partitions and two nodes both think they are the Leader, state can diverge. This is the classic distributed systems problem and needs a defined resolution strategy.
-- **Security** — nodes accepting promotions and state from other nodes is a significant attack surface. The trust model between nodes needs to be defined.
-- **Interaction with Shard registration** — the capability registry feeds both placement and election. How are these kept consistent?
+- **etcd vs NATS** — needs proper evaluation before any infrastructure work begins. NATS is the current preference but this is not locked.
+- **Raft vs simpler alternatives** — full Raft is complex. For a small personal cluster (3-5 nodes), a simpler leader election mechanism may be sufficient. Evaluate against etcd/NATS before deciding to roll anything custom.
+- **Replication protocol** — how commits stream from Leader to Followers. Frequency, consistency guarantees, conflict handling.
+- **Capability floor definition** — minimum specs for a node to be eligible as brain. Will vary as Skyra's services evolve.
+- **Placement engine design** — algorithm that matches workloads to nodes. How it weights RAM vs CPU vs GPU vs latency. How it handles colocation requirements.
+- **Migration orchestration** — who coordinates a migration? What happens if it fails mid-transfer?
+- **Split-brain handling** — if the network partitions and two nodes both think they are Leader, state can diverge. Needs a defined resolution strategy.
+- **Security** — nodes accepting promotions and state from other nodes is a significant attack surface. Trust model between nodes needs definition.
+- **Interaction with Shard registration** — capability registry feeds both placement and election. How are these kept consistent?
 - **Level 4 scope and safety** — if Skyra can provision cloud compute, what are the guardrails? Cost limits, geographic constraints, data residency.
