@@ -28,7 +28,7 @@ When calling the tool, return only JSON:
       "unknowns": ["explicit list of unknown facts"],
       "requested_checks": ["exact checks/actions needed from Pi"],
       "context": {
-        "project_id": "if known",
+        "agent_id": "if known",
         "session_id": "if known",
         "relevant_entities": ["files/services/components mentioned by user"]
       },
