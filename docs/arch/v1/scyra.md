@@ -286,7 +286,7 @@ Triage outputs:
 - `hint_target`: `control_plane | shard:<id>`
 - `ack_policy`: `silent | nonverbal | spoken_if_slow`
 - `confidence`: `0.0-1.0`
-- `provisional_eligible`: `bool`
+- `provisional_eligible`: `bool` _(v2 only — always `false` in v1; Pi emits non-semantic ACK only. See v2 note in section 7.1.)_
 - `cache_age_seconds`: `int | null`
 
 Notes:
@@ -445,8 +445,8 @@ sequenceDiagram
   Pi->>Pi: Front-door uses base + live + injected context
   par Proactive context refresh
     CIX-->>Pi: Push compressed context package
-  and User feedback path (non-authoritative)
-    Pi->>Pi: Provisional answer if eligible, else earcon/LED ACK only
+  and User feedback
+    Pi->>Pi: earcon/LED ACK only (non-semantic, v1 — provisional responses deferred to v2)
   end
 
   Pi->>Mac: POST /voice {voice_event_v1 + context_state + session_state}
@@ -475,6 +475,10 @@ sequenceDiagram
 ```
 
 ### 7.1 Consistency and Reconciliation Model
+
+**v1 decision**: Pi emits non-semantic ACKs only (earcon, LED, short wait phrase). Pi does not generate provisional semantic responses in v1. The reconciliation model below describes Pi rendering Mac-authored messages — that behavior applies fully in v1.
+
+> **v2 note**: A provisional response path where Pi speaks a fast local answer before Mac responds (using the front-door model and `provisional_eligible` triage hint), then reconciles on `FINAL`, can significantly reduce perceived latency. Deferred to v2 — the contradiction-handling and Pi state-tracking complexity outweighs the benefit until the core response loop is stable.
 
 Problem: maintaining single-authoritative response semantics with asynchronous backend processing.
 
@@ -573,14 +577,14 @@ def on_user_utterance(audio_chunk_stream):
         "context_window": context_window,
     }
 
-    outbox.persist(event)  # outbox stamps event_id before send
+    outbox.persist(event)  # Pi outbox tracked by turn_id; Mac generates event_id on ingress
     emit_user_ack(triage["ack_policy"])  # non-semantic ACK only
     transport.send(event)
 
     while True:
         msg = transport.recv_for_turn(turn_id, timeout=TURN_TIMEOUT_S)
         if msg is None:
-            transport.retry_from_outbox(event["event_id"])
+            transport.retry_from_outbox(event["turn_id"])
             continue
 
         if msg["message_type"] in ("UPDATE", "PLAN_PROGRESS"):
@@ -600,11 +604,13 @@ def on_user_utterance(audio_chunk_stream):
         if msg["message_type"] in ("FINAL", "ERROR"):
             tts_speak(msg["text"])
             context_manager.append_assistant(turn_id, msg["text"], authoritative=True)
-            outbox.delete_if_acked(event["event_id"])
+            outbox.delete_if_acked(event["turn_id"])
             return "resolved"
 ```
 
 #### 7.2.3 Backend reconciliation contract
+
+Note: `pi_gave_provisional` and `provisional_text` are always `false`/`null` in v1. These fields are reserved for the v2 provisional response path (see section 7.1).
 
 Request (`Pi -> Mac`):
 
@@ -645,7 +651,7 @@ Request (`Pi -> Mac`):
 }
 ```
 
-Note: `event_id` is NOT part of `voice_event_v1`. It is stamped onto the event by the Pi outbox layer before sending and used by Mac's Event Ingress as the idempotency key.
+Note: `event_id` is NOT part of `voice_event_v1`. Mac generates `event_id` (ULID) on ingress and returns it in the transport ACK. Pi does not stamp `event_id`. Pi tracks outbox entries by `turn_id`; `(session_id, turn_id)` is the deduplication key at Mac ingress. See `docs/arch/v1/event-ingress-ack.md` for the full contract.
 
 Response stream (`Mac -> Pi`):
 
