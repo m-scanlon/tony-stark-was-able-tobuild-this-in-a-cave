@@ -6,7 +6,7 @@ This document defines what counts as a `shard`, an `agent`, and a `service` in S
 
 - `Service`: a long-running backend component with a clear API/contract.
 - `Shard`: a lightweight daemon that Skyra deploys onto a device. It boots, fingerprints the device's hardware and software environment, registers its capabilities with the control plane, and listens for commands.
-- `Agent`: a scoped domain of the user's life (e.g. home, work, health, music, servers). Agents have their own memory, tools, boundaries, and state. They are the conceptual and intelligence layer.
+- `Agent`: a scoped domain of the user's life (e.g. home, work, health, music, servers). Agents have their own memory, tools, boundaries, and state. They are the conceptual and intelligence layer. Two types exist: system agents (predefined at init) and domain agents (user-created). See `docs/arch/v1/agents/README.md`.
 - `Domain Expert`: a control-plane service module used during task formation. It is not a remote shard.
 
 Practical rule:
