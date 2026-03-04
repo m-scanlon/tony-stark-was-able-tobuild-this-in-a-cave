@@ -21,31 +21,19 @@ System agents defined in v1:
 |---|---|
 | `skyra.user` | Cross-domain profile of the user — preferences, habits, life context, biographical facts |
 
-### === SUGGESTION BY KUNJ ===
-### System Agent Suggestion: `skyra.orchestrator`
+### Open Design: Multi-Domain Invocation
 
-Predefined at system.init as well if does not exist in `./skyra/agents`. Its task is to take in queries and route it to correct domain. Sits in the Mac Mini/Shard which is currently active. 
+The current session model assumes one active domain agent per session. The orchestrator routes to one domain. But some requests naturally span multiple domains.
 
-It has knowledge base from:
-1) `skyra.user`
-2) All Domain Agents
+Example: Mike and a friend discuss Skyra at the gym. Two things are worth remembering:
+- Gym domain: training session for the day
+- Developer domain: architecture ideas that came up in conversation
 
-`skyra.orchestrator` acts as the module agent which connects user info to domain info as well as routes user query into correct domain agent/domain tool needed.
+The current model has no answer for this. The orchestrator picks one domain. The other is dropped or lost.
 
-Rules:
-- Created automatically on first boot if does not exist in `./skyra/agents`
-- Status is always active — Agent Service rejects paused or archived for system agent IDs
-- Always injected into every LLM session regardless of what is being asked
-- Injection Order: Injected right after the `skyra.user` is loaded.
-- Allow users and domain agents to make commits to `skyra.orchestrator`. We introduce a guardrail agent that validates the user input before committing it to `skyra.orchestrator`
+The right answer depends on how the session model is defined (see G20) and how common multi-domain requests actually are in practice.
 
-Benefits:
-- Provides an architectural visibility layer to identify which domain agent was invoked for a given task
-- Allows invoking of multiple domain agents (for e.g. Mike and Kunj meet at gym and discuss Skyra. The entire event would require invoking of two domain agents in Mike's Skyra i.e. the Gym Domain to track fitness goals for the day, the Developer Domain to store ideas discussed during the gym session).
-
-Note: I read later on in `domain-expert/README.md` where you mention the controlplane orchetsrator already exists. It solves the issue of architectural visibility but we can still take look into the `skyra.orchestrator`'s benefits in cross-agent or multi-agent invoking.
-
-### === END OF SUGGESTIONS ===
+See G19 for the open gap.
 ### Domain Agents
 
 Created by the user (or by Skyra on the user's behalf) via `create_agent`. Each one represents a scoped domain of the user's life: work, gym, servers, music, home, etc.

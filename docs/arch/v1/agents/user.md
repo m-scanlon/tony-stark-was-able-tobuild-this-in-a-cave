@@ -107,13 +107,31 @@ Rules:
 - Commits to `skyra.user` are separate deliberate acts, not incidental to task execution
 - When Skyra learns something that should update the user profile during a domain session, it flags it for review at the end of the session — it does not commit inline
 
-### ==== SUGGESTIONS BY KUNJ ====
-Remove the `knowledge` artifact from `skyra.user` `state.json`. Instead utilize `langmem` knowledge graph generation per user for user preferences. Knowledge Graphs can be stored in `.skyra/agents/user/preferences`. Memory is loaded in when loading `skyra.user` into the system prompt. 
+### Open Design: LangMem as Candidate Extraction Engine
 
-`langmem` update is a scheduled task. During the day's session, Skyra manages chats and at 12:00 AM every night, preference update cycle converts these conversations into `langmem` Memory Triplets to update the User Preference memory.
+The v2 learning event below raises the question: what drives the extraction? How does Skyra know what's worth remembering from a conversation?
 
-NEED TO RESEARCH MORE ON THIS BEFORE IMPLEMENTING INTO THE PROJECT
-### ==== END OF SUGGESTIONS ====
+One approach: use LangMem's background memory manager as the extraction layer. LangMem reads completed session history and surfaces candidate memories — facts, preferences, observed patterns — that might belong in `skyra.user`. These candidates are not committed automatically. They are presented to the user for confirmation first.
+
+Proposed flow:
+
+1. Session closes.
+2. LangMem background manager processes the conversation history.
+3. Candidates are extracted — facts, preferences, patterns worth remembering.
+4. At end-of-session (or batched at end of day), Skyra presents candidates to the user: "I noticed you prefer X — should I remember that?"
+5. User confirms → committed to `skyra.user` via normal commit flow with full audit trail.
+6. User dismisses → discarded, not stored.
+
+This preserves the explicit commit model. LangMem handles detection, not commitment. Nothing lands in `skyra.user` without user confirmation. The `knowledge` section structure stays unchanged — LangMem feeds into it, not replaces it.
+
+Open questions before this can be designed:
+
+- **Domain routing**: does this extracted fact belong in `skyra.user` (cross-domain, about the person) or in the active domain agent (domain-specific)? Needs a classification step before anything is surfaced to the user.
+- **Confirmation UX**: surfacing 8 candidates mid-session is friction. End-of-session batch review is the right model — one moment, not multiple interruptions.
+- **Confidence threshold**: low-confidence extractions should be silently discarded, not presented. Only surface extractions above a meaningful threshold.
+- **Session definition**: LangMem processes "session history" — but what is a session? A single turn? A conversation block? A domain session? This is currently undefined. See G20.
+
+See G18 for the open gap on cross-agent write protocol. See G19 for multi-domain routing.
 ---
 
 ## Cross-Agent Write Protocol (Deferred — v2)
