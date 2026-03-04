@@ -12,19 +12,35 @@ The vision is simple: **one system that everything runs through**. Every product
 
 ---
 
+## The Bigger Picture
+
+Right now, software is built around frontends that companies control. They decide what you see, how you interact, and what you're allowed to do with your own data. Every conversation you have with their assistant makes their model better. You get the answer. They get the data point.
+
+That's a bad deal. And I think it breaks down.
+
+What replaces it is an OS layer that sits on top of your data — where the interface isn't something a company designed for you, but something that renders based on what your data actually looks like. The thing the system operates on is your decisions, your history, your domains. The frontend is almost secondary.
+
+Most people think about AI assistants as a better search box. This is something closer to a personal runtime. The app is incidental. What matters is the layer underneath that knows how you think.
+
+In a world where AI is cheap enough to run locally and powerful enough to be genuinely useful, there's no reason that intelligence has to live on someone else's server. Local-first AI for everyday use isn't a distant idea — it's what happens when the hardware catches up with the ambition.
+
+I'm building for that world.
+
+---
+
 ## Why I'm Building It
 
 Two reasons.
 
-The first is practical — I want to actually build something hard. Not a tutorial project. Something with real moving parts, real design decisions, and real trade-offs I have to live with. Distributed systems, AI orchestration, voice interfaces, local inference. The kind of thing that looks good because it actually is good.
+The first is bigger. I want an assistant that grows with me over my lifetime. The hardware will get faster. The AI models will get smarter. But the memory — the context it has about my life, my decisions, every domain I care about — that only gets richer over time. Most people will never have that because they're always starting over on someone else's platform.
 
-The second reason is bigger. I want an assistant that grows with me over my lifetime. The hardware will get faster. The AI models will get smarter. But the memory — the context it has about my life, my decisions, every domain I care about — that only gets richer over time. Most people will never have that because they're always starting over on someone else's platform.
+The second is practical — I want to actually build something hard. Not a tutorial project. Something with real moving parts, real design decisions, and real trade-offs I have to live with. Distributed systems, AI orchestration, voice interfaces, local inference. The kind of thing that looks good because it actually is good.
 
 ---
 
 ## What It Actually Does
 
-Skyra is built on three concepts:
+Skyra is built on three concepts. The shard captures, the control plane decides, the agents remember.
 
 **A control plane — the brain**
 One machine that owns everything. It receives what the user said, figures out what they're asking for, pulls in relevant context from memory, forms a plan, and coordinates execution. It knows all active domains — work, home, servers, health, music — and decides what happens next.
@@ -79,9 +95,3 @@ For the architecture and implementation details:
 - Agent service: `skyra/internal/project/README.md`
 - Scheduler: `skyra/internal/scheduler/README.md`
 - Open gaps: `docs/arch/v1/gaps.md`
-
----
-
-## The Bigger Picture
-
-I also think this is where the world is going, whether the big companies want it to or not. Right now, software is built around frontends that companies control — they decide what you see, how you interact, and what you're allowed to do with your own data. I think that model breaks down. What replaces it is an OS layer that sits on top of your data, where the interface isn't something a company designed for you but something that renders based on what your data actually looks like. Skyra is built around that idea. The thing Skyra operates on is the data — your decisions, your history, your domains. The frontend is almost secondary. In a world where AI is cheap enough to run locally and powerful enough to be genuinely useful, there's no reason that intelligence has to live on someone else's server. Decentralized AI for everyday use isn't a distant idea — it's what happens when the hardware catches up with the ambition. I'm building for that world.
