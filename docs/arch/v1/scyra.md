@@ -39,7 +39,7 @@ flowchart TB
   %% User
   USER([User])
 
-  %% Voice Node
+  %% Voice Shard
   subgraph PI[Voice Shard]
     WW[Wake Word]
     VAD[VAD]
@@ -469,7 +469,7 @@ sequenceDiagram
   end
   Mac->>PROJ: propose_commit / apply_commit
   Mac-->>Pi: FINAL authoritative response
-  Pi->>Pi: Reconcile — confirm, add detail, or correct provisional
+  Pi->>Pi: Render Brain Shard response via TTS
   Pi->>Pi: TTS
   Pi-->>User: Spoken response
 ```

@@ -68,8 +68,10 @@ How the UX model should acknowledge the request while the brain is working. The 
   - `silent` — no acknowledgement
 - `confidence` — float 0.0–1.0
 
-### `session_state` (? — shape not locked)
-Responsible for managing context about outgoing jobs and syncing that context with the brain. The shard tracks what jobs are in flight on its side — this field is how it communicates that state so the brain can route and continue correctly. The exact shape is not locked — how the shard tracks in-flight jobs and what the brain needs to know about them needs more design work.
+### `session_state`
+Responsible for managing context about outgoing jobs and syncing that context with the brain. The shard tracks what jobs are in flight on its side — this field is how it communicates that state so the brain can route and continue correctly.
+
+Shape is settled for v1 (`pending_job_id`, `waiting_for`). Routing semantics — how the Brain Shard acts on this to distinguish new jobs from continuations — are still being designed. See `next-steps.md` §2.
 
 #### `pending_job_id` (? — may be restructured into a job object)
 - `null` — new job, the brain should start fresh

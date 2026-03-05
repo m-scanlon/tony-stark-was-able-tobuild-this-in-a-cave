@@ -1,8 +1,10 @@
-# Skyra Listener Service
+# Skyra Listener Service — Voice Shard Implementation
 
-The listener is the always-on Voice Shard service. It handles voice capture, deterministic intent gating, triage, provisional response decisions, event delivery to the control plane, and turn reconciliation.
+The listener is the always-on Voice Shard service. It handles voice capture, deterministic intent gating, triage, event delivery to the Brain Shard, and rendering Brain Shard-authored responses via TTS.
 
-The Voice Shard is non-authoritative for semantic decisions. Every request goes to the Brain Shard. But the Voice Shard can give a provisional answer from fresh cached context while Brain Shard processes authoritatively in parallel.
+The Voice Shard is non-authoritative for semantic decisions. Every request goes to the Brain Shard.
+
+**v1 behavior:** Voice Shard emits non-semantic ACKs only (earcon, LED, short wait phrase). Provisional responses — where the Voice Shard speaks a fast local answer before the Brain Shard responds — are deferred to v2. See G4 in `docs/arch/v1/gaps.md` and `docs/arch/v1/scyra.md` §7.1.
 
 ## Responsibilities
 
@@ -18,8 +20,9 @@ The Voice Shard is non-authoritative for semantic decisions. Every request goes 
 
 Voice Shard is allowed to:
 - Emit non-semantic ACKs (earcon, LED, short wait phrase)
-- Give a provisional answer from fresh LCACHE context, clearly qualified as non-authoritative
 - Render Brain Shard-authored `UPDATE | PLAN_PROGRESS | CLARIFY | PLAN_APPROVAL_REQUIRED | FINAL | ERROR`
+
+> **v2:** Give a provisional answer from fresh LCACHE context, clearly qualified as non-authoritative, while Brain Shard processes in parallel.
 
 Voice Shard must not:
 - Generate semantic answers without fresh cached context
@@ -105,6 +108,8 @@ The front-door model runs event-driven — not always-on inference. It is invoke
 
 ## 5. Provisional Response Model
 
+> **v2 only — not implemented in v1.** Provisional responses are cut from v1 (see G4 in `docs/arch/v1/gaps.md`). This section documents the v2 design for reference.
+
 The Voice Shard can give a provisional answer from cached context while the request is being processed authoritatively on Brain Shard. This reduces perceived latency for retrieval-style questions without breaking the authoritative model.
 
 ### When Voice Shard May Answer Provisionally
@@ -154,40 +159,30 @@ If `provisional_eligible` is false or the front-door model cannot form a confide
 
 ### voice_event_v1
 
+v1 event — no provisional fields. `context_window` and `context_state` are v2 additions (see CHANGELOG.md).
+
 ```json
 {
   "schema": "voice_event_v1",
   "turn_id": "turn_8f4c",
   "ts": "2026-02-20T18:10:12Z",
+  "device_id": "voice-shard-livingroom",
   "transcript": "what did I decide about the Tekkit backups",
   "triage_hints": {
     "latency_class": "medium",
     "needs_delegation": true,
     "hint_target": "control_plane",
     "ack_policy": "spoken_if_slow",
-    "confidence": 0.84,
-    "provisional_eligible": true,
-    "cache_age_seconds": 420
+    "confidence": 0.84
   },
-  "pi_gave_provisional": true,
-  "provisional_text": "Based on what I have — you decided on weekly Tekkit backups at 02:00 UTC last Tuesday. Let me confirm that for you.",
-  "context_window": {
-    "session_summary": "...",
-    "recent_turns": [],
-    "active_agent": "server_ops",
-    "injected_facts": []
-  },
-  "context_state": {
-    "total_context_tokens": 8192,
-    "system_tokens": 1420,
-    "live_conversation_tokens": 980,
-    "response_reserve_tokens": 512,
-    "available_for_injection": 5280
+  "session_state": {
+    "pending_job_id": null,
+    "waiting_for": null
   }
 }
 ```
 
-`pi_gave_provisional` and `provisional_text` are included so Brain Shard knows what Voice Shard said. Brain Shard uses this to tune its response — it may confirm, correct, or add detail rather than restating from scratch.
+> **v2 additions:** `voice_shard_gave_provisional`, `provisional_text`, `context_window`, `context_state` — see CHANGELOG.md.
 
 `context_state` is included on every request. Voice Shard computes `available_for_injection` as `total_context_tokens - system_tokens - live_conversation_tokens - response_reserve_tokens`. Brain Shard fans this out internally to the Context Injector, which uses it to size the next context package. Voice Shard does not interface with the Context Injector directly — it only speaks to the Brain Shard API Gateway.
 
@@ -228,7 +223,9 @@ IDLE → LISTENING → TRANSCRIBED → FORWARDED → ACKED → RUNNING → RESOL
 
 ### Reconciliation Protocol
 
-When Brain Shard responds with `FINAL`, Voice Shard reconciles against any provisional answer it gave:
+**v1 behavior:** Voice Shard renders Brain Shard-authored messages directly via TTS. No provisional to reconcile against.
+
+> **v2:** When Brain Shard responds with `FINAL`, Voice Shard reconciles against any provisional answer it gave:
 
 | Brain Shard result | Voice Shard behavior |
 |---|---|
@@ -248,10 +245,11 @@ def on_user_utterance(audio_chunk_stream):
     context_window = context_manager.snapshot_for_turn(turn_id)
 
     provisional = None
-    if triage["provisional_eligible"]:
-        provisional = front_door_model.attempt_provisional(transcript, lcache)
-        if provisional:
-            tts_speak(provisional["provisional_answer"])
+    # v2 only — provisional responses deferred to v2
+    # if triage["provisional_eligible"]:
+    #     provisional = front_door_model.attempt_provisional(transcript, lcache)
+    #     if provisional:
+    #         tts_speak(provisional["provisional_answer"])
 
     event = build_voice_event_v1(
         turn_id=turn_id,
@@ -301,6 +299,8 @@ def on_user_utterance(audio_chunk_stream):
 LCACHE is the Voice Shard-side context store fed by the Context Injector service on Brain Shard. It holds compressed, ranked context packages ready for front-door model use.
 
 ### Freshness Check for Provisional Answers
+
+> **v2 only — not implemented in v1.** LCACHE freshness checking for provisional eligibility is part of the v2 provisional response model.
 
 Each item in a context package carries a `retrieved_at` timestamp. Before giving a provisional answer, the front-door model checks the most relevant item's `retrieved_at` against the 30-minute threshold:
 
