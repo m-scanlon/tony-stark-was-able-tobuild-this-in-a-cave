@@ -71,7 +71,7 @@ How the UX model should acknowledge the request while the brain is working. The 
 ### `session_state`
 Responsible for managing context about outgoing jobs and syncing that context with the brain. The shard tracks what jobs are in flight on its side — this field is how it communicates that state so the brain can route and continue correctly.
 
-Shape is settled for v1 (`pending_job_id`, `waiting_for`). Routing semantics — how the Brain Shard acts on this to distinguish new jobs from continuations — are still being designed. See `next-steps.md` §2.
+Shape is settled for v1 (`pending_job_id`, `waiting_for`). Routing semantics — how the Brain Shard acts on this to distinguish new jobs from continuations — are still being designed. See `docs/arch/v1/next-steps.md` §2.
 
 #### `pending_job_id` (? — may be restructured into a job object)
 - `null` — new job, the brain should start fresh

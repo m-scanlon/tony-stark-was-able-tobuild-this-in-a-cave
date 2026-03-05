@@ -115,5 +115,5 @@ The instinct to start with the object schema is wrong. Start with what each serv
 - `docs/arch/v1/scyra.md` — full system architecture
 - `docs/arch/v1/executor.md` — executor design (current state, incomplete)
 - `docs/arch/v1/domain-expert/README.md` — planning phase, plan approval gate
-- `skyra/internal/project/README.md` — agent service, tool hydration, boundary enforcement
+- `skyra/internal/agent/README.md` — agent service, tool hydration, boundary enforcement
 - `skyra/internal/scheduler/README.md` — scheduler, job lifecycle, lanes

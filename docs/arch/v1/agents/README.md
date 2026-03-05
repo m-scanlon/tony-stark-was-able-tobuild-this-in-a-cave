@@ -91,6 +91,6 @@ The `skyra.` prefix is reserved. `create_agent` must reject any `agent_id` that 
 ## Related Docs
 
 - `docs/arch/v1/agents/user.md` — user agent specification
-- `skyra/internal/project/README.md` — Agent Service: commits, tool registry, boundary enforcement
+- `skyra/internal/agent/README.md` — Agent Service: commits, tool registry, boundary enforcement
 - `docs/arch/v1/scyra.md` — full system architecture and session injection pipeline
 - `docs/arch/v1/gaps.md` — open design gaps including cross-agent write protocol

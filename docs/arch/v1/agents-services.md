@@ -63,7 +63,7 @@ Practical rule:
 
 ### 2.6 Agent Service
 
-Note: previously called "Project Service" and before that "Memory Service". The Agent Service supersedes those definitions with a more clearly scoped responsibility model. See `skyra/internal/project/README.md`.
+Note: previously called "Project Service" and before that "Memory Service". The Agent Service supersedes those definitions with a more clearly scoped responsibility model. See `skyra/internal/agent/README.md`.
 
 - Role: single owner of all agent state. Manages agent registry, object store commits, rollback, audit trail, and the local tool registry.
 - Owns:
@@ -71,14 +71,14 @@ Note: previously called "Project Service" and before that "Memory Service". The 
   - Object Store Interface — commits, HEAD, state.json, rollback
   - Local Tool Registry (Vector DB) — per-agent tools with `categories[]` (operation tags for boundary enforcement) and `requires_approval` flag, retrieved via vector search
 - Code:
-  - `skyra/internal/project/`
+  - `skyra/internal/agent/`
   - `skyra/internal/memory/objectstore/fs/store.go`
   - `skyra/internal/memory/objectstore/s3/store.go`
   - `skyra/internal/memory/vectorstore/chroma/store.go`
   - `skyra/internal/memory/vectorstore/qdrant/store.go`
   - `skyra/internal/memory/commit/`
 - Design:
-  - `skyra/internal/project/README.md`
+  - `skyra/internal/agent/README.md`
 
 ### 2.7 Tooling Services
 

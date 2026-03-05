@@ -206,6 +206,6 @@ Turn history is the primary source for the `recent_turns` section of the context
 - `docs/arch/v1/lifecycle.md` — full 8-stage pipeline
 - `docs/arch/v1/domain-expert/README.md` — planning phase, tool system
 - `docs/arch/v1/agents/README.md` — agent model, system vs domain agents
-- `skyra/internal/project/README.md` — agent service, tool hydration, boundary enforcement
+- `skyra/internal/agent/README.md` — agent service, tool hydration, boundary enforcement
 - `skyra/schemas/ingress/voice/` — voice_event schema, turn_id and session_state
 - `skyra/internal/context/` — implementation home

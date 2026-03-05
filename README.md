@@ -87,6 +87,6 @@ For the architecture and implementation details:
 - Domain expert / planning phase: `docs/arch/v1/domain-expert/README.md`
 - Event ingress and ACK: `docs/arch/v1/event-ingress-ack.md`
 - Task formation: `docs/arch/v1/task-formation.md`
-- Agent service: `skyra/internal/project/README.md`
+- Agent service: `skyra/internal/agent/README.md`
 - Scheduler: `skyra/internal/scheduler/README.md`
 - Open gaps: `docs/arch/v1/gaps.md`

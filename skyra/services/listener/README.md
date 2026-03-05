@@ -347,7 +347,7 @@ This is a drop-in addition before the front-door model invocation. Nothing in th
 - `skyra/services/context-injector/README.md` — context package format, push strategy, trigger model
 - `docs/arch/v1/scyra.md` — full system architecture and voice request flow
 - `docs/arch/v1/event-ingress-ack.md` — outbox/inbox reliability contract
-- `skyra/internal/project/README.md` — agent service, boundary enforcement
+- `skyra/internal/agent/README.md` — agent service, boundary enforcement
 
 ---
 

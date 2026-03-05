@@ -801,7 +801,7 @@ The Voice Shard remains a listener/transport/render node and is non-authoritativ
 
 ## 9. Agent Architecture
 
-All agent state is owned and managed by the Agent Service. See `skyra/internal/project/README.md` for the full specification.
+All agent state is owned and managed by the Agent Service. See `skyra/internal/agent/README.md` for the full specification.
 
 ### 9.1 Agent Registry (SQLite)
 

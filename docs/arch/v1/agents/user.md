@@ -141,5 +141,5 @@ Default state at system init: `skyra/configs/agents/user.json`
 ## Related Docs
 
 - `docs/arch/v1/agents/README.md` — agent model overview: system vs domain agents
-- `skyra/internal/project/README.md` — Agent Service: commits, boundary enforcement
+- `skyra/internal/agent/README.md` — Agent Service: commits, boundary enforcement
 - `docs/arch/v1/gaps.md` G18 — cross-agent write protocol

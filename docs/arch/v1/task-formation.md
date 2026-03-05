@@ -128,7 +128,7 @@ Responsibilities:
 - validate critical assumptions with tools when needed
 - include citations in TaskSheet evidence when external/docs lookup is used
 
-Note: before local tools are returned to the Domain Expert, the Agent Service runs a hydration step — each tool is enriched with an `access` field derived from the agent boundary in `state.json`. The Domain Expert receives all retrieved tools, including locked ones, with their access status attached. Locked tools that the LLM proposes calling are caught by the BoundaryValidator at runtime before execution. See `skyra/internal/project/README.md` for the full hydration and enforcement model.
+Note: before local tools are returned to the Domain Expert, the Agent Service runs a hydration step — each tool is enriched with an `access` field derived from the agent boundary in `state.json`. The Domain Expert receives all retrieved tools, including locked ones, with their access status attached. Locked tools that the LLM proposes calling are caught by the BoundaryValidator at runtime before execution. See `skyra/internal/agent/README.md` for the full hydration and enforcement model.
 
 Expected output contract:
 
@@ -298,7 +298,7 @@ Duplicate source events:
 ## 14. Related Docs
 
 - Executor runtime design (draft): `docs/arch/v1/executor.md`
-- Agent Service (object store, commits, tool registry): `skyra/internal/project/README.md`
+- Agent Service (object store, commits, tool registry): `skyra/internal/agent/README.md`
 - Scheduler Service (job lifecycle, lane assignment): `skyra/internal/scheduler/README.md`
 
 ## 15. Appendix A: Estimator Documentation Agent Prompt

@@ -68,7 +68,7 @@ The Domain Expert operates within a two-layer tool system:
 
 Before local tools are returned to the Domain Expert, the Agent Service runs a hydration step: each tool is joined against the agent's boundary in `state.json` and enriched with an `access` field (`status: allowed | locked`, `reason`). The Domain Expert receives all retrieved tools — including locked ones — with their access status clearly attached. No tools are hidden. The LLM can reason over what is available and what is restricted.
 
-Locked tools that the LLM attempts to call are caught at runtime by the BoundaryValidator before execution. See `skyra/internal/project/README.md` for the full enforcement model.
+Locked tools that the LLM attempts to call are caught at runtime by the BoundaryValidator before execution. See `skyra/internal/agent/README.md` for the full enforcement model.
 
 `requires_approval` on a local tool means the tool is surfaced and highlighted to the user during plan review. It does NOT pause execution mid-run. See Section 8 for the distinction between this and `PLAN_APPROVAL_REQUIRED`.
 
@@ -155,4 +155,4 @@ Tool mapping:
 - `docs/arch/v1/task-formation.md`
 - `docs/arch/v1/agents-services.md`
 - `docs/arch/v1/scyra.md`
-- `skyra/internal/project/README.md` — agent service, global tools, local tool registry
+- `skyra/internal/agent/README.md` — agent service, global tools, local tool registry

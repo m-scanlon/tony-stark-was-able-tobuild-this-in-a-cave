@@ -179,7 +179,7 @@ voice_event_v1
 - `docs/arch/v1/task-formation.md` — task formation detail
 - `docs/arch/v1/executor.md` — executor design
 - `docs/arch/v1/domain-expert/README.md` — planning phase
-- `skyra/internal/project/README.md` — agent service, tool hydration, boundary enforcement
+- `skyra/internal/agent/README.md` — agent service, tool hydration, boundary enforcement
 - `skyra/internal/scheduler/README.md` — scheduler, job lifecycle, lanes
 - `skyra/schemas/ingress/voice/` — voice_event schema
-- `next-steps.md` — open questions on job_envelope_v1 and executor loop
+- `docs/arch/v1/next-steps.md` — open questions on job_envelope_v1 and executor loop
