@@ -21,6 +21,7 @@
   "schema": "voice_event_v1",
   "turn_id": "turn_8f4c",
   "ts": "2026-02-20T18:10:12Z",
+  "device_id": "pi-livingroom-01",
   "transcript": "what did I decide about backups",
   "triage_hints": {
     "intent": {

@@ -56,29 +56,42 @@ Components:
 
 Required fields (sent by Pi):
 
-- `type`
-- `ts`
-- `session_id`
+- `schema`
 - `turn_id`
+- `ts`
 - `device_id`
-- `payload`
+- `transcript`
+- `triage_hints`
+- `session_state`
 
-Note: `event_id` is NOT sent by Pi. Mac generates `event_id` (ULID) on ingress. Pi provides `(session_id, turn_id)` as its idempotency pair — Mac uses this composite for duplicate detection.
+Note: `event_id` is NOT sent by Pi. Mac generates `event_id` (ULID) on ingress. Pi provides `(session_id, turn_id)` as its idempotency pair — Mac uses this composite for duplicate detection. All fields except `triage_hints` are stamped by the shard transport layer during hydration — see `skyra/schemas/ingress/voice/voice_event_v1.json` for the full schema.
 
 Example:
 
 ```json
 {
-  "schema_version": 1,
-  "type": "proposal.task",
-  "ts": "2026-02-16T23:10:21Z",
-  "session_id": "sess_01JZ4J1M9V52K8GSRP8YQ0N2YA",
+  "schema": "voice_event_v1",
   "turn_id": "turn_8f4c",
+  "ts": "2026-02-20T18:10:12Z",
   "device_id": "pi-livingroom-01",
-  "payload": {
-    "intent": "server.log_summary",
-    "confidence": 0.84,
-    "user_text": "summarize last night crash logs"
+  "transcript": "what did I decide about backups",
+  "triage_hints": {
+    "intent": {
+      "summary": "user wants to know what was decided about backups",
+      "confidence": 0.94
+    },
+    "latency_class": {
+      "value": "interactive",
+      "confidence": 0.88
+    },
+    "ack_policy": {
+      "value": "spoken_if_slow",
+      "confidence": 0.76
+    }
+  },
+  "session_state": {
+    "pending_job_id": null,
+    "waiting_for": null
   }
 }
 ```

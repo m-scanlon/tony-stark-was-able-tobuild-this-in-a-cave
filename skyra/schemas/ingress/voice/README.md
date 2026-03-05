@@ -15,6 +15,7 @@ The intent model only produces `triage_hints`. The rest of the envelope is assem
 | `schema` | Transport layer — stamped at send time |
 | `turn_id` | Transport layer — generated per turn |
 | `ts` | Transport layer — stamped at send time |
+| `device_id` | Transport layer — shard identity, stamped at send time |
 | `transcript` | STT model |
 | `triage_hints` | Intent model — the only field the model produces |
 | `session_state` | Shard local turn tracking |
@@ -31,6 +32,9 @@ Unique ID for this turn. Stamped by the shard's transport layer before sending �
 
 ### `ts`
 ISO 8601 timestamp. Stamped by the shard's transport layer before sending — not produced by the intent model.
+
+### `device_id`
+The identity of the shard that captured this event. Stamped by the shard's transport layer — not produced by the intent model. Allows the brain to know which shard to route responses back to.
 
 ### `transcript`
 What the user said, as plain text. Output of the Pi's STT model.
