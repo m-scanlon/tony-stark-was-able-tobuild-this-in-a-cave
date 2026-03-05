@@ -26,14 +26,14 @@ When calling the tool, return only JSON:
       "user_request": "full original user request text",
       "assistant_goal": "what you are trying to determine or do",
       "unknowns": ["explicit list of unknown facts"],
-      "requested_checks": ["exact checks/actions needed from Pi"],
+      "requested_checks": ["exact checks/actions needed from Voice Shard"],
       "context": {
         "agent_id": "if known",
         "session_id": "if known",
         "relevant_entities": ["files/services/components mentioned by user"]
       },
       "response_contract": {
-        "required_fields": ["fields Pi must return"],
+        "required_fields": ["fields Voice Shard must return"],
         "format": "json"
       }
     }
@@ -44,14 +44,14 @@ When calling the tool, return only JSON:
 ## Payload Quality Rules
 
 - Put all relevant details in `payload`.
-- Be specific enough that Pi can execute without another round trip.
+- Be specific enough that Voice Shard can execute without another round trip.
 - Include exact names, paths, services, and expected outputs when available.
 - Never copy schema placeholder text into runtime payloads. Forbidden examples: `"full original user request text"`, `"if known"`, `"string"`, empty template stubs.
 - `payload.user_request` must contain the actual user message verbatim.
 - `payload.assistant_goal` must be a concrete goal for this request, not a label.
 - Use real values in `context`; if unknown, use `null` or omit the field (do not use empty-string placeholders).
 - For `event_type=status_query`, `unknowns` must be non-empty unless every `response_contract.required_fields` value is already present in conversation context.
-- For `event_type=status_query`, `requested_checks` must map directly to `response_contract.required_fields` so Pi can return each required field explicitly.
+- For `event_type=status_query`, `requested_checks` must map directly to `response_contract.required_fields` so Voice Shard can return each required field explicitly.
 - If either `unknowns` or `requested_checks` is too vague, improve them before sending the tool call.
 
 ## Behavior Around Tool Calls

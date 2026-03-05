@@ -18,7 +18,7 @@ This service is a separate process from the control-plane API, but runs in the s
 
 ## Core Responsibilities
 
-- Receive `context_state` from Event Ingress on every Pi request (fan-out from `voice_event_v1`). Use `available_for_injection` as the live package budget. Fall back to static budget percentages on cold start (no state received yet).
+- Receive `context_state` from Event Ingress on every Voice Shard request (fan-out from `voice_event_v1`). Use `available_for_injection` as the live package budget. Fall back to static budget percentages on cold start (no state received yet).
 - Subscribe to events:
   - conversation turns
   - intent/project hints
@@ -30,16 +30,16 @@ This service is a separate process from the control-plane API, but runs in the s
 - Compress selected context to token budget.
 - Push versioned context package to listener cache.
 
-The Context Injector does not interface with Pi directly. Pi sends `context_state` to the Mac API Gateway as part of every `voice_event_v1`. Event Ingress fans this out internally to the Context Injector on Mac.
+The Context Injector does not interface with Voice Shard directly. Voice Shard sends `context_state` to the Brain Shard API Gateway as part of every `voice_event_v1`. Event Ingress fans this out internally to the Context Injector on Brain Shard.
 
 ## Data Flow
 
-1. Pi sends `voice_event_v1` to Mac API Gateway on every request. Event includes `context_state` (`available_for_injection` and token breakdown).
-2. Mac Event Ingress fans `context_state` out to Context Injector internally. Context Injector updates its live budget for the next package.
+1. Voice Shard sends `voice_event_v1` to Brain Shard API Gateway on every request. Event includes `context_state` (`available_for_injection` and token breakdown).
+2. Brain Shard Event Ingress fans `context_state` out to Context Injector internally. Context Injector updates its live budget for the next package.
 3. Control-plane components emit task/memory/time events to Context Injector.
 4. Context Injector consumes events and updates session snapshot.
 5. Injector computes new package: rank + compress to fit `available_for_injection` tokens exactly.
-6. Injector pushes package to Pi listener context cache (LCACHE).
+6. Injector pushes package to Voice Shard listener context cache (LCACHE).
 7. Front-door model reads `base + live + injected` segments at inference time.
 
 ## Trigger Strategy
@@ -55,11 +55,11 @@ The Context Injector does not interface with Pi directly. Pi sends `context_stat
 
 ## Context Budget
 
-The injected package budget is set dynamically from `context_state.available_for_injection` received via Event Ingress fan-out on every Pi request.
+The injected package budget is set dynamically from `context_state.available_for_injection` received via Event Ingress fan-out on every Voice Shard request.
 
 `available_for_injection = total_context_tokens - system_tokens - live_conversation_tokens - response_reserve_tokens`
 
-Pi computes this. Context Injector uses it directly as the token budget for the next package. This means the package grows when conversation is sparse and shrinks as the conversation accumulates — always filling the available headroom exactly.
+Voice Shard computes this. Context Injector uses it directly as the token budget for the next package. This means the package grows when conversation is sparse and shrinks as the conversation accumulates — always filling the available headroom exactly.
 
 **Cold start fallback** (no `context_state` received yet):
 
@@ -101,7 +101,7 @@ For front-door model context window `T`:
 }
 ```
 
-`retrieved_at` is required on every item. The Pi listener uses it to determine whether an item is fresh enough to support a provisional answer (threshold: 30 minutes). Items missing `retrieved_at` are treated as stale.
+`retrieved_at` is required on every item. The Voice Shard listener uses it to determine whether an item is fresh enough to support a provisional answer (threshold: 30 minutes). Items missing `retrieved_at` are treated as stale.
 
 ## Injection Event Schema (v0)
 
@@ -142,5 +142,5 @@ For front-door model context window `T`:
 
 ## Placement
 
-- Run as `context-injector` service in control-plane zone (Mac mini initially).
-- Keep listener-side cache on Raspberry Pi.
+- Run as `context-injector` service in control-plane zone (Brain Shard initially).
+- Keep listener-side cache on Voice Shard.

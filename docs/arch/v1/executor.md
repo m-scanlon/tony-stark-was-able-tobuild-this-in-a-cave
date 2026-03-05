@@ -28,8 +28,8 @@ Event -> JobEnvelope v1 -> Task Formation -> Task Object -> Estimator (initial) 
 
 Authority boundary:
 
-- Pi Shard can provide provisional responses but does not execute authoritative task pipelines.
-- Mac mini control plane owns orchestration authority and coordinates Executor runs.
+- Voice Shard can provide provisional responses but does not execute authoritative task pipelines.
+- Brain Shard control plane owns orchestration authority and coordinates Executor runs.
 - Shards with appropriate capabilities are execution targets selected by scheduler/runtime policy.
 
 The Scheduler remains responsible for placement policy. The Executor runs the selected task and reports progress/outcomes.
@@ -148,7 +148,7 @@ If constrained:
 
 Placement note:
 
-- Executor control loop runs on the Mac mini control plane.
+- Executor control loop runs on the Brain Shard control plane.
 - Individual stages may execute locally or be delegated to Shards with matching capability profiles.
 
 ## 6.9 Persistence and Fault Tolerance
@@ -176,7 +176,7 @@ Executor triggers Notifier events for:
 - task completed (final result summary)
 - errors requiring user attention
 
-Notifier owns channel fanout (Pi voice, mobile, etc.).
+Notifier owns channel fanout (Voice Shard, mobile, etc.).
 
 ## 6.11 Abstract Interfaces (TBD Contracts)
 

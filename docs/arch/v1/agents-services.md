@@ -11,11 +11,11 @@ This document defines what counts as a `shard`, an `agent`, and a `service` in S
 
 Practical rule:
 
-- If it makes routing/task decisions in Mac runtime, treat it as a service module.
+- If it makes routing/task decisions in Brain Shard runtime, treat it as a service module.
 - If it is a daemon deployed onto a device that executes commands from the control plane, treat it as a shard.
 - If it is a scoped domain of the user's life with its own state and tools, it is an agent.
 
-## 2. Core Control-Plane Services (Mac mini)
+## 2. Core Control-Plane Services (Brain Shard)
 
 ### 2.1 API Gateway + Ingress
 
@@ -95,9 +95,9 @@ A Shard is a lightweight daemon deployed by Skyra onto a device. Every device in
 
 The control plane treats all Shards uniformly. A Shard is identified by its capability profile — not by its hardware type.
 
-### 3.1 Pi Shard (Voice Capability Profile)
+### 3.1 Voice Shard (Voice Capability Profile)
 
-The Raspberry Pi runs a Shard with a voice-specific capability profile:
+The Voice Shard runs with a voice-specific capability profile:
 
 - `microphone`: always-on audio capture
 - `wake_word`: openWakeWord or Porcupine
@@ -107,7 +107,7 @@ The Raspberry Pi runs a Shard with a voice-specific capability profile:
 - `front_door_model`: fast local LLM (Llama 3.2 3B Instruct Q4_K_M)
 - `outbox`: durable event outbox with retry sender
 
-The Pi Shard is not architecturally special. It is a Shard that happens to have voice capabilities. The control plane treats it as a Shard whose capability profile includes audio input and output.
+The Voice Shard is not architecturally special. It is a Shard that happens to have voice capabilities. The control plane treats it as a Shard whose capability profile includes audio input and output.
 
 - Code:
   - `skyra/services/listener/app/main.py`
@@ -115,8 +115,8 @@ The Pi Shard is not architecturally special. It is a Shard that happens to have 
 
 Boundary:
 
-- Pi Shard is non-authoritative for semantic responses.
-- Pi emits ACK/progress and renders backend-authored `UPDATE|PLAN_PROGRESS|CLARIFY|PLAN_APPROVAL_REQUIRED|FINAL|ERROR`.
+- Voice Shard is non-authoritative for semantic responses.
+- Voice Shard emits ACK/progress and renders backend-authored `UPDATE|PLAN_PROGRESS|CLARIFY|PLAN_APPROVAL_REQUIRED|FINAL|ERROR`.
 
 ### 3.2 Machine Shards (Laptop/Desktop/Server)
 
@@ -139,7 +139,7 @@ v1 recommendation:
 
 ## 5. Ownership Summary
 
-- Pi Shard: capture + transport + render (voice capability profile)
+- Voice Shard: capture + transport + render (voice capability profile)
 - Machine Shards: execute commands only
 - Control-plane services: classify + form tasks + orchestrate + commit agent state
 - Agent Service: own agent registry, object store, local tool registry, commit history
