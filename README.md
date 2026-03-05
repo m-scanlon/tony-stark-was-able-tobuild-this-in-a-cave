@@ -40,18 +40,13 @@ The second is practical — I want to actually build something hard. Not a tutor
 
 ## What It Actually Does
 
-Skyra is built on three concepts. The shard captures, the control plane decides, the agents remember.
+Skyra is built on two concepts:
 
-**A control plane — the brain**
-One machine that owns everything. It receives what the user said, figures out what they're asking for, pulls in relevant context from memory, forms a plan, and coordinates execution. It knows all active domains — work, home, servers, health, music — and decides what happens next.
+**Shards — Skyra's presence on every device**
+A Shard is a small piece of software that runs on any device. When it starts up, it fingerprints what that device can do — does it have a microphone? A GPU? Can it run scripts? — and registers those capabilities with the rest of the network. The network routes work based on what each Shard advertises, not what kind of machine it is. One Shard runs the control plane because it's currently the most capable node. Another handles voice because it has a microphone and a speaker. A third handles deep reasoning because it has a GPU. These are capability designations, not permanent hardware roles. Every device added extends Skyra's capabilities without changing the underlying system.
 
 **Agents — the domains of the user's life**
 Each area of life is an Agent: work, home, health, servers, music. Each one has its own memory, its own set of tools, and its own rules for what Skyra is allowed to do inside it. When the user asks something, Skyra figures out which domain they're in and works from there.
-
-**Shards — Skyra's presence on every device**
-A Shard is a small piece of software that runs on any device. When it starts up, it figures out what that device can do — does it have a microphone? A GPU? Can it run scripts? — and registers those capabilities with the control plane. The control plane then knows what it has available and routes work accordingly.
-
-Every device added extends Skyra's capabilities without changing the underlying system.
 
 ---
 
