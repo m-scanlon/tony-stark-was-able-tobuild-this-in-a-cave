@@ -6,6 +6,21 @@ The envelope is assembled by the shard's transport layer before sending. The int
 
 ---
 
+## Envelope Hydration
+
+The intent model only produces `triage_hints`. The rest of the envelope is assembled by the shard's transport layer before the event is sent.
+
+| Field | Source |
+|---|---|
+| `schema` | Transport layer — stamped at send time |
+| `turn_id` | Transport layer — generated per turn |
+| `ts` | Transport layer — stamped at send time |
+| `transcript` | STT model |
+| `triage_hints` | Intent model — the only field the model produces |
+| `session_state` | Shard local turn tracking |
+
+---
+
 ## Fields
 
 ### `schema`
