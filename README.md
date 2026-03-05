@@ -74,7 +74,7 @@ The first milestone is simple: the user says something, it thinks, it responds. 
 
 ## In One Sentence
 
-Skyra is a personal operating environment that executes the user's intent across machines, owns their history, and gets smarter the longer it runs.
+Skyra executes your intent across every area of your life, owns your history, and gets smarter the longer it runs.
 
 ---
 
