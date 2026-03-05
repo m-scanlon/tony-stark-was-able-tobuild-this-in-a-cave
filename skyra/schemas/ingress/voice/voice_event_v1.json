@@ -1,0 +1,43 @@
+// Intent model output (pre-hydration) — this is all the model returns
+{
+  "triage_hints": {
+    "intent": {
+      "summary": "user wants to know what was decided about backups",
+      "confidence": 0.94
+    },
+    "latency_class": {
+      "value": "interactive | background | deferred",
+      "confidence": 0.88
+    },
+    "ack_policy": {
+      "value": "spoken_if_slow | earcon_only | silent",
+      "confidence": 0.76
+    }
+  }
+}
+
+// Fully hydrated envelope — assembled by the shard transport layer before sending
+{
+  "schema": "voice_event_v1",
+  "turn_id": "turn_8f4c",
+  "ts": "2026-02-20T18:10:12Z",
+  "transcript": "what did I decide about backups",
+  "triage_hints": {
+    "intent": {
+      "summary": "user wants to know what was decided about backups",
+      "confidence": 0.94
+    },
+    "latency_class": {
+      "value": "interactive | background | deferred",
+      "confidence": 0.88
+    },
+    "ack_policy": {
+      "value": "spoken_if_slow | earcon_only | silent",
+      "confidence": 0.76
+    }
+  },
+  "session_state": {
+    "pending_job_id": null,
+    "waiting_for": null
+  }
+}
