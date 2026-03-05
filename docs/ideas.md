@@ -126,4 +126,34 @@ For the Voice Shard, this is especially clean since the image is built from scra
 
 ---
 
+## The Death of the Frontend — Synthesized UI at Runtime
+
+**The idea:** There is no frontend. UI is synthesized at serve time by the brain, based on the shape of the data and the capabilities of the device rendering it.
+
+The brain sends a structured data packet. A model looks at the shape of that data — time series, list of short text, tabular, hierarchical — infers the right UI pattern, and synthesizes a renderer for it. The Shard with a screen executes that renderer against its available primitives.
+
+**Two separate problems:**
+1. **Shape recognition** — what kind of data is this, what UI pattern fits it (time series → graph, list of text with metadata → feed, tabular → table)
+2. **Capability adaptation** — given that inferred pattern, what can this device actually render (TV gets a rich layout, terminal gets a table, phone gets cards)
+
+**Why this is different from templates:**
+The model isn't picking from a fixed set of predefined templates. It's inferring the pattern from the data shape and generating the render description. A Twitter-like feed, a music queue, a server status dashboard — none of them exist as static artifacts. They're synthesized on demand.
+
+**The render target problem:**
+The Shard with a screen needs a consistent primitive layer — a small declarative spec of what it can draw (text, image, chart, list, input, etc.) and its device constraints (screen size, interaction model). The brain synthesizes UI that stays within those bounds. The Shard is essentially a runtime for whatever the brain emits.
+
+**Why it matters:**
+- No frontend to build, ship, or maintain
+- UI gets better as the model gets better — no re-deploy
+- Any new device with a screen just registers its primitive capabilities and immediately gets UIs it never had a frontend built for
+- The same data renders adequately on a TV, a phone, a terminal, or anything else without a separate codebase for each
+
+**Open questions:**
+- What does the primitive capability spec look like? How does a Shard declare what it can render?
+- Does the brain synthesize a declarative description (like a JSON UI tree) or actual render code?
+- How do you handle interactivity — inputs, gestures, navigation — in a synthesized UI?
+- What's the latency tradeoff of synthesizing UI at serve time vs caching synthesized renderers for recurring data shapes?
+
+---
+
 ## More ideas to add here as they come up
