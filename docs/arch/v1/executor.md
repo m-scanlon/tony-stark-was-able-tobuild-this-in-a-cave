@@ -4,11 +4,11 @@
 
 ## 6.1 Overview
 
-The Executor is the stage runner for Skyra task execution. It consumes `WorkPlan` (ephemeral) or `TaskSheet` (stateful), executes stage-by-stage, validates outcomes, handles assumption drift, and coordinates controlled replanning when needed.
+The Executor is the step runner for Skyra task execution. It consumes `WorkPlan` (ephemeral) or `TaskSheet` (stateful), executes step-by-step, validates outcomes, handles assumption drift, and coordinates controlled replanning when needed.
 
 The Executor is not a blind script runner. It is an adaptive runtime loop with:
 
-- stage validation
+- step validation
 - assumption checking
 - local corrective actions
 - bounded replanning
@@ -38,21 +38,21 @@ The Scheduler remains responsible for placement policy. The Executor runs the se
 
 The Executor must:
 
-1. Execute stage-by-stage with validation.
+1. Execute step-by-step with validation.
 2. Detect and classify assumption drift severity.
 3. Attempt local fixes before replanning.
 4. Trigger bounded, incremental replanning via Domain Expert.
 5. Send progress snapshots to Estimator.
-6. Consult Resource Manager before constrained stages.
+6. Consult Resource Manager before constrained steps.
 7. Persist checkpoints for crash/restart recovery.
 8. Emit user-facing lifecycle notifications through Notifier.
-9. Run BoundaryValidator before each stage — check proposed tool calls against the project boundary. If a tool is locked, pause execution and send a permission prompt to the user. User responds `allow_always | allow_once | deny`. On `deny`, trigger bounded replan rather than halting the task.
+9. Run BoundaryValidator before each step — check proposed tool calls against the project boundary. If a tool is locked, pause execution and send a permission prompt to the user. User responds `allow_always | allow_once | deny`. On `deny`, trigger bounded replan rather than halting the task.
 
-## 6.4 Stage Execution Model
+## 6.4 Step Execution Model
 
-Each stage contains:
+Each step contains:
 
-- `stage_id`
+- `step_id`
 - `goal`
 - `inputs`
 - `tools_required`
@@ -61,11 +61,11 @@ Each stage contains:
 - `resource_hints`
 - `timeout_seconds`
 
-Execution loop per stage:
+Execution loop per step:
 
 1. Pre-check resources with Resource Manager.
-2. Run BoundaryValidator: check all tool calls in this stage against the project boundary (`categories[]`, `tool_patterns`). If a tool is locked, pause execution and send a permission prompt to the user (`tool`, `why`, `how`). User responds `allow_always | allow_once | deny`. `allow_always` commits a boundary update to `state.json` immediately before execution resumes. `deny` triggers bounded replan for the remaining stages.
-3. Execute stage with specified tools/models.
+2. Run BoundaryValidator: check all tool calls in this step against the project boundary (`categories[]`, `tool_patterns`). If a tool is locked, pause execution and send a permission prompt to the user (`tool`, `why`, `how`). User responds `allow_always | allow_once | deny`. `allow_always` commits a boundary update to `state.json` immediately before execution resumes. `deny` triggers bounded replan for the remaining steps.
+3. Execute step with specified tools/models.
 3. Capture outputs + runtime metadata.
 4. Validate output against criteria.
 5. Check assumptions and environmental expectations.
@@ -79,8 +79,8 @@ Execution loop per stage:
 | Trivial  | API slightly slower than expected               | Log and continue                                                |
 | Minor    | Missing optional field with safe default        | Adjust locally and continue                                     |
 | Moderate | Required file missing but can be generated      | Attempt local fix; if fix fails, replan affected remaining path |
-| Major    | Core assumption false (intent/goal mismatch)    | Pause and replan remaining stages                               |
-| Critical | Security risk, impossible/safety-unsafe stage, or user denied tool and no replan path exists | Halt task, notify user, abort                            |
+| Major    | Core assumption false (intent/goal mismatch)    | Pause and replan remaining steps                               |
+| Critical | Security risk, impossible/safety-unsafe step, or user denied tool and no replan path exists | Halt task, notify user, abort                            |
 
 ## 6.6 Controlled Adaptation (Loop Prevention)
 
@@ -97,9 +97,9 @@ Try low-cost recovery before calling Domain Expert:
 On replan request, send:
 
 - original TaskSheet/WorkPlan
-- completed stage outputs/checkpoints
+- completed step outputs/checkpoints
 - explicit failure/assumption delta
-- request to modify remaining stages only
+- request to modify remaining steps only
 
 ### Replan budget
 
@@ -108,13 +108,13 @@ On replan request, send:
 
 ### Checkpointed state
 
-Persist after each stage:
+Persist after each step:
 
-- completed stages
+- completed steps
 - artifacts/results
 - current assumptions
 - replan count
-- next stage pointer
+- next step pointer
 
 ## 6.7 Estimator Feedback Interface
 
@@ -122,9 +122,9 @@ During execution, send progress snapshots:
 
 - `task_id`
 - `elapsed_seconds`
-- `stages_completed`
-- `total_stages`
-- `current_stage`
+- `steps_completed`
+- `total_steps`
+- `current_step`
 - `partial_results` (optional)
 - `resource_usage`
 - `errors` (optional)
@@ -133,7 +133,7 @@ Estimator returns updated remaining-time estimate and confidence for user commun
 
 ## 6.8 Resource Manager Interaction
 
-Before resource-sensitive stages, Executor checks:
+Before resource-sensitive steps, Executor checks:
 
 - GPU utilization and free VRAM
 - system memory pressure
@@ -149,7 +149,7 @@ If constrained:
 Placement note:
 
 - Executor control loop runs on the Brain Shard control plane.
-- Individual stages may execute locally or be delegated to Shards with matching capability profiles.
+- Individual steps may execute locally or be delegated to Shards with matching capability profiles.
 
 ## 6.9 Persistence and Fault Tolerance
 
@@ -157,22 +157,22 @@ Long-running tasks must survive process/node interruptions.
 
 Requirements:
 
-- periodic and stage-boundary checkpoints to Project Service
+- periodic and step-boundary checkpoints to Project Service
 - restart recovery from last good checkpoint
-- idempotent stage replay behavior when checkpoint boundary is ambiguous
+- idempotent step replay behavior when checkpoint boundary is ambiguous
 
 On restart:
 
 1. load latest checkpoint
 2. verify current environment assumptions
-3. resume next eligible stage or request replan
+3. resume next eligible step or request replan
 
 ## 6.10 Notification Responsibilities
 
 Executor triggers Notifier events for:
 
 - task started (with initial estimate)
-- significant progress (stage completion / estimate shift)
+- significant progress (step completion / estimate shift)
 - task completed (final result summary)
 - errors requiring user attention
 
@@ -186,7 +186,7 @@ Notifier owns channel fanout (Voice Shard, mobile, etc.).
 
 ### Executor <-> Resource Manager
 
-- `CheckStageResources(task_id, stage_id, hints) -> AvailabilityDecision`
+- `CheckStepResources(task_id, step_id, hints) -> AvailabilityDecision`
 
 ### Executor <-> Domain Expert (Replan)
 
@@ -207,7 +207,7 @@ Notifier owns channel fanout (Voice Shard, mobile, etc.).
    - JSON Schema vs declarative assertions vs executable validators.
 2. Machine-usable severity encoding:
    - static policy table vs learned mapping.
-3. Parallel stage execution model:
+3. Parallel step execution model:
    - dependency graph semantics, validation ordering, conflict handling.
 4. Sub-task spawning semantics:
    - parent-child lifecycle and rollback model.
@@ -218,16 +218,16 @@ Notifier owns channel fanout (Voice Shard, mobile, etc.).
 7. Replan failure fallback:
    - timeout policy, degraded execution, escalation path.
 8. Local fix policy granularity:
-   - per-stage profiles vs per-tool profiles vs global defaults.
+   - per-step profiles vs per-tool profiles vs global defaults.
 
 ## 6.13 Recommended Initial Defaults (Draft)
 
 - sequential execution by default
-- optional parallelism only when stage graph explicitly declares independence
+- optional parallelism only when step graph explicitly declares independence
 - replan budget default: 3
 - estimator updates:
-  - every stage completion
-  - plus periodic heartbeat for long stages (e.g., 30s)
+  - every step completion
+  - plus periodic heartbeat for long steps (e.g., 30s)
 - checkpoint:
-  - at stage boundaries
-  - plus timed checkpoint for long-running single stages
+  - at step boundaries
+  - plus timed checkpoint for long-running single steps
