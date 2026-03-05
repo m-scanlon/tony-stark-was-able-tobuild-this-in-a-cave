@@ -22,7 +22,7 @@ A software daemon installed directly on an open machine. This is the primary and
 - Full OS access — reads hardware, software, running processes
 - Fingerprints the host machine and registers its full capability profile
 - Connects to the control plane over the local network
-- Examples: Mac mini, dev laptop, Linux server, Raspberry Pi
+- Examples: Brain Shard, dev laptop, Linux server, Voice Shard
 
 ### Hardware Shard (Bootstrap Tool)
 
