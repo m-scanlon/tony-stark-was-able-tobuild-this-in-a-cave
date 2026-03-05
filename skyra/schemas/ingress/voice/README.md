@@ -31,7 +31,7 @@ What the user wants.
 - `summary` — one sentence describing the user's intent
 - `confidence` — float 0.0–1.0. How confident the model is in the intent classification. Low confidence may cause the brain to re-derive intent from the transcript directly rather than trusting this field.
 
-#### `latency_class` (?)
+#### `latency_class` (? — not locked, depends on UX model design)
 How urgently the user expects a response.
 
 - `value`: `interactive | background | deferred`
@@ -40,8 +40,8 @@ How urgently the user expects a response.
   - `deferred` — no urgency, schedule it for later
 - `confidence` — float 0.0–1.0
 
-#### `ack_policy` (?)
-How the UX model should acknowledge the request while the brain is working.
+#### `ack_policy` (? — not locked, depends on UX model design)
+How the UX model should acknowledge the request while the brain is working. The exact values here will be defined once the UX model and its acknowledgement behavior are designed.
 
 - `value`: `spoken_if_slow | earcon_only | silent`
   - `spoken_if_slow` — speak a wait phrase if the response is taking time
@@ -49,14 +49,14 @@ How the UX model should acknowledge the request while the brain is working.
   - `silent` — no acknowledgement
 - `confidence` — float 0.0–1.0
 
-### `session_state` (?)
+### `session_state` (? — shape not locked)
 Responsible for managing context about outgoing jobs and syncing that context with the brain. The shard tracks what jobs are in flight on its side — this field is how it communicates that state so the brain can route and continue correctly. The exact shape is not locked — how the shard tracks in-flight jobs and what the brain needs to know about them needs more design work.
 
-#### `pending_job_id` (?)
+#### `pending_job_id` (? — may be restructured into a job object)
 - `null` — new job, the brain should start fresh
 - set to a job ID — this turn continues an existing open job (waiting on user approval, clarification, etc.)
 
-#### `waiting_for` (?)
+#### `waiting_for` (? — may be restructured into a job object)
 What the existing job is waiting on, if anything. Examples: `user_approval`, `clarification`.
 
 ---
