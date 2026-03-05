@@ -84,7 +84,7 @@ None of these belong in `work` or `gym` or `servers`. They belong to the person.
 - `goals` — long-horizon life goals and priorities (e.g. "ship Skyra", "finish degree")
 - `assumptions` — things Skyra believes to be true about the user based on observed patterns
 - `decisions` — explicitly stated preferences (e.g. "prefers Go over Node", "wants approval before any destructive action")
-- `facts` — biographical and contextual facts (e.g. "works from home", "has a 4090 GPU machine on the local network")
+- `facts` — biographical and contextual facts (e.g. "works from home", "has a 4090 Reasoning Shard on the local network")
 
 **`boundary`** — what Skyra is allowed to update autonomously vs what requires confirmation. Knowledge fields can be updated from strong inference. Identity fields require explicit user confirmation.
 

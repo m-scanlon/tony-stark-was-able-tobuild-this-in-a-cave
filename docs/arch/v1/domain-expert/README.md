@@ -4,7 +4,7 @@ This directory is the source of truth for how the Domain Expert works.
 
 ## 1. What It Is
 
-- Domain Expert is a control-plane service module on Mac mini.
+- Domain Expert is a control-plane service module on the Brain Shard.
 - It is not a remote machine agent.
 - Task planning and task execution are carried out by the same LLM session/context.
 - It shapes an accepted event into one of:
@@ -119,7 +119,7 @@ Each evidence item:
 - Domain Expert may also execute approved plan steps in the same LLM session.
 - Domain Expert does not directly commit memory/project state.
 - State commits happen downstream through canonical execution + commit flow.
-- Pi remains non-authoritative and only renders backend-authored outputs.
+- Voice Shard remains non-authoritative and only renders backend-authored outputs.
 
 ## 8. Plan Approval Gate
 

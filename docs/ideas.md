@@ -83,7 +83,7 @@ As more capable devices come online, the brain has more options to route to. UX 
 UX quality becomes a function of the network's current hardware footprint, not a design decision made at build time.
 
 **Why this matters:**
-- Shards are generic — no special-casing for the Pi or any specific device
+- Shards are generic — no special-casing for the Voice Shard or any specific device
 - Model deployment is centrally controlled by the brain, not managed per-device
 - The system gets better as hardware improves without touching the architecture
 
@@ -92,6 +92,37 @@ UX quality becomes a function of the network's current hardware footprint, not a
 - How does the brain decide when to push a model package vs use a remote call?
 - How does proximity factor in — physical location, network latency, or both?
 - If two shards both have `voice`, does the brain pick one or coordinate them?
+
+---
+
+## Skyra OS — Custom Linux Branding
+
+**The idea:** Rather than building a custom OS from scratch, take a standard Linux distro, strip the branding, and make it feel like Skyra's own. The Shard daemon is still what does the work — the OS is just the thin layer it runs on.
+
+**What "Skyra OS" looks like in practice:**
+- Custom Plymouth boot splash with the Skyra logo
+- Branded login screen (GDM/LightDM theme)
+- Custom hostname (`skyra-node-1`, `skyra-voice`, etc.)
+- Default wallpaper and desktop env stripped or customized
+- Distro branding removed from terminal and about screens
+- Non-essential packages removed at image build time
+
+**Why not a fully custom OS:**
+A custom OS would reintroduce the exact problem Shards solved — you'd be back to separate OS builds per device type. The Shard daemon already owns capability registration and hardware adaptation. The OS should be thin and generic; the Shard is what adapts to the hardware.
+
+**Why not tie OS config to hardware capabilities:**
+Same reason. Hardware-specific OS builds are fragile — hardware changes, the build breaks. Capability logic belongs in the Shard, not baked into the image.
+
+**The right split:**
+- OS = minimal, generic, Skyra-branded Linux
+- Shard daemon = boots, fingerprints hardware, registers capabilities, configures itself accordingly
+
+For the Voice Shard, this is especially clean since the image is built from scratch anyway.
+
+**Open questions:**
+- Which base distro (Raspberry Pi OS, Ubuntu, Alpine)?
+- Do all Shard nodes run the same base image, or is there a Voice Shard variant and a desktop variant?
+- What's the right point to automate image building?
 
 ---
 
