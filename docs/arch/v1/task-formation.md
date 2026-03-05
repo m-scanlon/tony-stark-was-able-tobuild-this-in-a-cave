@@ -359,7 +359,7 @@ Cold-start fallback rules until enough data exists.
 
 Architecture & Integration
 
-The Estimator is a service on the Mac mini, exposed via an internal API.
+The Estimator is a service on the Brain Shard, exposed via an internal API.
 
 Initial estimation occurs after Domain Expert, before threshold review (if any).
 

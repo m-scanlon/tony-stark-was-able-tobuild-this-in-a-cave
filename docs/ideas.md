@@ -83,7 +83,7 @@ As more capable devices come online, the brain has more options to route to. UX 
 UX quality becomes a function of the network's current hardware footprint, not a design decision made at build time.
 
 **Why this matters:**
-- Shards are generic — no special-casing for the Pi or any specific device
+- Shards are generic — no special-casing for the Voice Shard or any specific device
 - Model deployment is centrally controlled by the brain, not managed per-device
 - The system gets better as hardware improves without touching the architecture
 
@@ -92,6 +92,67 @@ UX quality becomes a function of the network's current hardware footprint, not a
 - How does the brain decide when to push a model package vs use a remote call?
 - How does proximity factor in — physical location, network latency, or both?
 - If two shards both have `voice`, does the brain pick one or coordinate them?
+
+---
+
+## Skyra OS — Custom Linux Branding
+
+**The idea:** Rather than building a custom OS from scratch, take a standard Linux distro, strip the branding, and make it feel like Skyra's own. The Shard daemon is still what does the work — the OS is just the thin layer it runs on.
+
+**What "Skyra OS" looks like in practice:**
+- Custom Plymouth boot splash with the Skyra logo
+- Branded login screen (GDM/LightDM theme)
+- Custom hostname (`skyra-node-1`, `skyra-voice`, etc.)
+- Default wallpaper and desktop env stripped or customized
+- Distro branding removed from terminal and about screens
+- Non-essential packages removed at image build time
+
+**Why not a fully custom OS:**
+A custom OS would reintroduce the exact problem Shards solved — you'd be back to separate OS builds per device type. The Shard daemon already owns capability registration and hardware adaptation. The OS should be thin and generic; the Shard is what adapts to the hardware.
+
+**Why not tie OS config to hardware capabilities:**
+Same reason. Hardware-specific OS builds are fragile — hardware changes, the build breaks. Capability logic belongs in the Shard, not baked into the image.
+
+**The right split:**
+- OS = minimal, generic, Skyra-branded Linux
+- Shard daemon = boots, fingerprints hardware, registers capabilities, configures itself accordingly
+
+For the Voice Shard, this is especially clean since the image is built from scratch anyway.
+
+**Open questions:**
+- Which base distro (Raspberry Pi OS, Ubuntu, Alpine)?
+- Do all Shard nodes run the same base image, or is there a Voice Shard variant and a desktop variant?
+- What's the right point to automate image building?
+
+---
+
+## The Death of the Frontend — Synthesized UI at Runtime
+
+**The idea:** There is no frontend. UI is synthesized at serve time by the brain, based on the shape of the data and the capabilities of the device rendering it.
+
+The brain sends a structured data packet. A model looks at the shape of that data — time series, list of short text, tabular, hierarchical — infers the right UI pattern, and synthesizes a renderer for it. The Shard with a screen executes that renderer against its available primitives.
+
+**Two separate problems:**
+1. **Shape recognition** — what kind of data is this, what UI pattern fits it (time series → graph, list of text with metadata → feed, tabular → table)
+2. **Capability adaptation** — given that inferred pattern, what can this device actually render (TV gets a rich layout, terminal gets a table, phone gets cards)
+
+**Why this is different from templates:**
+The model isn't picking from a fixed set of predefined templates. It's inferring the pattern from the data shape and generating the render description. A Twitter-like feed, a music queue, a server status dashboard — none of them exist as static artifacts. They're synthesized on demand.
+
+**The render target problem:**
+The Shard with a screen needs a consistent primitive layer — a small declarative spec of what it can draw (text, image, chart, list, input, etc.) and its device constraints (screen size, interaction model). The brain synthesizes UI that stays within those bounds. The Shard is essentially a runtime for whatever the brain emits.
+
+**Why it matters:**
+- No frontend to build, ship, or maintain
+- UI gets better as the model gets better — no re-deploy
+- Any new device with a screen just registers its primitive capabilities and immediately gets UIs it never had a frontend built for
+- The same data renders adequately on a TV, a phone, a terminal, or anything else without a separate codebase for each
+
+**Open questions:**
+- What does the primitive capability spec look like? How does a Shard declare what it can render?
+- Does the brain synthesize a declarative description (like a JSON UI tree) or actual render code?
+- How do you handle interactivity — inputs, gestures, navigation — in a synthesized UI?
+- What's the latency tradeoff of synthesizing UI at serve time vs caching synthesized renderers for recurring data shapes?
 
 ---
 
