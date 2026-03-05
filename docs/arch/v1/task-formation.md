@@ -217,10 +217,10 @@ These are two distinct concepts and must not be confused.
 - `PLAN_APPROVAL_REQUIRED` — a plan-level gate. The entire plan waits for user approval before any execution begins. This is what is described above.
 - `requires_approval` on a local tool — a tool-level flag in the tool registry. It means the tool is surfaced and highlighted to the user during plan review so they can see it clearly. It does NOT pause execution mid-run. The user approves the full plan once and execution continues uninterrupted.
 
-Planner event emission:
+Domain Expert event emission:
 
-- during formation, planner/domain expert may emit user-facing events via context engine
-- planner may invoke these via interaction tools (for example `ask_user`)
+- during formation, Domain Expert may emit user-facing events via context engine
+- Domain Expert may invoke these via interaction tools (for example `ask_user`)
 - allowed planning events: `CLARIFY`, optional `PLAN_PROGRESS`, `PLAN_APPROVAL_REQUIRED`
 - events must be persisted on the event/context timeline before delivery
 - execution remains blocked until approval event resolves to `APPROVE`

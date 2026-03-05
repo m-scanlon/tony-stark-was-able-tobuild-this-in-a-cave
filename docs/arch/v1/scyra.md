@@ -388,7 +388,7 @@ flowchart LR
     EST[Estimator]
     SCHED[Scheduler]
     SESSION[Assigned LLM Session<br/>task formation + execution]
-    AGENT[Skyra Orchestration Runtime<br/>LangGraph Orchestrator and Router]
+    ORCH_RT[Skyra Orchestration Runtime<br/>LangGraph Orchestrator and Router]
     CIX[Context Injector Service<br/>Rank Compress Push]
     CLASS[Project + Intent Classifier]
 
@@ -399,15 +399,15 @@ flowchart LR
     OBJ[(Object Store<br/>.skyra projects<br/>versioned state)]
     VDB[(Vector DB<br/>Chroma<br/>semantic index + tool registry)]
 
-    APIGW --> INGRESS --> INBOX --> QUEUE --> EST --> SCHED --> SESSION --> AGENT
+    APIGW --> INGRESS --> INBOX --> QUEUE --> EST --> SCHED --> SESSION --> ORCH_RT
     INGRESS -->|context_state fan-out| CIX
-    AGENT --> CLASS
-    AGENT --> CODER
-    AGENT --> PROJ
+    ORCH_RT --> CLASS
+    ORCH_RT --> CODER
+    ORCH_RT --> PROJ
     CLASS --> CIX
     PROJ --> OBJ
     PROJ --> VDB
-    AGENT --> TOOLS
+    ORCH_RT --> TOOLS
   end
 
   subgraph GPUSHARD[GPU Shard • deep_reasoning]
@@ -419,8 +419,8 @@ flowchart LR
   PI -.->|optional audio stream for remote STT| APIGW
   CIX -->|compressed context package| LCACHE
   INBOX -->|transport ACK event_id| OBOX
-  AGENT -->|deep_reasoning task| LLM
-  LLM -->|completion| AGENT
+  ORCH_RT -->|deep_reasoning task| LLM
+  LLM -->|completion| ORCH_RT
   APIGW -->|authoritative result| VCLIENT
   VCLIENT -->|final speech output| TTS
 ```
