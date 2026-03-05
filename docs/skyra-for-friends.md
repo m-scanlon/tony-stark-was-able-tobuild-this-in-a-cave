@@ -26,14 +26,14 @@ The second reason is bigger. I want an assistant that grows with me over my life
 
 Skyra sits across three machines that work together:
 
-**Voice Shard — always on, always listening**
+**Raspberry Pi — always on, always listening**
 This is the voice layer. It detects when I'm talking, converts speech to text, and can give a quick answer from recent context while the heavier thinking happens in the background. It's always on, low power, and sits on my desk.
 
-**Brain Shard — the brain**
+**Mac mini — the brain**
 This is where decisions get made. It receives what I said, figures out what I'm asking for, pulls in relevant context from memory, forms a plan, and coordinates execution. It knows all my active projects and can take actions on my behalf — running scripts, managing files, calling APIs, whatever the task needs.
 
-**Reasoning Shard — heavy thinking**
-For complex reasoning, deep coding problems, or anything that needs serious horsepower, the Brain Shard delegates to a dedicated Reasoning Shard running a large language model locally. No cloud, no API keys, no usage limits.
+**GPU machine — heavy thinking**
+For complex reasoning, deep coding problems, or anything that needs serious horsepower, the Mac delegates to a dedicated GPU machine running a large language model locally. No cloud, no API keys, no usage limits.
 
 ---
 

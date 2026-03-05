@@ -20,7 +20,7 @@ Out of scope:
 ## 2. Terminology
 
 - **Event**: structured message produced by listener/front-door for downstream orchestration.
-- **Outbox**: durable local queue on Voice Shard for unacked events.
+- **Outbox**: durable local queue on Pi for unacked events.
 - **Inbox**: durable control-plane store for accepted events.
 - **ACK**: control-plane confirmation that `event_id` is durably stored.
 - **Idempotency**: processing duplicate deliveries without duplicate side effects.
@@ -30,22 +30,22 @@ Out of scope:
 
 Components:
 
-- listener/front-door event producer (Voice Shard)
-- Voice Shard outbox + retry sender
+- listener/front-door event producer (Pi)
+- Pi outbox + retry sender
 - transport channel (WebSocket initially, gRPC stream optional)
 - control-plane ingress handler
 - control-plane SQLite inbox
 
 ```text
 +---------------------+       +-----------------------+       +----------------------+
-| Voice Shard         |       | WS / gRPC Transport   |       | Control Plane        |
+| Pi Listener Node    |       | WS / gRPC Transport   |       | Control Plane        |
 | front-door producer |-----> | send event envelope   |-----> | ingress + inbox      |
 +----------+----------+       +-----------+-----------+       +----------+-----------+
            |                                  ^                           |
            v                                  |                           v
     +--------------+                    ACK(event_id)               +-------------+
-    | Voice Shard  | <--------------------------------------------- | SQLite Inbox|
-    | Outbox       |                                                | event_id PK |
+    | Pi Outbox    | <--------------------------------------------- | SQLite Inbox|
+    | durable queue|                                                | event_id PK |
     +--------------+                                                +-------------+
            |
            v
@@ -54,7 +54,7 @@ Components:
 
 ## 4. Event Envelope Schema
 
-Required fields (sent by Voice Shard):
+Required fields (sent by Pi):
 
 - `schema`
 - `turn_id`
@@ -64,7 +64,7 @@ Required fields (sent by Voice Shard):
 - `triage_hints`
 - `session_state`
 
-Note: `event_id` is NOT sent by Voice Shard. Brain Shard generates `event_id` (ULID) on ingress. Voice Shard provides `(session_id, turn_id)` as its idempotency pair — Brain Shard uses this composite for duplicate detection. All fields except `triage_hints` are stamped by the shard transport layer during hydration — see `skyra/schemas/ingress/voice/voice_event_v1.json` for the full schema.
+Note: `event_id` is NOT sent by Pi. Mac generates `event_id` (ULID) on ingress. Pi provides `(session_id, turn_id)` as its idempotency pair — Mac uses this composite for duplicate detection. All fields except `triage_hints` are stamped by the shard transport layer during hydration — see `skyra/schemas/ingress/voice/voice_event_v1.json` for the full schema.
 
 Example:
 
@@ -110,29 +110,29 @@ ACK message:
 
 Rules:
 
-- Brain Shard generates `event_id` (ULID) on ingress and returns it in the ACK
+- Mac generates `event_id` (ULID) on ingress and returns it in the ACK
 - control plane sends ACK only after SQLite commit succeeds
-- Voice Shard stores the returned `event_id` and deletes outbox row by `turn_id` only after matching ACK
+- Pi stores the returned `event_id` and deletes outbox row by `turn_id` only after matching ACK
 - duplicate delivery (same `session_id` + `turn_id`) returns the same `event_id` in ACK without reinserting
 - invalid envelopes return error/NACK and remain in outbox for retry
 
-## 6. Voice Shard Outbox Design
+## 6. Pi Outbox Design
 
 Storage:
 
-- local SQLite DB on Voice Shard (`listener_outbox.db`)
+- local SQLite DB on Pi (`listener_outbox.db`)
 - WAL mode enabled
 
 Recommended outbox fields:
 
-- `turn_id` (PRIMARY KEY — Voice Shard-generated, stable across retries)
-- `session_id` (paired with `turn_id` for Brain Shard-side deduplication)
+- `turn_id` (PRIMARY KEY — Pi-generated, stable across retries)
+- `session_id` (paired with `turn_id` for Mac-side deduplication)
 - `payload_json`
 - `created_at`
 - `next_attempt_at`
 - `attempt_count`
 - `last_error`
-- `acked_event_id` (populated after ACK received from Brain Shard; used for tracing)
+- `acked_event_id` (populated after ACK received from Mac; used for tracing)
 
 Retry:
 
@@ -162,14 +162,14 @@ Table schema:
 
 ```sql
 CREATE TABLE IF NOT EXISTS event_inbox (
-  event_id        TEXT PRIMARY KEY,      -- Brain Shard-generated ULID
+  event_id        TEXT PRIMARY KEY,      -- Mac-generated ULID
   session_id      TEXT NOT NULL,
   turn_id         TEXT NOT NULL,
   status          TEXT NOT NULL,
   received_at     TEXT NOT NULL,
   last_updated_at TEXT NOT NULL,
   payload         TEXT NOT NULL,
-  UNIQUE(session_id, turn_id)            -- deduplication key for Voice Shard retries
+  UNIQUE(session_id, turn_id)            -- deduplication key for Pi retries
 );
 CREATE INDEX IF NOT EXISTS idx_event_inbox_status ON event_inbox(status);
 CREATE INDEX IF NOT EXISTS idx_event_inbox_received_at ON event_inbox(received_at);
@@ -177,8 +177,8 @@ CREATE INDEX IF NOT EXISTS idx_event_inbox_received_at ON event_inbox(received_a
 
 Idempotency behavior:
 
-- `event_id` is Brain Shard-generated (ULID) — unique per ingress attempt, not per logical event
-- `(session_id, turn_id)` UNIQUE constraint prevents duplicate rows on Voice Shard retry
+- `event_id` is Mac-generated (ULID) — unique per ingress attempt, not per logical event
+- `(session_id, turn_id)` UNIQUE constraint prevents duplicate rows on Pi retry
 - duplicate delivery (same `session_id` + `turn_id`) triggers re-ACK with the original `event_id`, no reinsert
 
 ## 8. Ingress Flow
@@ -201,7 +201,7 @@ onEvent(envelope):
     return nack("invalid envelope")
 
   now = utcNow()
-  event_id = newULID()  # Brain Shard generates event_id — Voice Shard does not provide one
+  event_id = newULID()  # Mac generates event_id — Pi does not provide one
 
   begin tx
     try insert(event_id, session_id, turn_id, status="received", received_at=now, last_updated_at=now, payload=json)
@@ -209,7 +209,7 @@ onEvent(envelope):
       event_id = lookup_existing_event_id(session_id, turn_id)  # fetch original for ACK
   commit tx
 
-  sendAck(event_id, status="stored")  # Voice Shard stores event_id for tracing; deletes outbox row by turn_id
+  sendAck(event_id, status="stored")  # Pi stores event_id for tracing; deletes outbox row by turn_id
 ```
 
 ## 9. Failure Scenarios
@@ -217,8 +217,8 @@ onEvent(envelope):
 Network drop before ACK:
 
 - event may already be stored
-- Voice Shard retries with same `turn_id` (Voice Shard never had an `event_id` — Brain Shard generates it)
-- control plane detects duplicate via `(session_id, turn_id)` UNIQUE constraint and re-ACKs with the original Brain Shard-generated `event_id`
+- Pi retries with same `turn_id` (Pi never had an `event_id` — Mac generates it)
+- control plane detects duplicate via `(session_id, turn_id)` UNIQUE constraint and re-ACKs with the original Mac-generated `event_id`
 
 Duplicate events:
 
@@ -227,10 +227,10 @@ Duplicate events:
 
 Control plane crash after receive:
 
-- crash before commit: no durable row, no ACK, Voice Shard retries
+- crash before commit: no durable row, no ACK, Pi retries
 - crash after commit before ACK: row exists, retry gets duplicate ACK path
 
-Voice Shard reboot:
+Pi reboot:
 
 - outbox persists locally
 - sender resumes unsent/unacked events after restart

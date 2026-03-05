@@ -6,9 +6,9 @@
 
 ## The Core Idea
 
-Skyra is not tied to any single Brain Shard. She is tied to whatever hardware best serves her current needs. When the topology of available Shards changes — a new machine comes online, a machine goes offline, resources shift — Skyra reacts and reorganizes accordingly.
+Skyra is not tied to the Mac mini. She is tied to whatever hardware best serves her current needs. When the topology of available Shards changes — a new machine comes online, a machine goes offline, resources shift — Skyra reacts and reorganizes accordingly.
 
-The Brain Shard is currently the elected brain because it is the most capable available node. That is not a permanent assignment. It is the current best option.
+The Mac mini is currently the brain because it is the most capable available node. That is not a permanent assignment. It is the current best option.
 
 ---
 
@@ -59,7 +59,7 @@ Election criteria:
   3. Among eligible candidates, most capable node wins
 ```
 
-A Voice Shard cannot be elected brain even if it has the freshest log. A node below the capability floor is a Follower only.
+A Pi cannot be elected brain even if it has the freshest log. A node below the capability floor is a Follower only.
 
 ---
 
@@ -99,7 +99,7 @@ Level 1 is the near-term target. Level 4 means Skyra provisioning her own cloud 
 
 ## Build Horizon
 
-This infrastructure layer is a future horizon — not the current build. The Brain Shard is the brain, it is hardcoded, and that is correct for now.
+This infrastructure layer is a future horizon — not the current build. The Mac mini is the brain, it is hardcoded, and that is correct for now.
 
 **What "designing toward this" means in practice:**
 

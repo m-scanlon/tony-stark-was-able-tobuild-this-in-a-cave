@@ -2,7 +2,7 @@
 
 ## What It Is
 
-The Scheduler is a control-plane service on the Brain Shard. It sits between the Estimator and the assigned LLM session. Its job is to receive annotated jobs, assign them an execution lane, and track their operational lifecycle.
+The Scheduler is a control-plane service on the Mac mini. It sits between the Estimator and the assigned LLM session. Its job is to receive annotated jobs, assign them an execution lane, and track their operational lifecycle.
 
 It is intentionally simple in v1. Single queue, lane assignment only.
 
@@ -39,7 +39,7 @@ Canonical pipeline reference: `docs/arch/v1/scyra.md` section 10.2
 
 | Lane | Used For |
 |---|---|
-| `fast_local` | Short, low-cost requests handled by local Brain Shard models |
+| `fast_local` | Short, low-cost requests handled by local Mac models |
 | `deep_reasoning` | Complex requests routed to a Shard with deep_reasoning capability |
 
 The Estimator provides lane hints. The Scheduler makes the final assignment.
