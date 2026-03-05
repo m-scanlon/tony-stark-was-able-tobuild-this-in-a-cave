@@ -156,4 +156,33 @@ The Shard with a screen needs a consistent primitive layer — a small declarati
 
 ---
 
+## Multi-Tenancy — Multiple Users in the Same House
+
+**The idea:** More than one person in the house uses Skyra. Each user gets their own Brain Shard instance — their own context, agents, memory, and session. No shared brain state between users.
+
+**Why a second brain, not a shared brain:**
+A single brain trying to serve multiple users through a priority queue creates contention at every layer — context, agents, scheduling, model capacity. It's the wrong abstraction. Each brain owns one user. Multi-tenancy becomes "how many `control_plane` Shards are registered" rather than a scheduling problem.
+
+**Where it still gets hard — shared hardware:**
+Brains don't fight. Shards do. The hardware layer is still shared:
+
+- **Microphone** — two users, one wake word listener. Who owns it? Whoever triggered the wake word, or the primary user, or first-come-first-served?
+- **Screen** — is this display claimed by another brain's session? How does a brain know?
+- **GPU** — two brains want VRAM at the same time. The GPU Shard needs to queue requests from multiple brains.
+- **Speakers** — can two brains talk at once? Who gets priority?
+
+**The coordination problem:**
+If Shards can serve multiple brains, there needs to be a coordination layer between brains — or something above them — that arbitrates Shard access. Brains need to know about each other, or a neutral arbiter does. Neither is simple.
+
+**v1 assumption:**
+Shards are owned 1:1 by a brain. One user, one brain, one set of Shards. Multi-tenancy is deferred entirely. The architecture doesn't prevent it — it just doesn't solve it yet.
+
+**Open questions:**
+- Does a Shard register with one brain or can it advertise to multiple?
+- What's the session ownership model for shared-space Shards (living room Pi, shared screen)?
+- Is the coordination layer a new service above brains, or a peer protocol between brains?
+- How does user identity get established at the Shard layer — voice recognition, proximity, device association?
+
+---
+
 ## More ideas to add here as they come up
