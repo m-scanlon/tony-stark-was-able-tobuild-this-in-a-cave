@@ -281,13 +281,13 @@ Before delegation, Pi runs an extremely fast triage stage (rules or tiny model).
 
 Triage outputs:
 
-- `latency_class`: `fast | medium | slow`
-- `needs_delegation`: `bool`
-- `hint_target`: `control_plane | shard:<id>`
-- `ack_policy`: `silent | nonverbal | spoken_if_slow`
-- `confidence`: `0.0-1.0`
-- `provisional_eligible`: `bool` _(v2 only — always `false` in v1; Pi emits non-semantic ACK only. See v2 note in section 7.1.)_
-- `cache_age_seconds`: `int | null`
+- `intent`: `{ summary: string, confidence: 0.0-1.0 }`
+- `latency_class`: `{ value: interactive | background | deferred, confidence: 0.0-1.0 }`
+- `ack_policy`: `{ value: spoken_if_slow | earcon_only | silent, confidence: 0.0-1.0 }` _(values not locked — depends on UX model design)_
+
+v2 planned additions: `needs_delegation`, `hint_target`, `provisional_eligible`, `cache_age_seconds`
+
+> For the authoritative schema see `skyra/schemas/ingress/voice/`.
 
 Notes:
 
@@ -610,7 +610,7 @@ def on_user_utterance(audio_chunk_stream):
 
 #### 7.2.3 Backend reconciliation contract
 
-Note: `pi_gave_provisional` and `provisional_text` are always `false`/`null` in v1. These fields are reserved for the v2 provisional response path (see section 7.1).
+> For the authoritative v1 schema and hydration model see `skyra/schemas/ingress/voice/`. The example below reflects the current v1 design.
 
 Request (`Pi -> Mac`):
 
@@ -619,30 +619,21 @@ Request (`Pi -> Mac`):
   "schema": "voice_event_v1",
   "turn_id": "turn_8f4c",
   "ts": "2026-02-20T18:10:12Z",
+  "device_id": "pi-livingroom-01",
   "transcript": "what did I decide about backups",
   "triage_hints": {
-    "latency_class": "medium",
-    "needs_delegation": true,
-    "hint_target": "control_plane",
-    "ack_policy": "spoken_if_slow",
-    "confidence": 0.72,
-    "provisional_eligible": false,
-    "cache_age_seconds": null
-  },
-  "pi_gave_provisional": false,
-  "provisional_text": null,
-  "context_window": {
-    "session_summary": "...",
-    "recent_turns": [],
-    "active_agent": "server_ops",
-    "injected_facts": []
-  },
-  "context_state": {
-    "total_context_tokens": 8192,
-    "system_tokens": 1420,
-    "live_conversation_tokens": 980,
-    "response_reserve_tokens": 512,
-    "available_for_injection": 5280
+    "intent": {
+      "summary": "user wants to know what was decided about backups",
+      "confidence": 0.94
+    },
+    "latency_class": {
+      "value": "interactive",
+      "confidence": 0.88
+    },
+    "ack_policy": {
+      "value": "spoken_if_slow",
+      "confidence": 0.76
+    }
   },
   "session_state": {
     "pending_job_id": null,
@@ -652,6 +643,8 @@ Request (`Pi -> Mac`):
 ```
 
 Note: `event_id` is NOT part of `voice_event_v1`. Mac generates `event_id` (ULID) on ingress and returns it in the transport ACK. Pi does not stamp `event_id`. Pi tracks outbox entries by `turn_id`; `(session_id, turn_id)` is the deduplication key at Mac ingress. See `docs/arch/v1/event-ingress-ack.md` for the full contract.
+
+v2 additions: `pi_gave_provisional`, `provisional_text`, `context_window`, `context_state` — deferred, see `skyra/schemas/ingress/voice/CHANGELOG.md`.
 
 Response stream (`Mac -> Pi`):
 
