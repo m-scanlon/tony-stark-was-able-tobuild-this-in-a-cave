@@ -157,7 +157,7 @@ Long-running tasks must survive process/node interruptions.
 
 Requirements:
 
-- periodic and step-boundary checkpoints to Project Service
+- periodic and step-boundary checkpoints to Agent Service
 - restart recovery from last good checkpoint
 - idempotent step replay behavior when checkpoint boundary is ambiguous
 
@@ -192,7 +192,7 @@ Notifier owns channel fanout (Voice Shard, mobile, etc.).
 
 - `RevisePlan(replan_request) -> RevisedRemainingPlan`
 
-### Executor <-> Project Service
+### Executor <-> Agent Service
 
 - `SaveCheckpoint(checkpoint)`
 - `LoadCheckpoint(task_id) -> checkpoint`

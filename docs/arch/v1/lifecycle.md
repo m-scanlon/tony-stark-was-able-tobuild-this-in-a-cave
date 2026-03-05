@@ -120,10 +120,10 @@ The approved task enters the scheduler queue.
 
 The same LLM session that planned the task now executes it. Planning and execution share one context — approval gates and queueing may pause work but do not require a context switch.
 
-Execution loop per stage:
+Execution loop per step:
 1. Pre-check resources (Resource Manager)
 2. BoundaryValidator — check all tool calls against agent boundary. Locked tool → permission prompt (`allow_always | allow_once | deny`). `deny` triggers bounded replan.
-3. Execute stage with specified tools/models
+3. Execute step with specified tools/models
 4. Capture outputs + runtime metadata
 5. Validate output against criteria
 6. Check assumptions
@@ -132,7 +132,7 @@ Execution loop per stage:
 
 Replan budget: 3 attempts max. Exceed budget → escalate or halt.
 
-Progress snapshots sent to Estimator at each stage boundary (and on a heartbeat for long-running stages).
+Progress snapshots sent to Estimator at each step boundary (and on a heartbeat for long-running steps).
 
 ---
 
@@ -165,7 +165,7 @@ voice_event_v1
   [Scheduler] — lane assigned, queued
       |
       v
-  [Executor] — stage-by-stage, validate, checkpoint, replan
+  [Executor] — step-by-step, validate, checkpoint, replan
       |
       v
      done
