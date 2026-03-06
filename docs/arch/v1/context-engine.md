@@ -146,14 +146,42 @@ Order matters. Items injected first have the most influence on the LLM's behavio
 
 ## 4. Data Sources
 
-The context engine pulls from exactly six sources. Everything the LLM session sees comes from one of these.
+> This section is being built up incrementally as the model is defined. Start with what always needs to be there, add sources as the design requires them.
 
-1. **Agent Registry (SQLite)** — active agents, fast first gate before any deeper retrieval
-2. **Object Store** — authoritative agent state (`state.json`), recent commits
-3. **Vector DB** — semantic search over agent state and local tool registry
-4. **Turn History** — recent turns from the active session
-5. **Active Job Context** — in-flight task artifact and current stage, pulled from the object store under the agent
-6. **`skyra.user`** — system agent, always present, cross-domain user profile
+### Always present
+
+**Session History** — always. Every context package includes history from the active session. This is the baseline — without it the LLM has no conversational continuity. Non-negotiable.
+
+Both sessions and turns carry a decay value (arbitrary scale 20–100). Anything below the threshold gets forgotten. Higher value = more relevant, longer lived. The exact scoring and threshold logic is TBD — this is a placeholder to establish the model.
+
+- A turn can phase out within a session if its value drops below threshold
+- A session can remain important even as individual turns within it decay
+- Decay values will need to be derived from signals (recency, access frequency, topic relevance) — not yet defined
+
+### Retrieved
+
+Relevance-based data pulled from beyond the current session. This is where the algorithm lives.
+
+Each session and turn carries a weight (20–100). The retrieval strategy uses a combined score:
+
+```
+score = weight * semantic_similarity
+```
+
+- `weight` — long-term importance of the item. Captures things worth holding onto regardless of the current request.
+- `semantic_similarity` — how relevant the item is to the current transcript. Embed the transcript, score against the weighted index.
+- Combined score means: high weight + high similarity wins. Low weight items can still surface if highly relevant. High weight items can still surface even if not directly similar.
+
+Neither weight nor similarity alone is sufficient. Sources and full scoring logic TBD.
+
+### Context Package Shape
+
+```
+context_package {
+  session_history   // current session, recency based, always present, subject to decay
+  retrieved         // background loop output, relevance based, algorithm TBD
+}
+```
 
 ---
 
