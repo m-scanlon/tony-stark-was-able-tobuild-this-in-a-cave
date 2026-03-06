@@ -1,17 +1,17 @@
-# Scheduler Service
+# Job Registry
 
 ## What It Is
 
-The Scheduler is a control-plane service on the Brain Shard. It sits between the Estimator and the assigned LLM session. Its job is to receive annotated jobs, assign them an execution lane, and track their operational lifecycle.
+The Job Registry is a passive lifecycle tracker on the Brain Shard. It is the source of truth for job state from creation through completion or failure. It does not make placement, routing, or lane decisions — those are owned by the Estimator.
 
-It is intentionally simple in v1. Single queue, lane assignment only.
+It is intentionally simple in v1. Single queue, state tracking only.
 
 ## Responsibilities
 
-- Receive jobs from the queue after Estimator annotation
-- Assign an execution lane (`fast_local` or `deep_reasoning`)
-- Track operational job status from queued through completion
-- Surface active and queued jobs to other services (context injector)
+- Record jobs as they enter the system (`created`)
+- Reflect routing decisions made by the Estimator (`routed`, `shard_id`, `lane`, `routed_at`)
+- Track job status through planning, execution, and completion
+- Surface active job state to other services (context injector)
 
 ## What It Does Not Do
 
@@ -19,7 +19,7 @@ It is intentionally simple in v1. Single queue, lane assignment only.
 - Does not execute tasks — that is the assigned LLM session's job
 - Does not make semantic decisions about job content
 - Does not own the TaskSheet or WorkPlan — those live in the object store
-- Does not decide final scheduling policy — the Estimator informs, the Scheduler decides
+- Does not assign lanes or route to shards — that is the Estimator's job
 
 ## Position in the Pipeline
 
@@ -27,10 +27,9 @@ It is intentionally simple in v1. Single queue, lane assignment only.
 event
   → inbox (SQLite, event_id PK)
   → queue
-  → Estimator (annotates lane hints)
-  → Scheduler (assigns lane, creates job record)
+  → Estimator (assigns lane, shard, creates job record → Job Registry)
   → assigned LLM session (task formation + execution)
-  → Scheduler (marks completed or failed)
+  → Job Registry (marks planning → executing → completed / failed)
 ```
 
 Canonical pipeline reference: `docs/arch/v1/scyra.md` section 10.2
@@ -42,23 +41,25 @@ Canonical pipeline reference: `docs/arch/v1/scyra.md` section 10.2
 | `fast_local` | Short, low-cost requests handled by local Brain Shard models |
 | `deep_reasoning` | Complex requests routed to a Shard with deep_reasoning capability |
 
-The Estimator provides lane hints. The Scheduler makes the final assignment.
+The Estimator makes the lane assignment. The Job Registry records it.
 
 ## Job Lifecycle
 
 ```
-queued → running → completed
-                 → failed
+created → routed → planning → executing → completed
+                                        → failed
 ```
 
-- `queued`: job accepted, waiting for lane assignment
-- `running`: lane assigned, LLM session is active
+- `created`: job accepted, record written to registry
+- `routed`: Estimator has assigned lane and shard; `shard_id`, `lane`, and `routed_at` are set
+- `planning`: assigned LLM session is forming the task
+- `executing`: LLM session is actively executing
 - `completed`: session finished successfully
 - `failed`: unrecoverable error
 
 ## Job Envelope
 
-Each job entering the scheduler carries a `job_envelope_v1`:
+Each job entering the Job Registry carries a `job_envelope_v1`:
 
 - `job_id`
 - `parent_job_id`
@@ -77,11 +78,11 @@ Note: `job_envelope_v1` schema is not yet locked. See `docs/arch/v1/gaps.md` G1.
 
 See `schema.sql`.
 
-The jobs table is operational state only. Owned exclusively by the Scheduler.
+The jobs table is operational state only. Owned exclusively by the Job Registry.
 
 Access rules:
-- Scheduler: read + write
-- Estimator: read only
+- Job Registry: read + write
+- Estimator: write on routing (sets `shard_id`, `lane`, `routed_at`, `status = routed`); read otherwise
 - Context Injector: read only (`status`, `agent_id`)
 
 ## v1 Constraints

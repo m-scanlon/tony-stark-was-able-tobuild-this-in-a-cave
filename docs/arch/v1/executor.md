@@ -20,19 +20,18 @@ The Executor is not a blind script runner. It is an adaptive runtime loop with:
 Placement in end-to-end flow:
 
 ```text
-Event -> JobEnvelope v1 -> Task Formation -> Task Object -> Estimator (initial) -> Scheduler -> Executor
-                                                                                  ^
-                                                                                  |
-                                                        progress snapshots --------+
+Event → Internal Router (job_envelope_v1) → Estimator → External Router → LLM Session (Domain Expert + Executor)
+                                                  |
+                                            Job Registry
 ```
 
 Authority boundary:
 
 - Voice Shard can provide provisional responses but does not execute authoritative task pipelines.
-- Brain Shard control plane owns orchestration authority and coordinates Executor runs.
-- Shards with appropriate capabilities are execution targets selected by scheduler/runtime policy.
+- Brain Shard control plane owns orchestration authority and coordinates LLM Session runs.
+- Shards with appropriate capabilities are execution targets selected by the Estimator based on capability profiles and current load.
 
-The Scheduler remains responsible for placement policy. The Executor runs the selected task and reports progress/outcomes.
+The Estimator is responsible for placement decisions. The External Router dispatches the job to the selected shard. The LLM Session owns both planning and execution — one context window, no handoff mid-job. The Job Registry tracks lifecycle state passively throughout.
 
 ## 6.3 Core Responsibilities
 
@@ -118,7 +117,9 @@ Persist after each step:
 
 ## 6.7 Estimator Feedback Interface
 
-During execution, send progress snapshots:
+The Estimator made the original placement decision — it read `job_envelope_v1`, did a shallow consult with the agent domain to score job complexity, then selected the target shard based on capability profiles and current load. It wrote that placement to the Job Registry.
+
+During execution, the LLM Session sends progress snapshots back to the Estimator:
 
 - `task_id`
 - `elapsed_seconds`
@@ -129,7 +130,7 @@ During execution, send progress snapshots:
 - `resource_usage`
 - `errors` (optional)
 
-Estimator returns updated remaining-time estimate and confidence for user communication and scheduler hints.
+Estimator returns updated remaining-time estimate and confidence for user communication. These updates are also written to the Job Registry to keep lifecycle state current.
 
 ## 6.8 Resource Manager Interaction
 
@@ -144,7 +145,7 @@ If constrained:
 
 - wait/retry (temporary contention)
 - fallback to lighter execution mode
-- pause and hand control back to scheduler if no viable path
+- pause and surface the constraint — Estimator or Job Registry can flag for rescheduling if no viable path
 
 Placement note:
 
@@ -183,6 +184,8 @@ Notifier owns channel fanout (Voice Shard, mobile, etc.).
 ### Executor <-> Estimator
 
 - `UpdateProgress(snapshot) -> UpdatedEstimate`
+
+Note: the Estimator also owns the upstream placement decision (`PlaceJob(job_envelope_v1) -> PlacementDecision`). That contract belongs to the Estimator's own interface spec, not here. The Executor only interacts with the Estimator via progress updates during execution.
 
 ### Executor <-> Resource Manager
 

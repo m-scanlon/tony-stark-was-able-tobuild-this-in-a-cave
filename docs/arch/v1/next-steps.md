@@ -67,7 +67,7 @@ planning → executing → validating → replanning → done
 - **replanning** — if validation fails or a tool is denied, revises the plan and loops back
 - **done / cancelled / failed** — terminal states
 
-These are **semantic phases** tracked in the tasksheet. The scheduler's jobs table tracks operational status separately (queued / running / completed / failed).
+These are **semantic phases** tracked in the tasksheet. The Job Registry tracks operational status separately (created → routed → planning → executing → done / failed).
 
 ### 5. Open Question: Agent Routing
 
@@ -82,17 +82,17 @@ This is unresolved. Options discussed but not decided:
 
 ## Direct Next Step
 
-Walk the data model. For each service in the canonical flow — `event → inbox → queue → estimator → scheduler → assigned LLM session` — write down exactly what it needs as input and what it produces as output. Don't design schemas in isolation. Let the handoff contracts write the schemas.
+Walk the data model. For each service in the canonical flow — `event → inbox → queue → internal router → estimator → external router → LLM session` — write down exactly what it needs as input and what it produces as output. Don't design schemas in isolation. Let the handoff contracts write the schemas.
 
 The pipeline:
 
 1. **Voice Shard** — emits `voice_event_v1`
 2. **Event Ingress** — receives, assigns `event_id`, deduplicates, routes (new job vs continuation)
-3. **Inbox / Queue** — holds the job until a session is available
-4. **Estimator** — scores complexity, latency class, resource requirements
-5. **Scheduler** — assigns to a lane, manages job status, hands off to LLM session
-6. **LLM Session (Domain Expert)** — planning phase: retrieves agent context + tools, forms plan artifact
-7. **LLM Session (Executor)** — executing phase: runs tool calls, validates, replans if needed
+3. **SQLite Inbox / Queue** — holds the event until the pipeline picks it up
+4. **Internal Router** — pulls context from the Context Engine, resolves the domain agent, assembles `job_envelope_v1`
+5. **Estimator** — reads `job_envelope_v1`, does a shallow consult with the agent domain to score complexity, picks the target shard based on capability profiles and current load; writes placement to Job Registry
+6. **External Router** — receives the Estimator's placement decision, dispatches the job to the assigned shard
+7. **LLM Session** — owns the full lifecycle: planning phase (retrieves agent context + tools, forms plan artifact) and executing phase (runs tool calls, validates, replans if needed); updates Job Registry as the job progresses
 8. **Agent Service** — handles state commits during or after execution
 9. **Voice Shard (response)** — receives `UPDATE` / `PLAN_PROGRESS` / final result, renders to user
 
@@ -100,10 +100,10 @@ For each hop: what does the receiver need? What does the sender know at that mom
 
 The five questions that the walk will answer:
 
-1. **What exactly does the executor receive?** — the full `job_envelope_v1` schema
-2. **How does the executor know what tools to call?** — re-retrieve, or trust the plan?
+1. **What exactly does `job_envelope_v1` contain?** — assembled by the Internal Router; needs a locked schema before anything downstream can be designed
+2. **How does the LLM Session know what tools to call?** — re-retrieve at execution time, or trust the tool list already in the envelope from planning?
 3. **What does the replanning trigger look like?** — denied tool, validation failure, confidence threshold?
-4. **How does the executor emit progress?** — when and who controls the cadence of `UPDATE` events?
+4. **How does the LLM Session emit progress?** — when and who controls the cadence of `UPDATE` events back to the Voice Shard?
 5. **How does a state commit happen mid-execution?** — per-step or end-of-plan?
 
 ---
@@ -114,4 +114,5 @@ The five questions that the walk will answer:
 - `docs/arch/v1/executor.md` — executor design (current state, incomplete)
 - `docs/arch/v1/domain-expert/README.md` — planning phase, plan approval gate
 - `skyra/internal/agent/README.md` — agent service, tool hydration, boundary enforcement
-- `skyra/internal/scheduler/README.md` — scheduler, job lifecycle, lanes
+- `skyra/internal/job-registry/README.md` — Job Registry, job lifecycle state tracking
+- `skyra/internal/estimator/README.md` — Estimator, placement decisions, shard selection
