@@ -91,25 +91,49 @@ Patch requirements:
 - stateful path must emit patch payload or patch-generation request
 - patch must be attributable to source event and task id
 
-## 5. Domain Routing
+## 5. Domain Routing — Domain Agent as Doorkeeper
 
-Routing maps an event to the most relevant project/domain.
+There is no central classifier. Domain agents self-select relevance.
 
-Routing inputs:
+The front face transformer reads the context blob — which contains **all registered agents with their relevance scores** — and labels the turn as in-domain or "other." For in-domain turns, it routes to the relevant domain agents. Each agent receives the full context blob and makes its own decision about whether the turn belongs to it.
 
-- event text and metadata
-- session hints
-- agent registry
-- vector search over derived agent state
+The domain agent is the doorkeeper of its own domain. No external system knows a domain better than the agent that owns it.
 
-Routing outputs:
+**"Other" turns** — turns that don't clearly fit any current agent — are stored in RDS and picked up by the nightly batch process. Every agent runs against accumulated session context at night, so nothing is permanently missed. A turn deposited into a domain that doesn't quite fit yet is acceptable; the V3 background process will detect accumulating patterns and propose new agents over time.
 
-- `domain_id`
-- `agent_id` (if resolved)
-- `routing_confidence`
-- `top_candidates[]`
+**Routing inputs (front face transformer):**
+- turn transcript
+- context blob (all agents + relevance scores)
+- importance score assigned at ingress
 
-If confidence is low, formation enters ambiguity handling (see Section 11).
+**Domain agent self-selection:**
+- receives full context blob
+- decides if turn is relevant to its domain
+- checks whether turn impacts an ongoing job
+- forms a job if warranted (see Section 5a)
+
+If a turn spans multiple domains, multiple agents can each self-select independently. No special-casing needed.
+
+## 5a. Estimation Call
+
+After the domain agent receives the turn and determines a job is needed, it produces an **estimation call** — the first inference call for any actionable turn.
+
+Output:
+
+```json
+{
+  "is_job": true,
+  "complexity": 3,
+  "domain": "servers"
+}
+```
+
+Complexity is measured in **estimated tool calls**.
+
+- `complexity ≤ 1` → execute inline immediately. Never enters the heap.
+- `complexity > 1` → form job, push to heap. Estimator routes to best available machine.
+
+The complexity threshold is currently **1** and will be tuned from real usage data. See `docs/arch/v1/scheduler.md` for full heap and inference type design.
 
 ## 6. Domain Expert Role
 
@@ -382,23 +406,36 @@ Notification logic (when to inform the user) is outside this doc but should refe
 Event (voice/chat)
    |
    v
-[Domain Routing]
+[Front Face Transformer]
+  (labels turn: in-domain | other, reads all agents + relevance scores)
+   |
+   +---- other ---------> RDS (batch picks up at night)
    |
    v
-[Domain Expert]
-  |---- no_task --------> reply-only path
-  |
-  +---- ephemeral ------> WorkPlan
-  |
-  +---- stateful -------> TaskSheet + Patch
-               |
-               v
-      [Optional Threshold Review]
-               |
-               v
-        [Task Object Creation]
-               |
-               v
-         [Scheduler Hand-off]
-  (estimator contributes, but is not the scheduler)
+[Domain Agent] (self-selects — doorkeeper of its own domain)
+   |
+   v
+[Estimation Call]
+  (is_job? complexity in tool calls?)
+   |
+   +---- complexity ≤ 1 --> execute inline immediately
+   |
+   +---- complexity > 1 --> [Heap] → Estimator routes to capable machine
+                                          |
+                                          v
+                                   [Domain Expert]
+                                     |---- no_task --------> reply-only path
+                                     |
+                                     +---- ephemeral ------> WorkPlan
+                                     |
+                                     +---- stateful -------> TaskSheet + Patch
+                                                  |
+                                                  v
+                                         [Optional Threshold Review]
+                                                  |
+                                                  v
+                                           [Task Object Creation]
+                                                  |
+                                                  v
+                                            [Execution]
 ```

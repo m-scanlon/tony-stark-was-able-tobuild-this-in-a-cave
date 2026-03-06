@@ -152,9 +152,25 @@ Placement note:
 - Executor control loop runs on the Brain Shard control plane.
 - Individual steps may execute locally or be delegated to Shards with matching capability profiles.
 
-## 6.9 Persistence and Fault Tolerance
+## 6.9 Preemptive Scheduling and Job Suspension
 
-Long-running tasks must survive process/node interruptions.
+Higher priority work can interrupt a running job. A new estimation call arriving while all machines are busy preempts the lowest priority in-flight job.
+
+**The context window is the job state.** Suspension and resumption are context operations:
+
+1. Wait for the current tool call boundary — jobs are never interrupted mid-tool-call.
+2. Serialize the full context window at that boundary.
+3. Push serialized context onto a **FIFO stack** (first interrupted, first resumed).
+4. Machine handles the higher priority work.
+5. When machine is free, pop context from FIFO and resume generation.
+
+The LLM does not know it was interrupted. The context contains everything — completed steps, tool outputs, remaining intent. Resume is seamless.
+
+This replaces the previous checkpoint model for preemption. The context window is the checkpoint — no separate step-state serialization needed.
+
+## 6.9a Persistence and Fault Tolerance
+
+Long-running tasks must survive process/node interruptions (crashes, power loss) — distinct from intentional preemption.
 
 Requirements:
 
@@ -167,6 +183,18 @@ On restart:
 1. load latest checkpoint
 2. verify current environment assumptions
 3. resume next eligible step or request replan
+
+## 6.9b Working State vs Committed State
+
+The executor can write freely to the **working state** partition of the object store. This is a scratch pad — the system uses it to test ideas, validate approaches, run intermediate computations, and reason through problems on paper. No user approval required.
+
+**Committed state** requires user approval. When the executor produces output worth persisting canonically, it proposes a commit. The user accepts or rejects. Only accepted commits enter the version history.
+
+The distinction:
+- Working state: mutable, free, throwaway. The system's thinking space.
+- Committed state: user-gated, canonical, versioned, permanent.
+
+Version history tracks commits only. Working state does not pollute the audit trail.
 
 ## 6.10 Notification Responsibilities
 

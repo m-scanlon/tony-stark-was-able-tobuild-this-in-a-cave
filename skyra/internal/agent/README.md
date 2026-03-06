@@ -63,14 +63,31 @@ Each tool record in the registry:
   state.json           ← materialized current state (four sections below)
   commits/             ← immutable commit history
     {commit_id}.json
+  working/             ← scratch space (mutable, not versioned — see Working State below)
   jobs/
     {job_id}/
-      envelope.json    ← job_envelope_v1
+      envelope.json    ← job envelope
       tasks/
         {task_id}/
           tasksheet.json  or  workplan.json
           notes.md
 ```
+
+## Working State vs Committed State
+
+The object store has two distinct partitions:
+
+**Working state** (`working/`) — the executor's scratch pad. The system writes freely here during job execution to test ideas, validate approaches, and reason through problems on paper. No user approval required. Working state is mutable and throwaway — it does not appear in the version history. Cleaned up after job completion.
+
+**Committed state** (`state.json` + `commits/`) — requires user approval. When the executor produces output worth persisting canonically, it proposes a commit via `propose_commit`. The user accepts or rejects. Only accepted commits update `state.json` and enter the commit history.
+
+This distinction gives the system room to think without making permanent decisions. The audit trail stays clean — only intentional, user-approved changes appear in the commit log.
+
+## Domain Agent as Doorkeeper
+
+Each domain agent is the doorkeeper of its own domain. When a turn arrives with the context blob, the domain agent self-selects — it decides whether the turn is relevant to it, checks whether the turn impacts an ongoing job, and forms an estimation call if a job is needed.
+
+No external classifier makes routing decisions. The agent knows its domain better than any classifier can.
 
 ### state.json Structure
 

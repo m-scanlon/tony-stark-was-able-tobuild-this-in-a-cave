@@ -27,49 +27,58 @@ The Voice Shard maintains an event register — a hash table keyed by `turn_id` 
 
 ---
 
-## Canonical Pipeline (v1)
+## Canonical Pipeline (v1) — Updated
 
 ```
-Voice Shard → Event Ingress → SQLite inbox → Queue → Internal Router → Estimator → External Router → LLM Session (planning + execution)
-                                                                              ↓
-                                                                        Job Registry
+Voice Shard → Event Ingress → SQLite inbox → Internal Router → [Max-Heap] → Estimator → LLM Session (planning + execution)
+                                                    ↓                              ↓
+                                                   RDS                       Job Registry
 ```
 
 - SQLite inbox: durability + ACK only. Not a work queue.
-- Queue: single queue for v1. Estimator owns lane assignment. No split queues.
-- Internal Router: context-aware job formation. Pulls context from Context Engine, resolves the domain agent, assembles `job_envelope_v1`.
-- Estimator: the scheduler. Reads `job_envelope_v1`, does a shallow consult with the agent domain for rough complexity, picks the target shard based on capability profiles and current load. Writes placement to Job Registry.
-- External Router: receives the Estimator's placement decision and dispatches the job to the assigned shard.
-- Job Registry: passive lifecycle tracker only. Source of truth for job state (created → routed → planning → executing → done / failed). Does not make decisions.
-- LLM Session: owns the full lifecycle — planning AND execution. One session, one context window. Updates Job Registry as the job progresses. No handoff mid-job.
+- Internal Router: simplified. Drops off turn data at context engine. Labels turn (in-domain | other) using context blob. Routes to relevant domain agents. Done. Does not assemble `job_envelope_v1`.
+- RDS: stores all turns with routing metadata. Batch process reads this at night to run turns against agents that weren't reached in real-time.
+- Domain Agent: doorkeeper. Self-selects relevance. Checks for job impact. Forms estimation call if a job is needed.
+- Max-Heap: all work items ordered by importance score. Three types: estimation (very high priority), job (high priority), batch (very low priority). One heap — no separate queues.
+- Estimator: reads complexity score from estimation output, matches to capable machine via shard capability profiles. Simpler placement than before — complexity score in tool calls is the primary input.
+- External Router: dispatches to assigned shard.
+- Job Registry: passive lifecycle tracker. Source of truth for job state.
+- LLM Session: owns full lifecycle — planning AND execution. One context window. Updates Job Registry as job progresses.
 
-No split queues in v1. Revisit if lane contention becomes a real problem.
+**Three inference types in the heap:**
+- `estimation` — very high priority. "Is this a job? How complex?" Complexity ≤ 1 → execute inline, never enters heap.
+- `job` — high priority. Long-running execution.
+- `batch` — very low priority. Weight updates, pattern detection. Runs on idle compute at night.
+
+**Preemptive scheduling:** Higher priority work interrupts in-flight jobs at tool call boundaries. Interrupted job's context window serialized to FIFO stack. Resume = pop context, continue generation.
 
 ---
 
-## What the Internal Router Needs from the Queue
+## What the Internal Router Needs
 
-To assemble `job_envelope_v1`, the Internal Router needs:
+The Internal Router is now simple. It needs:
 
 - `event_id` — internal reference to the inbox row
 - `turn_id` + `session_id` — for tracing and dedup
-- `transcript` — what the user said (from the raw event payload)
-- `triage_hints` — intent classification and `latency_class` (from the raw event payload)
-- `session_state` — new job or continuation (drives routing logic)
+- `transcript` — what the user said
+- `triage_hints` — intent classification and `latency_class`
+- `session_state` — new job or continuation
 
-From there, the Internal Router pulls from the Context Engine to resolve the domain agent and build the context package. The assembled `job_envelope_v1` — containing transcript + resolved agent + context package — is what everything downstream receives.
+It drops off the turn in RDS, attaches the context blob (pushed by CIX, already available), labels the turn via the front face transformer, and routes to the relevant domain agents. It does not assemble a complex job envelope. That work has moved to the domain agent.
 
-`job_envelope_v1` schema is still to be locked. That's the first question the dataflow walk must answer.
+## What the Estimator Needs
 
-## What the Estimator Needs from `job_envelope_v1`
+The Estimator now reads the **estimation call output** from the domain agent — not a complex `job_envelope_v1`:
 
-To make a placement decision, the Estimator needs:
+```json
+{
+  "is_job": true,
+  "complexity": 3,
+  "domain": "servers"
+}
+```
 
-- `latency_class` — from `triage_hints`, signals urgency
-- `agent_id` — to do a shallow consult with the agent domain for rough complexity
-- `job_envelope_v1` reference — passed through to the assigned shard via the External Router
-
-The Estimator picks the target shard based on capability profiles and current load, then writes the placement to the Job Registry. The Job Registry's record: (`job_id`, `event_id`, `agent_id`, `shard`, `status`, timestamps).
+Complexity (in estimated tool calls) is the primary placement signal. The Estimator matches against shard capability profiles and current load, picks the best available machine, writes placement to Job Registry.
 
 ---
 

@@ -69,22 +69,36 @@ CIX tracks per-device cache staleness — it knows which devices are registered 
 
 The context engine feeds LLM sessions. The Context Injector keeps edge device caches warm. Different consumers, different cadence, different content shape.
 
+### Design Principle: Data Integrity Over Context Management
+
+The context blob contains **all registered agents** with their relevance scores — not just currently active ones. This makes the blob larger but ensures the front face transformer has the full picture when labeling a turn and routing to domain agents. A dormant agent with a low relevance score takes up minimal space but prevents a routing miss.
+
+The tradeoff is conscious: a larger context is manageable. Missing data is not recoverable. Bet on data integrity; pray hardware catches up on UX.
+
+Relevance scores on agents mirror the importance vector model — they reflect how active and relevant a domain has been recently. High score = in focus. Low score = dormant but present. The front face transformer uses these scores, not hardcoded rules, to make routing decisions.
+
 ### Revised Data Flow
 
 Ingress shards (shards that take input) already have context available locally — kept warm by CIX. That context is attached to the payload at the hydration step before the event is sent. By the time the payload reaches the Brain Shard, context is already embedded.
 
+The context blob includes all registered agents with their current relevance scores. The front face transformer reads this blob and labels the turn: **in-domain** (belongs to one or more known agents) or **other** (doesn't clearly fit any current agent).
+
+- **In-domain turns** are routed directly to the relevant domain agents. Each agent receives the full context blob and self-selects — it decides whether the turn is relevant to it, checks for job impact, and forms a job if warranted. No external classifier makes this decision.
+- **Other turns** are stored in RDS with a record that they were not routed in real-time. The batch process picks them up at night and runs them against all agents to ensure nothing is permanently missed.
+
 This means the Internal Router does not need to interface with the Context Engine at request time. The context came with the event.
 
-When the payload reaches the domain agent, the context blob acts as a relevance signal applied directly to the object store. Items in the object store that relate to what's in the context blob get their vectors bumped up. Items not mentioned decay over time.
+When the payload reaches the domain agent, the context blob acts as a relevance signal applied directly to the object store. **Weight updates are deferred to batch** — they do not happen in real-time. Items in the object store are updated during the nightly batch pass, not on every turn.
 
 ```
-event arrives with context blob attached
-  → domain agent reads context blob
-  → scores items in object store against it
-  → mentioned/relevant items: vector goes up
-  → unmentioned items: vector decays down
-  → retrieval reads current vectors + semantic similarity
-  → surfaces items above relevance threshold only
+event arrives with context blob attached (all agents + relevance scores)
+  → front face transformer labels turn: in-domain | other
+  → in-domain: route to relevant domain agents
+      → each agent self-selects relevance
+      → each agent checks for job impact
+      → job formed if warranted
+  → other: store in RDS, batch picks up at night
+  → batch (night): all agents × accumulated turns → weight updates → pattern detection
 ```
 
 Semantic similarity alone is not enough — an item must also meet a minimum vector score before it's considered for retrieval. The vector threshold and decay rate are configurable and will be tuned empirically. Eventually Skyra tunes these herself based on what surfaces useful context vs noise.
@@ -201,7 +215,7 @@ context_package {
 
 The context engine follows a fixed retrieval order. Each step gates the next.
 
-1. **Agent registry (SQLite)** — filter to `active` agents only. Fast, no vector search.
+1. **Agent registry (SQLite)** — all registered agents, with relevance scores. No active/inactive filter — all agents are present in the context blob. Fast, no vector search.
 2. **Domain routing** — select the most relevant domain agent from the filtered set. Uses event text, session hints, and vector similarity over agent state.
 3. **Vector search — agent state** — retrieve semantically similar content from the domain agent's state index. Temporal metadata used for reranking.
 4. **Vector search — local tools** — retrieve tools by semantic similarity to the current request. Results below score threshold are dropped before hydration.
