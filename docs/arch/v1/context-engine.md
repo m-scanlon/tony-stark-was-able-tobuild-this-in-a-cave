@@ -162,17 +162,61 @@ Both sessions and turns carry a decay value (arbitrary scale 20–100). Anything
 
 Relevance-based data pulled from beyond the current session. This is where the algorithm lives.
 
-Each session and turn carries a weight (20–100). The retrieval strategy uses a combined score:
+#### Importance Vectors
+
+Every piece of data in the system — turns, sessions, commits, long term memory entries — carries two importance scores attached directly to that piece of data:
 
 ```
-score = weight * semantic_similarity
+{
+  global: 72,   // importance across the entire system, all domains, all time
+  regional: 45  // importance within a specific domain or context
+}
 ```
 
-- `weight` — long-term importance of the item. Captures things worth holding onto regardless of the current request.
-- `semantic_similarity` — how relevant the item is to the current transcript. Embed the transcript, score against the weighted index.
-- Combined score means: high weight + high similarity wins. Low weight items can still surface if highly relevant. High weight items can still surface even if not directly similar.
+Examples:
 
-Neither weight nor similarity alone is sufficient. Sources and full scoring logic TBD.
+```
+turn {
+  data: "what did I decide about backups"
+  vectors: { global: 40, regional: 85 }  // low global, high regional (servers domain)
+}
+
+session {
+  data: "Feb 2026 debugging session"
+  vectors: { global: 70, regional: 60 }
+}
+
+commit {
+  data: "decided to move everything to S3"
+  vectors: { global: 90, regional: 80 }  // major decision, high both
+}
+
+long_term_memory {
+  data: "Mike had a rough February and pushed through it"
+  vectors: { global: 75, regional: 20 }  // life significant, not domain specific
+}
+```
+
+- **global** — life significance. Major decisions, defining moments, patterns that hold across all domains.
+- **regional** — domain significance. High in the relevant domain, near zero in others. Scopes data naturally without hardcoded rules.
+
+Scores are not static — they evolve over time based on access frequency, recency, and whether the data becomes relevant to something currently happening. Decay and amplification strategy TBD.
+
+#### Retrieval Score
+
+At query time the context engine scores every candidate item:
+
+```
+score = global * regional * semantic_similarity
+```
+
+Highest scoring items that fit the token budget surface. The retrieval engine doesn't care if an item is a turn, a commit, or a long term memory entry — everything is just a scored item in the same index.
+
+#### Long Term Memory Store
+
+A dedicated store for significant moments, patterns, and emotionally weighted data that doesn't belong in the object store as a formal commit but deserves to outlive session history. Second class citizens — below the object store in authority, above session history in permanence.
+
+Sources and full scoring logic TBD.
 
 ### Context Package Shape
 
