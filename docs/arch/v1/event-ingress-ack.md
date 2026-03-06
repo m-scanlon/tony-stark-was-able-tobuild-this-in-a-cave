@@ -20,9 +20,9 @@ Out of scope:
 ## 2. Terminology
 
 - **Event**: structured message produced by listener/front-door for downstream orchestration.
-- **Outbox**: durable local queue on Voice Shard for unacked events.
+- **Event Register**: durable hash table (keyed by `turn_id`) on the Voice Shard tracking sent events awaiting ACK.
 - **Inbox**: durable control-plane store for accepted events.
-- **ACK**: control-plane confirmation that `event_id` is durably stored.
+- **ACK**: control-plane confirmation that the event for a given `turn_id` is durably stored.
 - **Idempotency**: processing duplicate deliveries without duplicate side effects.
 - **At-least-once delivery**: sender retries until ACK; duplicates are possible.
 
@@ -31,7 +31,7 @@ Out of scope:
 Components:
 
 - listener/front-door event producer (Voice Shard)
-- Voice Shard outbox + retry sender
+- Voice Shard event register + retry sender
 - transport channel (WebSocket initially, gRPC stream optional)
 - control-plane ingress handler
 - control-plane SQLite inbox
@@ -43,13 +43,13 @@ Components:
 +----------+----------+       +-----------+-----------+       +----------+-----------+
            |                                  ^                           |
            v                                  |                           v
-    +--------------+                    ACK(event_id)               +-------------+
-    | Voice Shard  | <--------------------------------------------- | SQLite Inbox|
-    | Outbox       |                                                | event_id PK |
-    +--------------+                                                +-------------+
+    +----------------+                  ACK(turn_id)               +-------------+
+    | Voice Shard    | <------------------------------------------- | SQLite Inbox|
+    | Event Register | <------------------------------------------- | event_id PK |
+    +----------------+                                              +-------------+
            |
            v
-   delete only after ACK
+   pop by turn_id only after ACK
 ```
 
 ## 4. Event Envelope Schema
@@ -102,7 +102,7 @@ ACK message:
 
 ```json
 {
-  "event_id": "evt_01JZ4J1NZ0A1G8R4J8X3P4H2WG",
+  "turn_id": "turn_8f4c",
   "ack_ts": "2026-02-16T23:10:22Z",
   "status": "stored"
 }
@@ -110,20 +110,20 @@ ACK message:
 
 Rules:
 
-- Brain Shard generates `event_id` (ULID) on ingress and returns it in the ACK
+- ACK references `turn_id` — Voice Shard never sees `event_id`, which is internal to the control plane
 - control plane sends ACK only after SQLite commit succeeds
-- Voice Shard stores the returned `event_id` and deletes outbox row by `turn_id` only after matching ACK
-- duplicate delivery (same `session_id` + `turn_id`) returns the same `event_id` in ACK without reinserting
-- invalid envelopes return error/NACK and remain in outbox for retry
+- Voice Shard pops entry from event register by `turn_id` on matching ACK
+- duplicate delivery (same `session_id` + `turn_id`) returns ACK without reinserting
+- invalid envelopes return error/NACK and remain in event register for retry
 
-## 6. Voice Shard Outbox Design
+## 6. Voice Shard Event Register
 
 Storage:
 
-- local SQLite DB on Voice Shard (`listener_outbox.db`)
+- local SQLite DB on Voice Shard (`listener_event_register.db`)
 - WAL mode enabled
 
-Recommended outbox fields:
+Fields:
 
 - `turn_id` (PRIMARY KEY — Voice Shard-generated, stable across retries)
 - `session_id` (paired with `turn_id` for Brain Shard-side deduplication)
@@ -132,13 +132,12 @@ Recommended outbox fields:
 - `next_attempt_at`
 - `attempt_count`
 - `last_error`
-- `acked_event_id` (populated after ACK received from Brain Shard; used for tracing)
 
 Retry:
 
 - background loop sends rows where `next_attempt_at <= now`
 - exponential backoff with jitter (cap max delay)
-- on ACK: store `acked_event_id` from ACK response, then delete row by `turn_id`
+- on ACK: delete row by `turn_id`
 - on failure/no ACK: increment attempts + reschedule
 
 ## 7. Control Plane Inbox Design
@@ -179,7 +178,7 @@ Idempotency behavior:
 
 - `event_id` is Brain Shard-generated (ULID) — unique per ingress attempt, not per logical event
 - `(session_id, turn_id)` UNIQUE constraint prevents duplicate rows on Voice Shard retry
-- duplicate delivery (same `session_id` + `turn_id`) triggers re-ACK with the original `event_id`, no reinsert
+- duplicate delivery (same `session_id` + `turn_id`) triggers re-ACK with `turn_id`, no reinsert
 
 ## 8. Ingress Flow
 
@@ -206,10 +205,10 @@ onEvent(envelope):
   begin tx
     try insert(event_id, session_id, turn_id, status="received", received_at=now, last_updated_at=now, payload=json)
     on duplicate (session_id, turn_id):
-      event_id = lookup_existing_event_id(session_id, turn_id)  # fetch original for ACK
+      event_id = lookup_existing_event_id(session_id, turn_id)  # fetch original for internal reference only
   commit tx
 
-  sendAck(event_id, status="stored")  # Voice Shard stores event_id for tracing; deletes outbox row by turn_id
+  sendAck(turn_id, status="stored")  # Voice Shard deletes outbox row by turn_id; event_id stays internal
 ```
 
 ## 9. Failure Scenarios
@@ -217,8 +216,8 @@ onEvent(envelope):
 Network drop before ACK:
 
 - event may already be stored
-- Voice Shard retries with same `turn_id` (Voice Shard never had an `event_id` — Brain Shard generates it)
-- control plane detects duplicate via `(session_id, turn_id)` UNIQUE constraint and re-ACKs with the original Brain Shard-generated `event_id`
+- Voice Shard retries with same `turn_id`
+- control plane detects duplicate via `(session_id, turn_id)` UNIQUE constraint and re-ACKs with `turn_id`
 
 Duplicate events:
 
@@ -232,7 +231,7 @@ Control plane crash after receive:
 
 Voice Shard reboot:
 
-- outbox persists locally
+- event register persists locally
 - sender resumes unsent/unacked events after restart
 
 ## 10. Service Placement Decision
@@ -277,7 +276,7 @@ skyra/
   services/
     listener/
       internal/
-        outbox/
+        event_register/
           store.go
           retry_loop.go
           sender.go
@@ -285,7 +284,7 @@ skyra/
 
 Responsibilities:
 
-- `services/listener/internal/outbox`: local persistence + retry sender
+- `services/listener/internal/event_register`: local persistence + retry sender
 - `internal/controlplane/ingress`: receive + validate + ACK
 - `internal/controlplane/inbox`: durable write/read primitives
 - `internal/event`: shared envelope and ACK protocol types
