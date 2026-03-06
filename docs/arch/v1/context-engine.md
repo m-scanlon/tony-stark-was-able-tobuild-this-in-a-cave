@@ -213,6 +213,26 @@ Highest scoring items that fit the token budget surface. The retrieval engine do
 
 A dedicated store for significant moments, patterns, and emotionally weighted data that doesn't belong in the object store as a formal commit but deserves to outlive session history. Second class citizens — below the object store in authority, above session history in permanence.
 
+Purpose-built for retrieval — not buried in git logs. The object store is the source of truth. The git log is the audit trail. Long term memory is the meaning layer.
+
+```
+// instead of:
+git log → 847 commits → grep → maybe find it
+
+// it's:
+long_term_memory.query("rough patch February") → v:[75, 20] → surfaces instantly
+```
+
+#### V3 — Background Importance Process
+
+A future background process that continuously measures and updates importance vectors across agents and across time. Uses real access patterns — which commits keep getting surfaced, which sessions keep being referenced — to keep vectors current.
+
+Because it runs across agents it can spot cross-domain patterns. Something that scores low regionally in every individual domain but keeps appearing everywhere accumulates global importance. This is also how the system detects new domains emerging in the user's life — data clustering around a topic with no existing agent, growing global relevance, low regional fit anywhere. The system surfaces it: "looks like photography is becoming a real part of your life, want me to create an agent for it?"
+
+- **V1**: static vectors, manually assigned or simple rules
+- **V2**: vectors updated based on access frequency and recency
+- **V3**: full background process — cross-agent, cross-time, domain detection, long term memory commits
+
 Sources and full scoring logic TBD.
 
 ### Context Package Shape
