@@ -1,6 +1,8 @@
 # Context Engine (v1)
 
-The context engine is responsible for assembling everything that flows into an LLM session. It is the layer that knows what to pull, how much to include, and in what order.
+> **Design status**: The model described in sections 3–5 reflects an earlier reactive design — assemble on request. A significant design change is in progress (see section 10). The new model is proactive and commit-based. Sections 1–2 remain accurate. Sections 3–8 are partially superseded — treat them as a baseline to be revised, not as locked design.
+
+The context engine is the system's short term memory. It is an ever-growing, ever-evolving state machine that continuously watches what is happening — jobs running, turns completing, user patterns — and maintains a warm, current context state through inference commits. It does not assemble context on demand from scratch. It keeps context ready.
 
 ---
 
@@ -51,7 +53,7 @@ Sessions are the unit the context engine uses to scope recent turn history. When
 
 A unit of work produced by the pipeline. Jobs are **independent of sessions**. A turn may produce a job, or it may not. Multiple turns may contribute to the same job (clarification, approval, continuation). The domain expert decides — not the session layer.
 
-Jobs are tracked in the scheduler's jobs table and in the object store under the agent. The session tracks `pending_job_id` in `voice_event_v1.session_state` so the Brain Shard can route continuations correctly — but the job does not belong to the session.
+Jobs are tracked in the Job Registry and in the object store under the agent. The session tracks `pending_job_id` in `voice_event_v1.session_state` so the Brain Shard can route continuations correctly — but the job does not belong to the session.
 
 ---
 
@@ -198,6 +200,63 @@ Turn history is the primary source for the `recent_turns` section of the context
 - How many recent turns are included by default before token budget pressure kicks in?
 - Does the context engine run on every request, or is the package cached and invalidated on state change?
 - How does the context engine handle domain routing ambiguity — does it inject multiple candidate agents or block until routing resolves?
+
+---
+
+## 10. Design Direction — Proactive Commit-Based Model
+
+> This section captures the direction the context engine is moving. It is not yet locked. Open questions are noted inline.
+
+### Core Idea
+
+The context engine is not a query engine. It is a continuously running background process — the system's short term memory. It watches data sources, runs inference, and commits relevant observations to its own state. When the Internal Router asks for context, the answer is already there. The hard work happened in the background.
+
+### Two Modes
+
+**Background loop** — always running. Watches:
+- Jobs in flight (what is currently executing, what stage, what tools are being called)
+- Turns completing (what the user said, what the system responded)
+- Agent state changes (commits to the object store)
+- User patterns emerging across sessions
+
+On each cycle, the loop runs inference and commits observations it considers relevant. Examples: "User has been asking about backups across three sessions." "A job is running that touches the filesystem agent." "Last two turns were about the same topic — this is a continuing thread."
+
+**Request time** — Internal Router asks for context. Context engine reads its latest committed state and assembles the package. Fast shallow read, not a full retrieval pass. The background loop already did the work.
+
+### Commit Model
+
+The context engine maintains its own committed state — separate from agent state. Commits are inference results, not raw observations. Each commit has:
+- a relevance signal (why this was committed)
+- a decay property (open question — time-based, relevance-based, or both?)
+- a confidence level (direct observation vs inferred pattern)
+
+When the context budget fills, lowest-relevance commits are evicted first.
+
+### Tools Are Out
+
+Tools are not part of the context engine's responsibility. The context engine assembles memory and history. Tool retrieval is the Agent Service's job, called from inside the LLM session during planning. Clean separation — the context engine does not need to know about tools.
+
+### What the Context Package Contains (revised)
+
+1. `skyra.user` — always first
+2. Domain agent snapshot — from latest commit
+3. Recent turns — from active session
+4. Active job context — if this is a continuation
+
+No tools. No hydration. Just context.
+
+### Retrieval Algorithm (revised role)
+
+The retrieval steps in section 5 remain relevant but their role changes. They are no longer a request-time assembly pipeline — they describe the logic the **background loop** runs continuously to decide what to commit. Domain routing, vector search over agent state, recent commit retrieval, reranking — all of that happens in the background, not at request time.
+
+### Open Questions
+
+- What is the decay model — time-based, relevance-based, or both?
+- What is the commit cadence for the background loop — event-driven, periodic, or hybrid?
+- How does the context engine handle domain routing ambiguity at request time if the background state is stale?
+- Where does the context engine's own committed state live — SQLite, vector DB, object store?
+- What is the eviction policy when the budget fills?
+- Does the background loop run inference using a lightweight model, or is it purely rule/signal based?
 
 ---
 
