@@ -6,6 +6,24 @@ This is a big feature. The full scoring algorithm is a V2/V3 problem — the des
 
 ---
 
+## Problems This Solves
+
+**Semantic similarity alone is not enough.** Two pieces of text can be semantically similar without one being relevant to the current moment. Importance vectors add a second independent signal — if something scores high on both relevance and importance, you can trust it. Low importance items don't even make it to the semantic search step.
+
+**Context retrieval has no memory of what matters.** Without vectors, every retrieval pass starts from scratch — recency and text similarity are the only signals. The system has no way to know that a decision made six months ago is still load-bearing, or that a rough patch Mike went through is worth remembering. Vectors encode that knowledge and keep it current.
+
+**Everything buried in the git log.** The object store's commit history is an audit trail, not a memory system. Finding a meaningful past decision means grepping through hundreds of commits. Long term memory with importance vectors makes meaningful data purpose-built for retrieval — structured, scored, instantly accessible.
+
+**No way to scope data to where it matters.** Without regional importance, a piece of data from the servers domain could surface inside a gym session query. Regional vectors naturally scope data to where it's relevant without hardcoded rules or domain filters.
+
+**The system can't detect when your life changes.** A pure retrieval system has no awareness of emerging patterns. Importance vectors accumulating around a topic with no existing agent is the signal that a new domain is forming. The system can surface that observation and propose a new agent — the AI adapts to the user's life rather than waiting to be reconfigured.
+
+**Tuning requires real usage data.** Static retrieval rules can't be calibrated without knowing what actually surfaces useful context. Because vectors are numeric and configurable, thresholds and decay rates can be tuned empirically — and eventually by Skyra herself.
+
+---
+
+---
+
 ## 1. The Vector
 
 ```
