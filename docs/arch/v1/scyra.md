@@ -457,7 +457,7 @@ sequenceDiagram
   end
 
   Pi->>Mac: POST /voice {voice_event_v1 + context_state + session_state}
-  Note over Pi,Mac: event_id stamped by Voice Shard outbox before send
+  Note over Pi,Mac: Brain Shard generates event_id on ingress — Voice Shard never sends one
   Mac-->>Pi: Transport ACK(event_id) after durable inbox write
   Mac->>CIX: Fan-out context_state (available_for_injection)
 
