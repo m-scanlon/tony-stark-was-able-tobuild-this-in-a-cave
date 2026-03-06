@@ -80,33 +80,31 @@ This is unresolved. Options discussed but not decided:
 
 ---
 
-## What We Need to Define Next
+## Direct Next Step
 
-To design the executor loop, we need to answer:
+Walk the data model. For each service in the canonical flow — `event → inbox → queue → estimator → scheduler → assigned LLM session` — write down exactly what it needs as input and what it produces as output. Don't design schemas in isolation. Let the handoff contracts write the schemas.
 
-1. **What exactly does the executor receive?** — the full `job_envelope_v1` schema. What fields does it contain? What does it look like when handed off from the scheduler?
+The pipeline:
 
-2. **How does the executor know what tools to call?** — global tools are always injected. Local tools are retrieved by the Domain Expert during planning and embedded in the task artifact. Does the executor re-retrieve, or trust the plan?
+1. **Voice Shard** — emits `voice_event_v1`
+2. **Event Ingress** — receives, assigns `event_id`, deduplicates, routes (new job vs continuation)
+3. **Inbox / Queue** — holds the job until a session is available
+4. **Estimator** — scores complexity, latency class, resource requirements
+5. **Scheduler** — assigns to a lane, manages job status, hands off to LLM session
+6. **LLM Session (Domain Expert)** — planning phase: retrieves agent context + tools, forms plan artifact
+7. **LLM Session (Executor)** — executing phase: runs tool calls, validates, replans if needed
+8. **Agent Service** — handles state commits during or after execution
+9. **Voice Shard (response)** — receives `UPDATE` / `PLAN_PROGRESS` / final result, renders to user
 
-3. **What does the replanning trigger look like?** — tool denied (BoundaryValidator), validation failure, or confidence threshold not met. How does the executor signal replan vs halt vs clarify?
+For each hop: what does the receiver need? What does the sender know at that moment? What's the contract?
 
-4. **How does the executor emit progress to the user?** — `UPDATE` and `PLAN_PROGRESS` events flow back to Voice Shard during execution. When are they emitted? Who controls the cadence?
+The five questions that the walk will answer:
 
-5. **How does a state commit happen mid-execution?** — the executor calls `propose_commit` → `apply_commit` through the Agent Service global tools. Is this per-step or at the end of the plan?
-
----
-
----
-
-## How to Approach the Data Model
-
-The flow is already designed. The next hard thing is the data model — and the right way in is:
-
-1. **Walk the pipeline stage by stage** — for each service/component in the canonical flow (`event → inbox → queue → estimator → scheduler → assigned LLM session`), write down exactly what it needs as input and what it produces as output.
-2. **Let the objects emerge from that** — once every handoff has a clear input/output requirement, the schema of each object (`job_envelope_v1`, task object, WorkPlan, TaskSheet, etc.) becomes a direct consequence of what the services on both sides need. Don't design the schema in isolation.
-3. **Lock the handoff contracts first** — the riskiest gap is the scheduler→session handoff (`job_envelope_v1`). That's the one everything depends on. Start there.
-
-The instinct to start with the object schema is wrong. Start with what each service needs, and the schema writes itself.
+1. **What exactly does the executor receive?** — the full `job_envelope_v1` schema
+2. **How does the executor know what tools to call?** — re-retrieve, or trust the plan?
+3. **What does the replanning trigger look like?** — denied tool, validation failure, confidence threshold?
+4. **How does the executor emit progress?** — when and who controls the cadence of `UPDATE` events?
+5. **How does a state commit happen mid-execution?** — per-step or end-of-plan?
 
 ---
 
