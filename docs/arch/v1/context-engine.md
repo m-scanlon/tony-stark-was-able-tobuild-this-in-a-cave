@@ -185,7 +185,10 @@ Relevance-based data pulled from beyond the current session. This is where the a
 Every piece of data in the system — turns, sessions, commits, long term memory entries — carries two importance scores attached directly to that piece of data:
 
 ```
-[72, 45]  // [global, regional]
+v: {
+  global:   [long_term, medium_term, session],
+  regional: [long_term, medium_term, session]
+}
 ```
 
 Examples:
@@ -193,22 +196,26 @@ Examples:
 ```
 turn {
   data: "what did I decide about backups"
-  v: [40, 85]  // low global, high regional (servers domain)
-}
-
-session {
-  data: "Feb 2026 debugging session"
-  v: [70, 60]
+  v: {
+    global:   [20, 30, 85],  // not historically significant, somewhat recent, very live right now
+    regional: [10, 40, 90]   // low cross-domain, medium recent, high in current domain
+  }
 }
 
 commit {
   data: "decided to move everything to S3"
-  v: [90, 80]  // major decision, high both
+  v: {
+    global:   [90, 60, 30],  // major decision, fading medium term, not session relevant
+    regional: [80, 70, 40]   // high in servers domain across time
+  }
 }
 
 long_term_memory {
   data: "Mike had a rough February and pushed through it"
-  v: [75, 20]  // life significant, not domain specific
+  v: {
+    global:   [75, 30, 5],   // life significant, fading, not session relevant
+    regional: [20, 10, 5]    // not domain specific
+  }
 }
 ```
 
