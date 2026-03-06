@@ -61,15 +61,33 @@ Jobs are tracked in the Job Registry and in the object store under the agent. Th
 
 These are two distinct components. Do not conflate them.
 
-**Context Engine** — assembles the context package that is injected into an LLM session on the Brain Shard. Runs at request time. Pulls from agent state, turn history, and tool registry.
+**Context Engine** — maintains warm context state through a background process. Not a request-time assembler. Continuously watches jobs, turns, and agent state, runs inference, and commits observations. The intelligence happens in the background — retrieval at request time is just a fast read.
 
-**Context Injector (CIX)** — a Brain Shard sync daemon that continuously watches for state changes in the context engine and pushes compressed context packages to registered edge devices when their cache is stale. CIX is not turn-aware — it is state-aware. The trigger is not "a turn completed," it is "context engine state changed and this device is behind." Anything that mutates state (agent commit, knowledge update, tool boundary change) can trigger a push.
+**Context Injector (CIX)** — a Brain Shard sync daemon that continuously watches for state changes and pushes compressed context packages to registered edge devices when their cache is stale. CIX is not turn-aware — it is state-aware. Anything that mutates state (agent commit, knowledge update, tool boundary change) can trigger a push.
 
 CIX tracks per-device cache staleness — it knows which devices are registered and when each one last received a push. Edge devices do not ask for context. They receive it.
 
-The `cache_age_seconds` field in `voice_event_v1` (v2) reflects how long since the edge device's cache was last updated by CIX — not how long since the last turn. The Brain Shard uses this to weight the triage hints the Voice Shard sends.
-
 The context engine feeds LLM sessions. The Context Injector keeps edge device caches warm. Different consumers, different cadence, different content shape.
+
+### Revised Data Flow
+
+Ingress shards (shards that take input) already have context available locally — kept warm by CIX. That context is attached to the payload at the hydration step before the event is sent. By the time the payload reaches the Brain Shard, context is already embedded.
+
+This means the Internal Router does not need to interface with the Context Engine at request time. The context came with the event.
+
+When the payload reaches the domain agent, the context blob acts as a relevance signal applied directly to the object store. Items in the object store that relate to what's in the context blob get their vectors bumped up. Items not mentioned decay over time.
+
+```
+event arrives with context blob attached
+  → domain agent reads context blob
+  → scores items in object store against it
+  → mentioned/relevant items: vector goes up
+  → unmentioned items: vector decays down
+  → retrieval reads current vectors + semantic similarity
+  → surfaces items above relevance threshold only
+```
+
+Semantic similarity alone is not enough — an item must also meet a minimum vector score before it's considered for retrieval. The vector threshold and decay rate are configurable and will be tuned empirically. Eventually Skyra tunes these herself based on what surfaces useful context vs noise.
 
 ---
 
