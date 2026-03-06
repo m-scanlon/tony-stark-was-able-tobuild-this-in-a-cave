@@ -178,87 +178,13 @@ Both sessions and turns carry a decay value (arbitrary scale 20–100). Anything
 
 ### Retrieved
 
-Relevance-based data pulled from beyond the current session. This is where the algorithm lives.
-
-#### Importance Vectors
-
-Every piece of data in the system — turns, sessions, commits, long term memory entries — carries two importance scores attached directly to that piece of data:
-
-```
-v: {
-  global:   [long_term, medium_term, session],
-  regional: [long_term, medium_term, session]
-}
-```
-
-Examples:
-
-```
-turn {
-  data: "what did I decide about backups"
-  v: {
-    global:   [20, 30, 85],  // not historically significant, somewhat recent, very live right now
-    regional: [10, 40, 90]   // low cross-domain, medium recent, high in current domain
-  }
-}
-
-commit {
-  data: "decided to move everything to S3"
-  v: {
-    global:   [90, 60, 30],  // major decision, fading medium term, not session relevant
-    regional: [80, 70, 40]   // high in servers domain across time
-  }
-}
-
-long_term_memory {
-  data: "Mike had a rough February and pushed through it"
-  v: {
-    global:   [75, 30, 5],   // life significant, fading, not session relevant
-    regional: [20, 10, 5]    // not domain specific
-  }
-}
-```
-
-- **global** — life significance. Major decisions, defining moments, patterns that hold across all domains.
-- **regional** — domain significance. High in the relevant domain, near zero in others. Scopes data naturally without hardcoded rules.
-
-Scores are not static — they evolve over time based on access frequency, recency, and whether the data becomes relevant to something currently happening. Decay and amplification strategy TBD.
-
-#### Retrieval Score
-
-At query time the context engine scores every candidate item:
+Relevance-based data pulled from beyond the current session. The Context Retriever scores every candidate item using importance vectors — every piece of data in the system carries a `v: { global, regional }` vector where each dimension has a time horizon profile `[long_term, medium_term, session]`. Items must meet a minimum vector score before semantic similarity is computed.
 
 ```
 score = global * regional * semantic_similarity
 ```
 
-Highest scoring items that fit the token budget surface. The retrieval engine doesn't care if an item is a turn, a commit, or a long term memory entry — everything is just a scored item in the same index.
-
-#### Long Term Memory Store
-
-A dedicated store for significant moments, patterns, and emotionally weighted data that doesn't belong in the object store as a formal commit but deserves to outlive session history. Second class citizens — below the object store in authority, above session history in permanence.
-
-Purpose-built for retrieval — not buried in git logs. The object store is the source of truth. The git log is the audit trail. Long term memory is the meaning layer.
-
-```
-// instead of:
-git log → 847 commits → grep → maybe find it
-
-// it's:
-long_term_memory.query("rough patch February") → v:[75, 20] → surfaces instantly
-```
-
-#### V3 — Background Importance Process
-
-A future background process that continuously measures and updates importance vectors across agents and across time. Uses real access patterns — which commits keep getting surfaced, which sessions keep being referenced — to keep vectors current.
-
-Because it runs across agents it can spot cross-domain patterns. Something that scores low regionally in every individual domain but keeps appearing everywhere accumulates global importance. This is also how the system detects new domains emerging in the user's life — data clustering around a topic with no existing agent, growing global relevance, low regional fit anywhere. The system surfaces it: "looks like photography is becoming a real part of your life, want me to create an agent for it?"
-
-- **V1**: static vectors, manually assigned or simple rules
-- **V2**: vectors updated based on access frequency and recency
-- **V3**: full background process — cross-agent, cross-time, domain detection, long term memory commits
-
-Sources and full scoring logic TBD.
+Full vector design, scoring formula, decay model, long term memory store, and versioned rollout: see `docs/arch/v1/importance-vectors.md`.
 
 ### Context Package Shape
 
@@ -376,6 +302,7 @@ The retrieval steps in section 5 remain relevant but their role changes. They ar
 
 ## 9. Related Docs
 
+- `docs/arch/v1/importance-vectors.md` — full importance vector design, scoring formula, decay, long term memory, self-tuning
 - `docs/arch/v1/lifecycle.md` — full 8-stage pipeline
 - `docs/arch/v1/domain-expert/README.md` — planning phase, tool system
 - `docs/arch/v1/agents/README.md` — agent model, system vs domain agents
