@@ -1,5 +1,15 @@
 # Skyra Unsupervised Task Estimator
 
+> **Status: SUPERSEDED.** This document describes the original ML clustering approach for the Estimator. The Estimator's role changed significantly with the architecture revision.
+>
+> **Current design:** The Estimator reads the estimation call output produced by the domain agent (`{is_job, complexity, domain}`), matches complexity score (measured in estimated tool calls) against registered shard capability profiles and current load, and assigns the job to the best available machine. No ML clustering, no token prediction, no heuristics.
+>
+> See `skyra/internal/delegation/README.md` for the current role and `docs/arch/v1/scheduler.md` for the full heap and placement design.
+>
+> The content below is retained for reference only.
+
+---
+
 Internal engineering documentation for implementation and operations.
 
 ## 1. Overview

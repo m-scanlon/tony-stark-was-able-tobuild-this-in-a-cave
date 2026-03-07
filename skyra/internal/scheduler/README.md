@@ -1,17 +1,17 @@
-# Scheduler Service
+# Job Registry
 
 ## What It Is
 
-The Scheduler is a control-plane service on the Mac mini. It sits between the Estimator and the assigned LLM session. Its job is to receive annotated jobs, assign them an execution lane, and track their operational lifecycle.
+The Job Registry is a passive lifecycle tracker on the Brain Shard. It is the source of truth for job state from creation through completion or failure. It does not make placement, routing, or lane decisions — those are owned by the Estimator.
 
-It is intentionally simple in v1. Single queue, lane assignment only.
+It is intentionally simple in v1. Single queue, state tracking only.
 
 ## Responsibilities
 
-- Receive jobs from the queue after Estimator annotation
-- Assign an execution lane (`fast_local` or `deep_reasoning`)
-- Track operational job status from queued through completion
-- Surface active and queued jobs to other services (context injector)
+- Record jobs as they enter the system (`created`)
+- Reflect routing decisions made by the Estimator (`routed`, `shard_id`, `lane`, `routed_at`)
+- Track job status through planning, execution, and completion
+- Surface active job state to other services (context injector)
 
 ## What It Does Not Do
 
@@ -19,82 +19,84 @@ It is intentionally simple in v1. Single queue, lane assignment only.
 - Does not execute tasks — that is the assigned LLM session's job
 - Does not make semantic decisions about job content
 - Does not own the TaskSheet or WorkPlan — those live in the object store
-- Does not decide final scheduling policy — the Estimator informs, the Scheduler decides
+- Does not assign lanes or route to shards — that is the Estimator's job
 
 ## Position in the Pipeline
 
 ```
 event
   → inbox (SQLite, event_id PK)
-  → queue
-  → Estimator (annotates lane hints)
-  → Scheduler (assigns lane, creates job record)
+  → Internal Router (labels turn, routes to domain agents)
+  → Domain Agent (estimation call → {is_job, complexity, domain})
+  → Max-Heap (all work ordered by importance score)
+  → Estimator (reads complexity, matches to capable shard → Job Registry)
   → assigned LLM session (task formation + execution)
-  → Scheduler (marks completed or failed)
+  → Job Registry (marks planning → executing → completed / failed)
 ```
 
-Canonical pipeline reference: `docs/arch/v1/scyra.md` section 10.2
+Canonical pipeline reference: `docs/arch/v1/dataflow-walk-notes.md`, `docs/arch/v1/scheduler.md`
 
-## Execution Lanes
+## Shard Placement
 
-| Lane | Used For |
+The Estimator matches complexity score (in estimated tool calls) against registered shard capability profiles. There are no hardcoded lanes — routing is capability-profile-based.
+
+| Complexity | Likely target |
 |---|---|
-| `fast_local` | Short, low-cost requests handled by local Mac models |
-| `deep_reasoning` | Complex requests routed to a Shard with deep_reasoning capability |
+| ≤ 1 | Inline execution — never reaches heap or Estimator |
+| 2–5 | Mac mini class |
+| 6+ | GPU machine or most capable available shard |
 
-The Estimator provides lane hints. The Scheduler makes the final assignment.
+The Estimator makes the placement decision. The Job Registry records it.
 
 ## Job Lifecycle
 
 ```
-queued → running → completed
-                 → failed
+created → routed → planning → executing → completed
+                                        → failed
 ```
 
-- `queued`: job accepted, waiting for lane assignment
-- `running`: lane assigned, LLM session is active
+- `created`: job accepted, record written to registry
+- `routed`: Estimator has assigned lane and shard; `shard_id`, `lane`, and `routed_at` are set
+- `planning`: assigned LLM session is forming the task
+- `executing`: LLM session is actively executing
 - `completed`: session finished successfully
 - `failed`: unrecoverable error
 
-## Job Envelope
+## Job Entry Contract
 
-Each job entering the scheduler carries a `job_envelope_v1`:
+Each job entering the heap originates from an estimation call produced by the domain agent:
 
-- `job_id`
-- `parent_job_id`
-- `agent_id`
-- `intent`
-- `priority`
-- `required_tools`
-- `target` (`none | control_plane | shard:<id>`)
-- `risk_level` (`low | med | high`)
-- `expect_response_by`
-- `schema_version`
+```json
+{
+  "is_job": true,
+  "complexity": 3,
+  "domain": "servers"
+}
+```
 
-Note: `job_envelope_v1` schema is not yet locked. See `docs/arch/v1/gaps.md` G1.
+Complexity is measured in estimated tool calls. This is the primary placement signal — the Estimator reads it and matches against shard capability profiles. The estimation call schema is not yet locked. See `docs/arch/v1/gaps.md` G1.
 
 ## Data Model
 
 See `schema.sql`.
 
-The jobs table is operational state only. Owned exclusively by the Scheduler.
+The jobs table is operational state only. Owned exclusively by the Job Registry.
 
 Access rules:
-- Scheduler: read + write
-- Estimator: read only
+- Job Registry: read + write
+- Estimator: write on routing (sets `shard_id`, `lane`, `routed_at`, `status = routed`); read otherwise
 - Context Injector: read only (`status`, `agent_id`)
 
 ## v1 Constraints
 
-- Single queue, no priority tiers
-- Lane assignment is the only routing decision
-- No backpressure or overload handling
-- No job cancellation or pause/resume
-- transport ACK confirms durable ingest only — execution may occur later from queue
+- Backpressure and overload policies are undefined — see `docs/arch/v1/gaps.md` G6
+- Preemptive scheduling is supported — higher priority work can interrupt in-flight jobs. Interrupted job's context window is serialized to a FIFO stack and resumed when the machine is free. See `docs/arch/v1/scheduler.md`.
+- Transport ACK confirms durable ingest only — execution may occur later from the heap
 
 ## Related Docs
 
-- `docs/arch/v1/scyra.md` — canonical pipeline and job envelope
-- `docs/arch/v1/task-formation.md` — what happens inside the assigned LLM session
-- `docs/arch/v1/gaps.md` — known open issues including job_envelope_v1 schema lock
-- `skyra/internal/delegation/estimator/DESIGN.md` — estimator design
+- `docs/arch/v1/scheduler.md` — unified heap, three inference types, complexity scoring, preemptive scheduling
+- `docs/arch/v1/dataflow-walk-notes.md` — updated canonical pipeline
+- `docs/arch/v1/task-formation.md` — domain agent as doorkeeper, estimation call
+- `docs/arch/v1/gaps.md` — known open issues including estimation call schema lock (G1)
+- `skyra/internal/delegation/README.md` — estimator placement role

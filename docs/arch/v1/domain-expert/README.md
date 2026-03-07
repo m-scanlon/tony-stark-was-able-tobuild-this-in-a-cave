@@ -4,7 +4,7 @@ This directory is the source of truth for how the Domain Expert works.
 
 ## 1. What It Is
 
-- Domain Expert is a control-plane service module on Mac mini.
+- Domain Expert is a control-plane service module on the Brain Shard.
 - It is not a remote machine agent.
 - Task planning and task execution are carried out by the same LLM session/context.
 - It shapes an accepted event into one of:
@@ -24,8 +24,8 @@ Code references:
 Inputs:
 
 - user request/event text
-- agent routing result (`domain_id`, confidence, candidates)
-- context window + memory retrieval results
+- context blob (all agents with relevance scores, session history, retrieved context — attached at hydration by CIX)
+- domain agent self-selection result (the domain agent receives the context blob and determines relevance before the Domain Expert runs)
 - tool registry/allowlist + policies
 
 Output:
@@ -68,7 +68,7 @@ The Domain Expert operates within a two-layer tool system:
 
 Before local tools are returned to the Domain Expert, the Agent Service runs a hydration step: each tool is joined against the agent's boundary in `state.json` and enriched with an `access` field (`status: allowed | locked`, `reason`). The Domain Expert receives all retrieved tools — including locked ones — with their access status clearly attached. No tools are hidden. The LLM can reason over what is available and what is restricted.
 
-Locked tools that the LLM attempts to call are caught at runtime by the BoundaryValidator before execution. See `skyra/internal/project/README.md` for the full enforcement model.
+Locked tools that the LLM attempts to call are caught at runtime by the BoundaryValidator before execution. See `skyra/internal/agent/README.md` for the full enforcement model.
 
 `requires_approval` on a local tool means the tool is surfaced and highlighted to the user during plan review. It does NOT pause execution mid-run. See Section 8 for the distinction between this and `PLAN_APPROVAL_REQUIRED`.
 
@@ -119,7 +119,7 @@ Each evidence item:
 - Domain Expert may also execute approved plan steps in the same LLM session.
 - Domain Expert does not directly commit memory/project state.
 - State commits happen downstream through canonical execution + commit flow.
-- Pi remains non-authoritative and only renders backend-authored outputs.
+- Voice Shard remains non-authoritative and only renders backend-authored outputs.
 
 ## 8. Plan Approval Gate
 
@@ -155,4 +155,4 @@ Tool mapping:
 - `docs/arch/v1/task-formation.md`
 - `docs/arch/v1/agents-services.md`
 - `docs/arch/v1/scyra.md`
-- `skyra/internal/project/README.md` — agent service, global tools, local tool registry
+- `skyra/internal/agent/README.md` — agent service, global tools, local tool registry

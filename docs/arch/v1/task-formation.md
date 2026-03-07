@@ -91,25 +91,49 @@ Patch requirements:
 - stateful path must emit patch payload or patch-generation request
 - patch must be attributable to source event and task id
 
-## 5. Domain Routing
+## 5. Domain Routing — Domain Agent as Doorkeeper
 
-Routing maps an event to the most relevant project/domain.
+There is no central classifier. Domain agents self-select relevance.
 
-Routing inputs:
+The front face transformer reads the context blob — which contains **all registered agents with their relevance scores** — and labels the turn as in-domain or "other." For in-domain turns, it routes to the relevant domain agents. Each agent receives the full context blob and makes its own decision about whether the turn belongs to it.
 
-- event text and metadata
-- session hints
-- agent registry
-- vector search over derived agent state
+The domain agent is the doorkeeper of its own domain. No external system knows a domain better than the agent that owns it.
 
-Routing outputs:
+**"Other" turns** — turns that don't clearly fit any current agent — are stored in RDS and picked up by the nightly batch process. Every agent runs against accumulated session context at night, so nothing is permanently missed. A turn deposited into a domain that doesn't quite fit yet is acceptable; the V3 background process will detect accumulating patterns and propose new agents over time.
 
-- `domain_id`
-- `agent_id` (if resolved)
-- `routing_confidence`
-- `top_candidates[]`
+**Routing inputs (front face transformer):**
+- turn transcript
+- context blob (all agents + relevance scores)
+- importance score assigned at ingress
 
-If confidence is low, formation enters ambiguity handling (see Section 11).
+**Domain agent self-selection:**
+- receives full context blob
+- decides if turn is relevant to its domain
+- checks whether turn impacts an ongoing job
+- forms a job if warranted (see Section 5a)
+
+If a turn spans multiple domains, multiple agents can each self-select independently. No special-casing needed.
+
+## 5a. Estimation Call
+
+After the domain agent receives the turn and determines a job is needed, it produces an **estimation call** — the first inference call for any actionable turn.
+
+Output:
+
+```json
+{
+  "is_job": true,
+  "complexity": 3,
+  "domain": "servers"
+}
+```
+
+Complexity is measured in **estimated tool calls**.
+
+- `complexity ≤ 1` → execute inline immediately. Never enters the heap.
+- `complexity > 1` → form job, push to heap. Estimator routes to best available machine.
+
+The complexity threshold is currently **1** and will be tuned from real usage data. See `docs/arch/v1/scheduler.md` for full heap and inference type design.
 
 ## 6. Domain Expert Role
 
@@ -128,7 +152,7 @@ Responsibilities:
 - validate critical assumptions with tools when needed
 - include citations in TaskSheet evidence when external/docs lookup is used
 
-Note: before local tools are returned to the Domain Expert, the Agent Service runs a hydration step — each tool is enriched with an `access` field derived from the agent boundary in `state.json`. The Domain Expert receives all retrieved tools, including locked ones, with their access status attached. Locked tools that the LLM proposes calling are caught by the BoundaryValidator at runtime before execution. See `skyra/internal/project/README.md` for the full hydration and enforcement model.
+Note: before local tools are returned to the Domain Expert, the Agent Service runs a hydration step — each tool is enriched with an `access` field derived from the agent boundary in `state.json`. The Domain Expert receives all retrieved tools, including locked ones, with their access status attached. Locked tools that the LLM proposes calling are caught by the BoundaryValidator at runtime before execution. See `skyra/internal/agent/README.md` for the full hydration and enforcement model.
 
 Expected output contract:
 
@@ -159,7 +183,7 @@ Optional review by a larger model for complex/high-risk formations.
 
 Typical triggers:
 
-- low routing confidence
+- low formation confidence
 - broad stateful patch scope
 - multi-system dependency count above threshold
 - ambiguous intent wording
@@ -194,7 +218,7 @@ Idempotency:
 
 ## 10. Queue, Scheduler, and Execution Start
 
-Task formation and execution run in the same assigned LLM context after queueing and scheduler lane assignment.
+Task formation and execution run in the same assigned LLM context after queueing and Estimator placement.
 
 Execution model:
 
@@ -217,10 +241,10 @@ These are two distinct concepts and must not be confused.
 - `PLAN_APPROVAL_REQUIRED` — a plan-level gate. The entire plan waits for user approval before any execution begins. This is what is described above.
 - `requires_approval` on a local tool — a tool-level flag in the tool registry. It means the tool is surfaced and highlighted to the user during plan review so they can see it clearly. It does NOT pause execution mid-run. The user approves the full plan once and execution continues uninterrupted.
 
-Planner event emission:
+Domain Expert event emission:
 
-- during formation, planner/domain expert may emit user-facing events via context engine
-- planner may invoke these via interaction tools (for example `ask_user`)
+- during formation, Domain Expert may emit user-facing events via context engine
+- Domain Expert may invoke these via interaction tools (for example `ask_user`)
 - allowed planning events: `CLARIFY`, optional `PLAN_PROGRESS`, `PLAN_APPROVAL_REQUIRED`
 - events must be persisted on the event/context timeline before delivery
 - execution remains blocked until approval event resolves to `APPROVE`
@@ -233,8 +257,8 @@ Execution start guarantees:
 
 Important boundary:
 
-- scheduler v1 is intentionally simple (single queue + lane assignment)
-- estimator is only one scheduler component, not the scheduler itself
+- scheduling is handled by the unified max-heap — see `docs/arch/v1/scheduler.md`
+- the Estimator reads the estimation call output and makes placement decisions
 - formation does not decide final scheduling policy
 
 ## 11. Failure and Ambiguity Handling
@@ -298,83 +322,26 @@ Duplicate source events:
 ## 14. Related Docs
 
 - Executor runtime design (draft): `docs/arch/v1/executor.md`
-- Agent Service (object store, commits, tool registry): `skyra/internal/project/README.md`
-- Scheduler Service (job lifecycle, lane assignment): `skyra/internal/scheduler/README.md`
+- Scheduler — unified heap, inference types, complexity scoring: `docs/arch/v1/scheduler.md`
+- Agent Service (object store, commits, tool registry): `skyra/internal/agent/README.md`
+- Delegation Engine (Estimator): `skyra/internal/delegation/README.md`
 
-## 15. Appendix A: Estimator Documentation Agent Prompt
+## 15. Estimator Role (Updated)
 
-Use this prompt when generating the Estimator design documentation for Skyra Task Formation.
+> Note: The Estimator's role changed significantly with the architecture revision. The old prompt-based design spec below this section is superseded. See `skyra/internal/delegation/README.md` for the current Estimator design.
 
-```text
-Write a comprehensive design document for the Estimator component of Skyra's Task Formation System, based on the following specifications. The Estimator is responsible for predicting task duration and resource needs, and for dynamically updating those predictions during execution. The job execution layer is not yet fully defined, so define interfaces abstractly.
+The Estimator now has a single, clear responsibility: **placement**. It reads the estimation call output from the domain agent and routes the job to the best available machine.
 
-Context:
-Skyra processes events into tasks via a Task Formation pipeline (see attached task-formation.md). After the Domain Expert creates a WorkPlan or TaskSheet, the Estimator produces initial estimates. During task execution, the Estimator receives progress updates and refines estimates, which are used for user communication and scheduler hints.
-
-Requirements:
-
-Purpose
-
-Predict how long a task will take (initial estimate).
-
-Classify tasks into duration classes (instant, short, long, unknown) to guide scheduling and user interaction.
-
-Suggest checkpoint intervals for long tasks.
-
-Provide resource hints (GPU, network, etc.) to the scheduler.
-
-Dynamically re-estimate remaining time during execution based on progress.
-
-Inputs – Initial Estimation
-
-Hydrated job (after Domain Expert) including WorkPlan/TaskSheet, agent context, user ID, etc.
-
-Snapshot of current system resources (GPU load, memory, network latency).
-
-Historical data: embeddings of similar past tasks with their actual durations and resource usage.
-
-Inputs – Dynamic Re‑estimation (during execution)
-
-Progress snapshots from the executor (abstractly defined): e.g., elapsed time, steps completed, current step, partial results, resource usage, errors.
-
-Original task features and initial estimate.
-
-Outputs
-
-Initial: duration class, estimated seconds (with confidence), checkpoint interval, resource hints, complexity score.
-
-Re‑estimation: updated remaining seconds, new confidence, optionally a reason for change.
-
-All outputs may be used by scheduler, threshold review, and user notification system.
-
-Learning & Adaptation
-
-Store features and actual outcomes (duration, resource consumption) for every completed task.
-
-Periodically retrain a model (e.g., gradient boosting, small neural net) to improve accuracy.
-
-Include progress snapshots in training to improve re‑estimation.
-
-Cold-start fallback rules until enough data exists.
-
-Architecture & Integration
-
-The Estimator is a service on the Mac mini, exposed via an internal API.
-
-Initial estimation occurs after Domain Expert, before threshold review (if any).
-
-During execution, the executor (to be defined) sends progress updates to the Estimator; the Estimator returns updated estimates.
-
-Estimates are attached to the task object and can be queried by the scheduler or notification system.
-
-Open Points
-
-The exact executor interface is TBD; define the expected progress snapshot schema.
-
-How frequently re‑estimation occurs (e.g., every 30 seconds, after each step) is configurable and may depend on duration class.
-
-Notification logic (when to inform the user) is outside this doc but should reference the estimator's outputs.
+Input:
+```json
+{
+  "is_job": true,
+  "complexity": 3,
+  "domain": "servers"
+}
 ```
+
+Complexity in estimated tool calls is the primary placement signal. The Estimator matches against registered shard capability profiles and current load. No duration prediction, no checkpoint intervals, no duration classes — those were part of the old design that has been retired.
 
 ## Task Formation Flow Diagram
 
@@ -382,23 +349,36 @@ Notification logic (when to inform the user) is outside this doc but should refe
 Event (voice/chat)
    |
    v
-[Domain Routing]
+[Front Face Transformer]
+  (labels turn: in-domain | other, reads all agents + relevance scores)
+   |
+   +---- other ---------> RDS (batch picks up at night)
    |
    v
-[Domain Expert]
-  |---- no_task --------> reply-only path
-  |
-  +---- ephemeral ------> WorkPlan
-  |
-  +---- stateful -------> TaskSheet + Patch
-               |
-               v
-      [Optional Threshold Review]
-               |
-               v
-        [Task Object Creation]
-               |
-               v
-         [Scheduler Hand-off]
-  (estimator contributes, but is not the scheduler)
+[Domain Agent] (self-selects — doorkeeper of its own domain)
+   |
+   v
+[Estimation Call]
+  (is_job? complexity in tool calls?)
+   |
+   +---- complexity ≤ 1 --> execute inline immediately
+   |
+   +---- complexity > 1 --> [Heap] → Estimator routes to capable machine
+                                          |
+                                          v
+                                   [Domain Expert]
+                                     |---- no_task --------> reply-only path
+                                     |
+                                     +---- ephemeral ------> WorkPlan
+                                     |
+                                     +---- stateful -------> TaskSheet + Patch
+                                                  |
+                                                  v
+                                         [Optional Threshold Review]
+                                                  |
+                                                  v
+                                           [Task Object Creation]
+                                                  |
+                                                  v
+                                            [Execution]
 ```

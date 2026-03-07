@@ -77,11 +77,12 @@ Templates define structure and defaults — they do not carry user data. The run
 When an LLM session starts, context is assembled in this order:
 
 1. **System agents** — always present, loaded first. In v1: `skyra.user`.
-2. **Active domain agent** — retrieved based on classifier routing.
-3. **Retrieved tools** — hydrated local tools from the active domain agent.
-4. **Recent turns** — session continuity context.
+2. **Active domain agent** — the domain agent that self-selected relevance from the context blob. Injected after system agents.
+3. **Recent turns** — session continuity context.
 
-This ordering ensures I always know who I am talking to before knowing what domain we are in.
+Tools are **not** part of the context package. Tool retrieval is owned by the Agent Service inside the LLM session during planning — not assembled upfront. See `skyra/internal/agent/README.md`.
+
+This ordering ensures the system always knows who it's talking to before knowing what domain is active.
 
 ---
 
@@ -116,6 +117,6 @@ The `skyra.` prefix is reserved. `create_agent` must reject any `agent_id` that 
 ## Related Docs
 
 - `docs/arch/v1/agents/user.md` — user agent specification
-- `skyra/internal/project/README.md` — Agent Service: commits, tool registry, boundary enforcement
+- `skyra/internal/agent/README.md` — Agent Service: commits, tool registry, boundary enforcement
 - `docs/arch/v1/scyra.md` — full system architecture and session injection pipeline
 - `docs/arch/v1/gaps.md` — open design gaps including cross-agent write protocol

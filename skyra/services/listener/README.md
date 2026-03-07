@@ -1,30 +1,33 @@
-# Skyra Listener Service
+# Skyra Listener Service — Voice Shard Implementation
 
-The listener is the always-on Pi-side service. It handles voice capture, deterministic intent gating, triage, provisional response decisions, event delivery to the control plane, and turn reconciliation.
+The listener is the always-on Voice Shard service. It handles voice capture, deterministic intent gating, triage, event delivery to the Brain Shard, and rendering Brain Shard-authored responses via TTS.
 
-The Pi is non-authoritative for semantic decisions. Every request goes to the Mac. But the Pi can give a provisional answer from fresh cached context while Mac processes authoritatively in parallel.
+The Voice Shard is non-authoritative for semantic decisions. Every request goes to the Brain Shard.
+
+**v1 behavior:** Voice Shard emits non-semantic ACKs only (earcon, LED, short wait phrase). Provisional responses — where the Voice Shard speaks a fast local answer before the Brain Shard responds — are deferred to v2. See G4 in `docs/arch/v1/gaps.md` and `docs/arch/v1/scyra.md` §7.1.
 
 ## Responsibilities
 
 - Always-on audio pipeline: wake word → VAD → STT
 - Deterministic intent gate (no LLM, no inference)
-- Pi triage: classify latency, delegation need, and provisional answer eligibility
+- Voice Shard triage: classify latency, delegation need, and provisional answer eligibility
 - Front-door fast model: structure the event, generate provisional answer when eligible
 - Durable local outbox for reliable event delivery to control plane
-- Turn reconciliation: handle Mac response and correct/confirm provisional if needed
-- TTS output of Mac-authored content
+- Turn reconciliation: handle Brain Shard response and correct/confirm provisional if needed
+- TTS output of Brain Shard-authored content
 
 ## Boundaries
 
-Pi is allowed to:
+Voice Shard is allowed to:
 - Emit non-semantic ACKs (earcon, LED, short wait phrase)
-- Give a provisional answer from fresh LCACHE context, clearly qualified as non-authoritative
-- Render Mac-authored `UPDATE | PLAN_PROGRESS | CLARIFY | PLAN_APPROVAL_REQUIRED | FINAL | ERROR`
+- Render Brain Shard-authored `UPDATE | PLAN_PROGRESS | CLARIFY | PLAN_APPROVAL_REQUIRED | FINAL | ERROR`
 
-Pi must not:
+> **v2:** Give a provisional answer from fresh LCACHE context, clearly qualified as non-authoritative, while Brain Shard processes in parallel.
+
+Voice Shard must not:
 - Generate semantic answers without fresh cached context
-- Claim an action completed unless confirmed by Mac
-- Claim state changes occurred unless confirmed by Mac
+- Claim an action completed unless confirmed by Brain Shard
+- Claim state changes occurred unless confirmed by Brain Shard
 - Write or modify system memory or agent state
 
 ---
@@ -39,7 +42,7 @@ wake word → VAD → STT → intent gate → triage → front-door model
 
 **VAD**: captures utterance boundaries. Avoids sending silence.
 
-**STT**: Whisper small or base. Runs locally on Pi. Optional: stream audio to Mac for faster STT (see `docs/arch/v1/scyra.md` §7).
+**STT**: Whisper small or base. Runs locally on Voice Shard. Optional: stream audio to Brain Shard for faster STT (see `docs/arch/v1/scyra.md` §7).
 
 ---
 
@@ -57,7 +60,7 @@ No model involved. No ambiguity. Fast gate only.
 
 ---
 
-## 3. Pi Triage Layer
+## 3. Voice Shard Triage Layer
 
 Runs after intent gate passes. Fast rules or tiny classifier. Produces routing and UX hints for the rest of the pipeline.
 
@@ -79,7 +82,7 @@ Runs after intent gate passes. Fast rules or tiny classifier. Produces routing a
 
 `cache_age_seconds` — age of the most relevant item in LCACHE for this request, in seconds. Used by the front-door model to decide whether to answer provisionally.
 
-Triage output is a hint, not final authority. Mac makes all authoritative decisions.
+Triage output is a hint, not final authority. Brain Shard makes all authoritative decisions.
 
 ---
 
@@ -105,9 +108,11 @@ The front-door model runs event-driven — not always-on inference. It is invoke
 
 ## 5. Provisional Response Model
 
-The Pi can give a provisional answer from cached context while the request is being processed authoritatively on Mac. This reduces perceived latency for retrieval-style questions without breaking the authoritative model.
+> **v2 only — not implemented in v1.** Provisional responses are cut from v1 (see G4 in `docs/arch/v1/gaps.md`). This section documents the v2 design for reference.
 
-### When Pi May Answer Provisionally
+The Voice Shard can give a provisional answer from cached context while the request is being processed authoritatively on Brain Shard. This reduces perceived latency for retrieval-style questions without breaking the authoritative model.
+
+### When Voice Shard May Answer Provisionally
 
 All conditions must be met:
 
@@ -119,7 +124,7 @@ All conditions must be met:
 | Intent clarity | Unambiguous — no multi-step, no action words |
 | LCACHE hit | At least one item with meaningful relevance score to the request |
 
-### When Pi Must Not Answer Provisionally
+### When Voice Shard Must Not Answer Provisionally
 
 - Request implies action or state mutation ("turn off", "update", "delete", "create", "set")
 - Cache is stale (`cache_age_seconds > 1800`) or empty
@@ -127,13 +132,13 @@ All conditions must be met:
 - Intent is ambiguous or multi-part
 - `stale: true` on the current context package
 
-### What Pi Says
+### What Voice Shard Says
 
-Pi prefixes all provisional answers with a clear non-authoritative qualifier:
+Voice Shard prefixes all provisional answers with a clear non-authoritative qualifier:
 
 > "Based on what I have — [answer]. Let me confirm that for you."
 
-The qualifier is not optional. Pi must never state a provisional answer as fact.
+The qualifier is not optional. Voice Shard must never state a provisional answer as fact.
 
 ### Provisional Answer Output (front-door model)
 
@@ -146,7 +151,7 @@ The qualifier is not optional. Pi must never state a provisional answer as fact.
 }
 ```
 
-If `provisional_eligible` is false or the front-door model cannot form a confident answer, `provisional_answer` is null and Pi emits a non-semantic ACK only.
+If `provisional_eligible` is false or the front-door model cannot form a confident answer, `provisional_answer` is null and Voice Shard emits a non-semantic ACK only.
 
 ---
 
@@ -154,59 +159,49 @@ If `provisional_eligible` is false or the front-door model cannot form a confide
 
 ### voice_event_v1
 
+v1 event — no provisional fields. `context_window` and `context_state` are v2 additions (see CHANGELOG.md).
+
 ```json
 {
   "schema": "voice_event_v1",
   "turn_id": "turn_8f4c",
   "ts": "2026-02-20T18:10:12Z",
+  "device_id": "voice-shard-livingroom",
   "transcript": "what did I decide about the Tekkit backups",
   "triage_hints": {
     "latency_class": "medium",
     "needs_delegation": true,
     "hint_target": "control_plane",
     "ack_policy": "spoken_if_slow",
-    "confidence": 0.84,
-    "provisional_eligible": true,
-    "cache_age_seconds": 420
+    "confidence": 0.84
   },
-  "pi_gave_provisional": true,
-  "provisional_text": "Based on what I have — you decided on weekly Tekkit backups at 02:00 UTC last Tuesday. Let me confirm that for you.",
-  "context_window": {
-    "session_summary": "...",
-    "recent_turns": [],
-    "active_agent": "server_ops",
-    "injected_facts": []
-  },
-  "context_state": {
-    "total_context_tokens": 8192,
-    "system_tokens": 1420,
-    "live_conversation_tokens": 980,
-    "response_reserve_tokens": 512,
-    "available_for_injection": 5280
+  "session_state": {
+    "pending_job_id": null,
+    "waiting_for": null
   }
 }
 ```
 
-`pi_gave_provisional` and `provisional_text` are included so Mac knows what Pi said. Mac uses this to tune its response — it may confirm, correct, or add detail rather than restating from scratch.
+> **v2 additions:** `voice_shard_gave_provisional`, `provisional_text`, `context_window`, `context_state` — see CHANGELOG.md.
 
-`context_state` is included on every request. Pi computes `available_for_injection` as `total_context_tokens - system_tokens - live_conversation_tokens - response_reserve_tokens`. Mac fans this out internally to the Context Injector, which uses it to size the next context package. Pi does not interface with the Context Injector directly — it only speaks to the Mac API Gateway.
+`context_state` is included on every request. Voice Shard computes `available_for_injection` as `total_context_tokens - system_tokens - live_conversation_tokens - response_reserve_tokens`. Brain Shard fans this out internally to the Context Injector, which uses it to size the next context package. Voice Shard does not interface with the Context Injector directly — it only speaks to the Brain Shard API Gateway.
 
 ---
 
 ## 7. Outbox and Event Delivery
 
-Pi uses a local SQLite outbox for durable event delivery.
+Voice Shard uses a local SQLite outbox for durable event delivery.
 
 ```
 1. Front-door produces voice_event_v1
-2. Pi writes event to local outbox (before sending)
-3. Pi sends event to Mac API Gateway
-4. Mac writes to inbox (event_id PRIMARY KEY — idempotent)
-5. Mac sends transport ACK
-6. Pi deletes outbox row on ACK match
+2. Voice Shard writes event to local outbox (before sending)
+3. Voice Shard sends event to Brain Shard API Gateway
+4. Brain Shard writes to inbox (event_id PRIMARY KEY — idempotent)
+5. Brain Shard sends transport ACK
+6. Voice Shard deletes outbox row on ACK match
 ```
 
-If no ACK arrives within timeout, Pi retries from outbox. Events are delivered at-least-once. Mac inbox deduplicates by `event_id`.
+If no ACK arrives within timeout, Voice Shard retries from outbox. Events are delivered at-least-once. Brain Shard inbox deduplicates by `event_id`.
 
 Transport ACK is machine-to-machine only. It is never spoken to the user.
 
@@ -228,17 +223,19 @@ IDLE → LISTENING → TRANSCRIBED → FORWARDED → ACKED → RUNNING → RESOL
 
 ### Reconciliation Protocol
 
-When Mac responds with `FINAL`, Pi reconciles against any provisional answer it gave:
+**v1 behavior:** Voice Shard renders Brain Shard-authored messages directly via TTS. No provisional to reconcile against.
 
-| Mac result | Pi behavior |
+> **v2:** When Brain Shard responds with `FINAL`, Voice Shard reconciles against any provisional answer it gave:
+
+| Brain Shard result | Voice Shard behavior |
 |---|---|
-| Mac agrees with provisional | Silent, or soft "confirmed" — do not repeat the answer |
-| Mac has additional detail | Speak the delta: "Also worth noting — [Mac addition]" |
-| Mac contradicts provisional | Correct clearly: "Update — [Mac answer]" |
+| Brain Shard agrees with provisional | Silent, or soft "confirmed" — do not repeat the answer |
+| Brain Shard has additional detail | Speak the delta: "Also worth noting — [Brain Shard addition]" |
+| Brain Shard contradicts provisional | Correct clearly: "Update — [Brain Shard answer]" |
 
-Pi appends the authoritative Mac content to the local context window on `FINAL | ERROR` and closes the turn.
+Voice Shard appends the authoritative Brain Shard content to the local context window on `FINAL | ERROR` and closes the turn.
 
-### Pi-Side Turn Loop (Pseudocode)
+### Voice Shard Turn Loop (Pseudocode)
 
 ```python
 def on_user_utterance(audio_chunk_stream):
@@ -248,10 +245,11 @@ def on_user_utterance(audio_chunk_stream):
     context_window = context_manager.snapshot_for_turn(turn_id)
 
     provisional = None
-    if triage["provisional_eligible"]:
-        provisional = front_door_model.attempt_provisional(transcript, lcache)
-        if provisional:
-            tts_speak(provisional["provisional_answer"])
+    # v2 only — provisional responses deferred to v2
+    # if triage["provisional_eligible"]:
+    #     provisional = front_door_model.attempt_provisional(transcript, lcache)
+    #     if provisional:
+    #         tts_speak(provisional["provisional_answer"])
 
     event = build_voice_event_v1(
         turn_id=turn_id,
@@ -298,9 +296,11 @@ def on_user_utterance(audio_chunk_stream):
 
 ## 9. LCACHE (Listener Context Cache)
 
-LCACHE is the Pi-side context store fed by the Context Injector service on Mac. It holds compressed, ranked context packages ready for front-door model use.
+LCACHE is the Voice Shard-side context store fed by the Context Injector service on Brain Shard. It holds compressed, ranked context packages ready for front-door model use.
 
 ### Freshness Check for Provisional Answers
+
+> **v2 only — not implemented in v1.** LCACHE freshness checking for provisional eligibility is part of the v2 provisional response model.
 
 Each item in a context package carries a `retrieved_at` timestamp. Before giving a provisional answer, the front-door model checks the most relevant item's `retrieved_at` against the 30-minute threshold:
 
@@ -347,7 +347,7 @@ This is a drop-in addition before the front-door model invocation. Nothing in th
 - `skyra/services/context-injector/README.md` — context package format, push strategy, trigger model
 - `docs/arch/v1/scyra.md` — full system architecture and voice request flow
 - `docs/arch/v1/event-ingress-ack.md` — outbox/inbox reliability contract
-- `skyra/internal/project/README.md` — agent service, boundary enforcement
+- `skyra/internal/agent/README.md` — agent service, boundary enforcement
 
 ---
 

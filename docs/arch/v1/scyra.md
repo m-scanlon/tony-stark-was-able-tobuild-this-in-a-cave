@@ -12,22 +12,22 @@
 
 The system is composed of:
 
-- **Mac mini** → Control plane (API, orchestration runtime, memory, tools, fast local models)
-- **Shards** → Any device that registers its capabilities with the control plane (Pi, laptops, desktops, servers, GPU machines)
+- **Brain Shard** → Control plane (API, orchestration runtime, memory, tools, fast local models)
+- **Shards** → Any device that registers its capabilities with the control plane (Voice Shard, laptops, desktops, servers, Reasoning Shards)
 
-Every device in the Skyra network runs a Shard. The Pi Shard has voice capabilities. GPU Shards have deep_reasoning capability. The control plane routes work based on what each Shard advertises — not what kind of machine it is.
+Every device in the Skyra network runs a Shard. The Voice Shard has voice capabilities. Reasoning Shards have deep_reasoning capability. The control plane routes work based on what each Shard advertises — not what kind of machine it is.
 
 ## 3. Distributed Shard Architecture
 
 ### 3.1 Shard Model Overview
 
-Every device in the Skyra network runs a lightweight Shard daemon. A Shard boots, fingerprints the device's hardware and software environment, registers its capabilities with the control plane, and listens for commands. The Mac mini remains the central orchestrator, sending high-level commands to Shards for execution.
+Every device in the Skyra network runs a lightweight Shard daemon. A Shard boots, fingerprints the device's hardware and software environment, registers its capabilities with the control plane, and listens for commands. The Brain Shard remains the central orchestrator, sending high-level commands to Shards for execution.
 
-**Shards are execution-only components and do not perform reasoning, memory access, or model inference** (except the Pi Shard's front-door fast model, which is a registered capability of that Shard and runs only as a non-authoritative voice interface).
+**Shards are execution-only components and do not perform reasoning, memory access, or model inference** (except the Voice Shard's front-door fast model, which is a registered capability of that Shard and runs only as a non-authoritative voice interface).
 
 **Key Concepts:**
 
-- **Control Plane**: Mac mini maintains intelligence, memory, and decision-making
+- **Control Plane**: Brain Shard maintains intelligence, memory, and decision-making
 - **Shards**: Lightweight daemons on target devices, identified by capability profile
 - **Command Distribution**: High-level intents sent to Shards for execution
 - **Secure Execution**: Allowlisted actions only, with authenticated connections
@@ -36,95 +36,62 @@ Every device in the Skyra network runs a lightweight Shard daemon. A Shard boots
 
 ```mermaid
 flowchart TB
-  %% User
   USER([User])
 
-  %% Voice Node
-  subgraph PI[Raspberry Pi • Voice Node]
-    WW[Wake Word]
-    VAD[VAD]
-    STT[Speech-to-Text]
-    GATE[Intent Gate]
-    TRIAGE[Pi Triage]
-    LCACHE[Listener Context Cache]
-    FDOOR[Front-Door Fast Model]
-    OBOX[Event Outbox]
-    VCLIENT[Voice Client]
-    TTS[Text to Speech]
-    WW --> VAD --> STT --> GATE --> TRIAGE --> FDOOR
-    LCACHE --> FDOOR
-    FDOOR --> OBOX --> VCLIENT --> TTS
+  subgraph IS[Ingress Shard]
+    ISHARD[Input Capture<br/>triage · outbox · hydration]
+    LCACHE[Context Cache<br/>kept warm by CIX]
   end
 
-  %% Control Plane
-  subgraph CTRL[Mac mini • Control Plane]
-    direction LR
+  subgraph BRAIN[Brain Shard • Control Plane]
     APIGW[API Gateway]
-    INGRESS[Event Ingress]
-    INBOX[(SQLite Event Inbox)]
-    QUEUE[(Durable Request Queue)]
-    EST[Estimator]
-    SCHED[Scheduler]
-    SESSION[Assigned LLM Session]
-    ORCH[Orchestrator]
-    CIX[Context Injector]
-    CODER[Coding Model]
-    PROJ[Agent Service]
-    OBJ[Object Store]
-    VDB[Vector DB]
+    INBOX[(SQLite Inbox)]
+    IRTR[Internal Router<br/>labels turn]
+    DAGENT[Domain Agent<br/>self-selects · estimation call]
+    HEAP[(Max-Heap<br/>all work by importance score)]
+    EST[Estimator<br/>complexity → placement]
+    JOBREG[(Job Registry)]
+    ERTR[External Router]
+    SESSION[LLM Session<br/>planning + execution]
+    CRE[Context Retrieval Engine<br/>background loop]
+    CIX[Context Injector<br/>state-aware push daemon]
+    AREG[(Agent Registry)]
+    OBJ[(Object Store)]
+    VDB[(Vector DB)]
 
-    APIGW --> INGRESS --> INBOX --> QUEUE --> EST --> SCHED --> SESSION --> ORCH
-    INGRESS -->|context_state fan-out| CIX
-    ORCH --> CODER
-    ORCH --> PROJ
-    PROJ --> OBJ
-    PROJ --> VDB
+    APIGW --> INBOX --> IRTR --> DAGENT --> HEAP --> EST --> ERTR --> SESSION
+    EST -->|placement written| JOBREG
+    SESSION <-->|reads · commits| OBJ
+    SESSION <-->|tool retrieval| VDB
+    CRE --> AREG
+    CRE --> OBJ
+    CRE --> VDB
+    OBJ -.->|state change| CIX
   end
 
-  %% Shards — any device that registers capabilities
-  subgraph GPUSHARD[GPU Shard • deep_reasoning]
-    DEEP[DeepSeek Model]
-  end
-
-  subgraph LAPTOP[Laptop • Shard]
-    LAGENT[Shard\nWebSocket Client]
-    LEXEC[Command Executor]
-    LAGENT --> LEXEC
-  end
-
-  subgraph DESKTOP[Desktop • Shard]
-    DAGENT[Shard\nWebSocket Client]
-    DEXEC[Command Executor]
-    DAGENT --> DEXEC
-  end
-
-  subgraph SERVER[Server • Shard]
-    SAGENT[Shard\nWebSocket Client]
-    SEXEC[Command Executor]
-    SAGENT --> SEXEC
+  subgraph EXEC[Execution Shards]
+    GPU[GPU Shard<br/>deep_reasoning]
+    MACH[Machine Shards<br/>command execution]
   end
 
   %% Request path
-  USER -->|audio| WW
-  VCLIENT -->|voice_event_v1| APIGW
-  INBOX -->|ACK event_id| OBOX
+  USER -->|input| ISHARD
+  LCACHE -->|context attached at hydration| ISHARD
+  ISHARD -->|event + embedded context| APIGW
+  INBOX -->|ACK| ISHARD
 
-  %% Response path
-  ORCH -->|FINAL / UPDATE / ERROR| APIGW
-  APIGW -->|mac response| VCLIENT
-  TTS -->|speech| USER
+  %% Shard dispatch
+  ERTR --> GPU
+  SESSION -->|commands| ERTR
+  ERTR --> MACH
 
-  %% Shard routing
-  ORCH -->|deep_reasoning tasks| DEEP
-  CIX -->|context package push| LCACHE
-  ORCH -->|high-level commands| LAGENT
-  ORCH -->|high-level commands| DAGENT
-  ORCH -->|high-level commands| SAGENT
+  %% Response
+  SESSION -->|FINAL · UPDATE · ERROR| APIGW
+  APIGW -->|response| ISHARD
+  ISHARD -->|renders| USER
 
-  %% Secure outbound connections (Shards initiate)
-  LAGENT -.->|outbound WSS| CTRL
-  DAGENT -.->|outbound WSS| CTRL
-  SAGENT -.->|outbound WSS| CTRL
+  %% CIX pushes context proactively to ingress shards
+  CIX -->|context package| LCACHE
 ```
 
 ### 3.3 Shard Security Model
@@ -209,7 +176,7 @@ flowchart TB
 
 **User**: "Skyra, open VS Code on my laptop."
 
-1. **Pi Shard** captures audio → sends text to control plane
+1. **Voice Shard** captures audio → sends text to control plane
 2. **Orchestrator** selects target: laptop Shard, action: open_vscode
 3. **Control plane** sends command to laptop Shard
 4. **Shard** executes local command (`code .`)
@@ -218,18 +185,21 @@ flowchart TB
 
 ---
 
-## 4. Concurrency and Job Model (Simple v1)
+## 4. Concurrency and Job Model (v1)
 
-Skyra v1 uses a single durable request queue for inbound voice/chat events.
+All work in Skyra flows through a unified max-heap ordered by importance score. Three inference types: `estimation` (very high priority), `job` (high priority), `batch` (very low priority — idle compute at night). No separate queues or lanes.
 
-Simple flow:
+Flow:
 
-1. Pi/chat ingress writes request to queue (`event_id` idempotent).
-2. Mac durably stores it, sends transport ACK, and the task remains queued for scheduling.
-3. Estimator annotates latency/cost/risk hints.
-4. Scheduler dequeues and assigns an execution lane (`fast_local` or `deep_reasoning`).
-5. The assigned LLM session performs both task planning and task execution in one continuous context.
-6. System emits `UPDATE|PLAN_PROGRESS|CLARIFY|PLAN_APPROVAL_REQUIRED|FINAL|ERROR` events as work progresses.
+1. Voice Shard/chat ingress writes event to SQLite inbox (`event_id` idempotent). Brain Shard sends transport ACK.
+2. Internal Router reads event, labels turn as in-domain or "other" using the context blob (all agents + relevance scores), and routes to relevant domain agents. Does not assemble a job envelope.
+3. Domain agent self-selects relevance and produces an **estimation call**: `{is_job, complexity, domain}`. Complexity is measured in estimated tool calls. Complexity ≤ 1 → execute inline immediately, never enters heap.
+4. For complexity > 1: job enters the max-heap. Estimator reads the estimation call output, matches complexity score against shard capability profiles and current load, and writes the placement decision to the Job Registry.
+5. External Router dispatches to the assigned Shard.
+6. The assigned LLM session performs both task planning and task execution in one continuous context.
+7. System emits `UPDATE|PLAN_PROGRESS|CLARIFY|PLAN_APPROVAL_REQUIRED|FINAL|ERROR` events as work progresses.
+
+Higher priority work can preempt in-flight jobs at tool call boundaries. Interrupted job's context window is serialized to a FIFO stack and resumed when the machine is free. See `docs/arch/v1/scheduler.md`.
 
 ## 5. Model and Runtime Roles
 
@@ -258,44 +228,44 @@ The always-on path runs continuously and does not require continuous LLM inferen
 
 ### 5.1 Delegate -> Authoritative -> Reconcile Pattern (Strict Mode)
 
-The Pi front-door path is non-authoritative. Pi captures input, emits transport/user ACKs, and relays context-rich JSON. Mac mini remains the only response authority.
+The Voice Shard front-door path is non-authoritative. Voice Shard captures input, emits transport/user ACKs, and relays context-rich JSON. Brain Shard remains the only response authority.
 
 Flow:
 
-1. Pi captures audio, performs STT, and creates `voice_event_v1`.
-2. Pi always forwards the event to Mac mini.
-3. Mac performs authoritative processing (task formation, routing, execution, memory commit).
-4. Mac may emit `UPDATE` or `CLARIFY` while work is in progress.
-5. Mac emits `FINAL` or `ERROR` as authoritative output.
-6. Pi speaks only Mac-authored content and updates local turn state.
+1. Voice Shard captures audio, performs STT, and creates `voice_event_v1`.
+2. Voice Shard always forwards the event to Brain Shard.
+3. Brain Shard performs authoritative processing (task formation, routing, execution, memory commit).
+4. Brain Shard may emit `UPDATE` or `CLARIFY` while work is in progress.
+5. Brain Shard emits `FINAL` or `ERROR` as authoritative output.
+6. Voice Shard speaks only Brain Shard-authored content and updates local turn state.
 
 Behavior by confidence:
 
 - high confidence: minimal user feedback ACK only (earcon/LED, optional "working on it")
 - medium confidence: short progress ACK only, no semantic answer
-- low confidence: non-verbal ACK only (earcon/LED), wait for Mac result
+- low confidence: non-verbal ACK only (earcon/LED), wait for Brain Shard result
 
-### 5.2 Pi Triage Layer (Fast Gate)
+### 5.2 Voice Shard Triage Layer (Fast Gate)
 
-Before delegation, Pi runs an extremely fast triage stage (rules or tiny model).
+Before delegation, Voice Shard runs an extremely fast triage stage (rules or tiny model).
 
 Triage outputs:
 
-- `latency_class`: `fast | medium | slow`
-- `needs_delegation`: `bool`
-- `hint_target`: `control_plane | shard:<id>`
-- `ack_policy`: `silent | nonverbal | spoken_if_slow`
-- `confidence`: `0.0-1.0`
-- `provisional_eligible`: `bool` _(v2 only — always `false` in v1; Pi emits non-semantic ACK only. See v2 note in section 7.1.)_
-- `cache_age_seconds`: `int | null`
+- `intent`: `{ summary: string, confidence: 0.0-1.0 }`
+- `latency_class`: `{ value: interactive | background | deferred, confidence: 0.0-1.0 }`
+- `ack_policy`: `{ value: spoken_if_slow | earcon_only | silent, confidence: 0.0-1.0 }` _(values not locked — depends on UX model design)_
+
+v2 planned additions: `needs_delegation`, `hint_target`, `provisional_eligible`, `cache_age_seconds`
+
+> For the authoritative schema see `skyra/schemas/ingress/voice/`.
 
 Notes:
 
 - triage output is a hint, not final authority
-- triage does not replace Mac-side task formation or estimation
-- Mac remains source of truth
+- triage does not replace Brain Shard-side task formation or estimation
+- Brain Shard remains source of truth
 
-### Mac mini (orchestration + tools)
+### Brain Shard (orchestration + tools)
 
 **Coding / Tool Model**
 
@@ -312,7 +282,7 @@ Notes:
 
 Shards that register with `deep_reasoning` capability run large local models for complex inference.
 
-- Example: DeepSeek-Coder 33B+ on a GPU machine
+- Example: DeepSeek-Coder 33B+ on a Reasoning Shard
 - Handles:
   - Complex coding
   - Architecture decisions
@@ -320,7 +290,7 @@ Shards that register with `deep_reasoning` capability run large local models for
   - Deep debugging
   - Long-context tasks
 
-### 5.3 RTX 4090 + DeepSeek Model Selection Notes (Preliminary)
+### 5.3 Reasoning Shard — DeepSeek Model Selection Notes (Preliminary)
 
 Status:
 
@@ -357,72 +327,88 @@ Correctness-first recommendation path:
 
 ```mermaid
 flowchart LR
-  %% ===== Nodes =====
-  subgraph PI[Raspberry Pi • Voice Node]
-    direction LR
-    WW[Wake Word<br/>openWakeWord or Porcupine]
-    VAD[Voice Activity Detection]
-    STT[Speech to Text<br/>Whisper small or base]
-    TTS[Text to Speech<br/>Piper or Coqui]
-    GATE[Intent Gate<br/>deterministic]
-    TRIAGE[Pi Triage<br/>fast gate]
-    LCACHE[Listener Context Cache<br/>base + live + injected]
-    FDOOR[Front-Door Fast Model\nLlama 3.2 3B]
-    UACK[User Feedback ACK<br/>earcon led spoken hint]
-    OBOX[Local Event Outbox<br/>durable plus retry]
-    VCLIENT[Voice Client<br/>HTTP or gRPC to API]
-    WW --> VAD --> STT --> GATE --> TRIAGE --> FDOOR
-    TRIAGE --> UACK
-    LCACHE --> FDOOR
-    FDOOR --> TTS
-    FDOOR --> OBOX
-    OBOX --> VCLIENT
+  USER([User])
+
+  subgraph IS[Ingress Shard]
+    direction TB
+    ISHARD[Input Capture<br/>triage · outbox · hydration]
+    LCACHE[Context Cache<br/>kept warm by CIX]
   end
 
-  subgraph MAC[Mac mini M4 24GB Control Plane]
-    direction LR
-    APIGW[API Gateway<br/>FastAPI or Node<br/>voice chat tools memory]
-    INGRESS[Event Ingress<br/>WS or gRPC receiver]
-    INBOX[(SQLite Inbox<br/>PRIMARY KEY event_id)]
-    QUEUE[(Durable Request Queue)]
-    EST[Estimator]
-    SCHED[Scheduler]
-    SESSION[Assigned LLM Session<br/>task formation + execution]
-    AGENT[Skyra Orchestration Runtime<br/>LangGraph Orchestrator and Router]
-    CIX[Context Injector Service<br/>Rank Compress Push]
-    CLASS[Project + Intent Classifier]
+  subgraph BRAIN[Brain Shard • Control Plane]
+    direction TB
 
-    CODER[Coding Tool Model<br/>Qwen2.5 Coder 7B]
+    subgraph REQ[Request Pipeline]
+      direction LR
+      APIGW[API Gateway] --> INBOX[(SQLite Inbox<br/>event_id PK)]
+      INBOX --> IRTR[Internal Router<br/>labels turn · routes to domain agents]
+      IRTR --> DAGENT[Domain Agent<br/>self-selects · estimation call]
+      DAGENT --> HEAP[(Max-Heap<br/>all work by importance score)]
+      HEAP --> EST[Estimator<br/>complexity → capability profile → placement]
+      EST --> ERTR[External Router]
+      ERTR --> SESSION[LLM Session<br/>planning + execution]
+      EST -->|placement written| JOBREG[(Job Registry<br/>lifecycle state)]
+    end
 
-    PROJ[Agent Service<br/>Registry Commits Tools]
-    TOOLS[Tool Skills Runner<br/>SSH scripts Slack]
-    OBJ[(Object Store<br/>.skyra projects<br/>versioned state)]
-    VDB[(Vector DB<br/>Chroma<br/>semantic index + tool registry)]
+    subgraph CTX[Context Engine]
+      direction LR
+      CRE[Context Retrieval Engine<br/>background loop<br/>watches jobs · turns · agent state]
+      CIX[Context Injector<br/>state-aware push daemon<br/>keeps ingress caches warm]
+    end
 
-    APIGW --> INGRESS --> INBOX --> QUEUE --> EST --> SCHED --> SESSION --> AGENT
-    INGRESS -->|context_state fan-out| CIX
-    AGENT --> CLASS
-    AGENT --> CODER
-    AGENT --> PROJ
-    CLASS --> CIX
+    subgraph DATA[Data Sources]
+      direction TB
+      AREG[(Agent Registry<br/>SQLite · all agents + relevance scores)]
+      OBJ[(Object Store<br/>.skyra/agents · versioned state)]
+      VDB[(Vector DB<br/>semantic index · tool registry)]
+    end
+
+    PROJ[Agent Service<br/>owns all agent state]
+    TOOLS[Tool Runner<br/>SSH · scripts · APIs]
+
+    %% CRE queries data sources (background)
+    CRE -->|queries| AREG
+    CRE -->|queries| OBJ
+    CRE -->|queries| VDB
+
+    %% State changes trigger CIX
+    OBJ -.->|agent commit / state change| CIX
+
+    %% LLM Session reads and writes through Agent Service
+    SESSION --> PROJ
     PROJ --> OBJ
     PROJ --> VDB
-    AGENT --> TOOLS
+    SESSION --> TOOLS
   end
 
-  subgraph GPUSHARD[GPU Shard • deep_reasoning]
-    LLM[DeepSeek Reasoning Model<br/>33B plus<br/>LLM Server]
+  subgraph EXEC[Execution Shards]
+    direction TB
+    GPU[GPU Shard<br/>deep_reasoning<br/>DeepSeek 33B+]
+    MACH[Machine Shards<br/>command execution]
   end
 
-  %% ===== Links between machines =====
-  VCLIENT -->|voice_event_v1 + context_state| APIGW
-  PI -.->|optional audio stream for remote STT| APIGW
+  %% ===== Request path =====
+  USER -->|input| ISHARD
+  LCACHE -->|context attached at hydration| ISHARD
+  ISHARD -->|event + embedded context| APIGW
+  INBOX -->|transport ACK| ISHARD
+
+  %% ===== Shard dispatch =====
+  ERTR -->|deep_reasoning job| GPU
+  SESSION -->|shard commands| ERTR
+  ERTR --> MACH
+
+  %% ===== Response path =====
+  SESSION -->|FINAL · UPDATE · ERROR| APIGW
+  APIGW -->|authoritative response| ISHARD
+  ISHARD -->|renders| USER
+
+  %% ===== Context push path =====
   CIX -->|compressed context package| LCACHE
-  INBOX -->|transport ACK event_id| OBOX
-  AGENT -->|deep_reasoning task| LLM
-  LLM -->|completion| AGENT
-  APIGW -->|authoritative result| VCLIENT
-  VCLIENT -->|final speech output| TTS
+
+  %% Shards initiate outbound connections
+  GPU -.->|outbound WSS| BRAIN
+  MACH -.->|outbound WSS| BRAIN
 ```
 
 ## 7. Voice Request Flow
@@ -430,18 +416,18 @@ flowchart LR
 ```mermaid
 sequenceDiagram
   participant User
-  participant Pi as Raspberry Pi (Listener + Front Door)
+  participant Pi as Voice Shard
   participant CIX as Context Injector
-  participant Mac as Mac mini (Orchestrator)
+  participant Mac as Brain Shard
   participant PROJ as Agent Service
-  participant GPU as GPU Shard (DeepSeek)
+  participant GPU as Reasoning Shard (DeepSeek)
 
   User->>Pi: "Hey Skyra..." (audio)
   Pi->>Pi: Wake word detect
   Pi->>Pi: Earcon + LED listening
   Pi->>Pi: VAD start/stop
   Pi->>Pi: STT (audio → text)
-  Pi->>Pi: Pi triage (latency_class, needs_delegation, provisional_eligible, cache_age_seconds, ack_policy, confidence)
+  Pi->>Pi: Voice Shard triage (latency_class, needs_delegation, provisional_eligible, cache_age_seconds, ack_policy, confidence)
   Pi->>Pi: Front-door uses base + live + injected context
   par Proactive context refresh
     CIX-->>Pi: Push compressed context package
@@ -450,13 +436,15 @@ sequenceDiagram
   end
 
   Pi->>Mac: POST /voice {voice_event_v1 + context_state + session_state}
-  Note over Pi,Mac: event_id stamped by Pi outbox before send
+  Note over Pi,Mac: Brain Shard generates event_id on ingress — Voice Shard never sends one
   Mac-->>Pi: Transport ACK(event_id) after durable inbox write
   Mac->>CIX: Fan-out context_state (available_for_injection)
 
-  Mac->>Mac: Create job_envelope_v1 + enqueue
-  Mac->>Mac: Estimation annotates scheduler hints
-  Mac->>Mac: Scheduler assigns execution lane
+  Mac->>Mac: Internal Router — label turn (in-domain | other), route to domain agents
+  Mac->>Mac: Domain agent — self-selects, produces estimation call {is_job, complexity, domain}
+  Mac->>Mac: Max-heap — job enters heap (complexity > 1) or executes inline (≤ 1)
+  Mac->>Mac: Estimator — reads complexity, picks Shard by capability profile, writes to Job Registry
+  Mac->>Mac: External Router — dispatch to assigned Shard
   Mac->>Mac: Assigned LLM session — planning phase
   Mac->>PROJ: Retrieve project state + hydrated tools
   PROJ-->>Mac: Project state + tools with access status
@@ -469,48 +457,48 @@ sequenceDiagram
   end
   Mac->>PROJ: propose_commit / apply_commit
   Mac-->>Pi: FINAL authoritative response
-  Pi->>Pi: Reconcile — confirm, add detail, or correct provisional
+  Pi->>Pi: Render Brain Shard response via TTS
   Pi->>Pi: TTS
   Pi-->>User: Spoken response
 ```
 
 ### 7.1 Consistency and Reconciliation Model
 
-**v1 decision**: Pi emits non-semantic ACKs only (earcon, LED, short wait phrase). Pi does not generate provisional semantic responses in v1. The reconciliation model below describes Pi rendering Mac-authored messages — that behavior applies fully in v1.
+**v1 decision**: Voice Shard emits non-semantic ACKs only (earcon, LED, short wait phrase). Voice Shard does not generate provisional semantic responses in v1. The reconciliation model below describes Voice Shard rendering Brain Shard-authored messages — that behavior applies fully in v1.
 
-> **v2 note**: A provisional response path where Pi speaks a fast local answer before Mac responds (using the front-door model and `provisional_eligible` triage hint), then reconciles on `FINAL`, can significantly reduce perceived latency. Deferred to v2 — the contradiction-handling and Pi state-tracking complexity outweighs the benefit until the core response loop is stable.
+> **v2 note**: A provisional response path where Voice Shard speaks a fast local answer before Brain Shard responds (using the front-door model and `provisional_eligible` triage hint), then reconciles on `FINAL`, can significantly reduce perceived latency. Deferred to v2 — the contradiction-handling and Voice Shard state-tracking complexity outweighs the benefit until the core response loop is stable.
 
 Problem: maintaining single-authoritative response semantics with asynchronous backend processing.
 
 Failure mode to avoid:
 
-1. Pi emits semantic content before backend decision is complete.
+1. Voice Shard emits semantic content before backend decision is complete.
 2. Backend result differs.
 3. User receives contradictory answers in one turn.
 
 Design principle: Delegate -> Authoritative -> Reconcile
 
-1. Delegate (Pi -> Mac): event is always sent to Mac.
-2. Authoritative process (Mac): only Mac can produce semantic result.
-3. Reconcile (Mac -> Pi): Pi renders Mac messages and commits turn state.
+1. Delegate (Voice Shard -> Brain Shard): event is always sent to Brain Shard.
+2. Authoritative process (Brain Shard): only Brain Shard can produce semantic result.
+3. Reconcile (Brain Shard -> Voice Shard): Voice Shard renders Brain Shard messages and commits turn state.
 
-Pi speech guardrails
+Voice Shard speech guardrails
 
-Pi is allowed to:
+Voice Shard is allowed to:
 
 - status acknowledgements ("I'm checking...", "One sec...")
 - transport/progress signals (earcon, LED, short wait phrase)
 
-Pi must not:
+Voice Shard must not:
 
 - generate semantic answers from local context
-- claim an action completed unless confirmed by Mac
-- claim state changes occurred unless confirmed by Mac
+- claim an action completed unless confirmed by Brain Shard
+- claim state changes occurred unless confirmed by Brain Shard
 - write or modify system memory
 
-Reconciliation protocol (Mac -> Pi)
+Reconciliation protocol (Brain Shard -> Voice Shard)
 
-Mac responses include:
+Brain Shard responses include:
 
 - `message_type`: `FINAL | UPDATE | PLAN_PROGRESS | CLARIFY | PLAN_APPROVAL_REQUIRED | ERROR`
 - `job_id`: `string`
@@ -532,24 +520,24 @@ Message types:
   - does not mark job complete
 - `CLARIFY`
   - requests missing information from user
-  - Pi asks clarification instead of asserting uncertain content
+  - Voice Shard asks clarification instead of asserting uncertain content
 - `PLAN_APPROVAL_REQUIRED`
   - plan is ready and waiting for user decision
   - expected user response: `APPROVE | REVISE | CANCEL`
 - `ERROR`
   - authoritative failure result
-  - Pi should give concise failure output and next step
+  - Voice Shard should give concise failure output and next step
 
-Reconciliation behavior on Pi:
+Reconciliation behavior on Voice Shard:
 
-- If `UPDATE` arrives first, Pi may emit short progress speech based on `ack_policy`.
-- Pi may render `PLAN_PROGRESS` as short status.
-- Pi speaks `CLARIFY`, `PLAN_APPROVAL_REQUIRED`, `FINAL`, and `ERROR` as authoritative turn content.
-- Pi appends authoritative output to local context window and closes the turn on `FINAL|ERROR`.
+- If `UPDATE` arrives first, Voice Shard may emit short progress speech based on `ack_policy`.
+- Voice Shard may render `PLAN_PROGRESS` as short status.
+- Voice Shard speaks `CLARIFY`, `PLAN_APPROVAL_REQUIRED`, `FINAL`, and `ERROR` as authoritative turn content.
+- Voice Shard appends authoritative output to local context window and closes the turn on `FINAL|ERROR`.
 
-### 7.2 Formal Turn Loop Algorithm (Hear -> JSON Pi -> Backend -> Context Manager)
+### 7.2 Formal Turn Loop Algorithm (Hear -> JSON Voice Shard -> Backend -> Context Manager)
 
-This algorithm enforces that Pi cannot answer on its own.
+This algorithm enforces that Voice Shard cannot answer on its own.
 
 #### 7.2.1 State machine
 
@@ -559,7 +547,7 @@ This algorithm enforces that Pi cannot answer on its own.
 `RUNNING -> LISTENING` on `CLARIFY`  
 `RUNNING -> RESOLVED` on `FINAL|ERROR`
 
-#### 7.2.2 Pi-side pseudocode
+#### 7.2.2 Voice Shard-side pseudocode
 
 ```python
 def on_user_utterance(audio_chunk_stream):
@@ -577,7 +565,7 @@ def on_user_utterance(audio_chunk_stream):
         "context_window": context_window,
     }
 
-    outbox.persist(event)  # Pi outbox tracked by turn_id; Mac generates event_id on ingress
+    outbox.persist(event)  # Voice Shard outbox tracked by turn_id; Brain Shard generates event_id on ingress
     emit_user_ack(triage["ack_policy"])  # non-semantic ACK only
     transport.send(event)
 
@@ -610,39 +598,30 @@ def on_user_utterance(audio_chunk_stream):
 
 #### 7.2.3 Backend reconciliation contract
 
-Note: `pi_gave_provisional` and `provisional_text` are always `false`/`null` in v1. These fields are reserved for the v2 provisional response path (see section 7.1).
+> For the authoritative v1 schema and hydration model see `skyra/schemas/ingress/voice/`. The example below reflects the current v1 design.
 
-Request (`Pi -> Mac`):
+Request (`Voice Shard -> Brain Shard`):
 
 ```json
 {
   "schema": "voice_event_v1",
   "turn_id": "turn_8f4c",
   "ts": "2026-02-20T18:10:12Z",
+  "device_id": "pi-livingroom-01",
   "transcript": "what did I decide about backups",
   "triage_hints": {
-    "latency_class": "medium",
-    "needs_delegation": true,
-    "hint_target": "control_plane",
-    "ack_policy": "spoken_if_slow",
-    "confidence": 0.72,
-    "provisional_eligible": false,
-    "cache_age_seconds": null
-  },
-  "pi_gave_provisional": false,
-  "provisional_text": null,
-  "context_window": {
-    "session_summary": "...",
-    "recent_turns": [],
-    "active_agent": "server_ops",
-    "injected_facts": []
-  },
-  "context_state": {
-    "total_context_tokens": 8192,
-    "system_tokens": 1420,
-    "live_conversation_tokens": 980,
-    "response_reserve_tokens": 512,
-    "available_for_injection": 5280
+    "intent": {
+      "summary": "user wants to know what was decided about backups",
+      "confidence": 0.94
+    },
+    "latency_class": {
+      "value": "interactive",
+      "confidence": 0.88
+    },
+    "ack_policy": {
+      "value": "spoken_if_slow",
+      "confidence": 0.76
+    }
   },
   "session_state": {
     "pending_job_id": null,
@@ -651,9 +630,11 @@ Request (`Pi -> Mac`):
 }
 ```
 
-Note: `event_id` is NOT part of `voice_event_v1`. Mac generates `event_id` (ULID) on ingress and returns it in the transport ACK. Pi does not stamp `event_id`. Pi tracks outbox entries by `turn_id`; `(session_id, turn_id)` is the deduplication key at Mac ingress. See `docs/arch/v1/event-ingress-ack.md` for the full contract.
+Note: `event_id` is NOT part of `voice_event_v1`. Brain Shard generates `event_id` (ULID) on ingress and returns it in the transport ACK. Voice Shard does not stamp `event_id`. Voice Shard tracks outbox entries by `turn_id`; `(session_id, turn_id)` is the deduplication key at Brain Shard ingress. See `docs/arch/v1/event-ingress-ack.md` for the full contract.
 
-Response stream (`Mac -> Pi`):
+v2 additions: `pi_gave_provisional`, `provisional_text`, `context_window`, `context_state` — deferred, see `skyra/schemas/ingress/voice/CHANGELOG.md`.
+
+Response stream (`Brain Shard -> Voice Shard`):
 
 ```json
 {
@@ -677,36 +658,36 @@ Response stream (`Mac -> Pi`):
 Rules:
 
 - `event_id` is idempotency key across retries.
-- Pi never fabricates `memory_patch` or `commit`.
+- Voice Shard never fabricates `memory_patch` or `commit`.
 - Context Manager applies backend-authored `memory_patch` only after `FINAL|ERROR`.
 
-### Optional: Remote STT Acceleration (Pi -> Mac Audio Streaming)
+### Optional: Remote STT Acceleration (Voice Shard -> Brain Shard Audio Streaming)
 
 Purpose:
 
-Allow the Raspberry Pi to stream captured audio to the Mac mini so speech-to-text can run on the more powerful control plane. This reduces time to first spoken response for short utterances.
+Allow the Voice Shard to stream captured audio to the Brain Shard so speech-to-text can run on the more powerful control plane. This reduces time to first spoken response for short utterances.
 
 This feature is optional and not required for the base architecture.
 
 When enabled:
 
-1. Wake word is detected on Pi.
-2. Pi begins capturing audio.
-3. Pi streams audio chunks to Mac over a low-latency channel.
-4. Mac performs streaming or fast batch STT.
-5. Mac continues normal processing:
-   - job envelope creation
-   - triage
+1. Wake word is detected on Voice Shard.
+2. Voice Shard begins capturing audio.
+3. Voice Shard streams audio chunks to Brain Shard over a low-latency channel.
+4. Brain Shard performs streaming or fast batch STT.
+5. Brain Shard continues normal processing:
+   - turn labeling and domain agent routing
+   - estimation call
+   - heap placement
    - task formation
-   - routing
    - execution
-6. Mac returns response text to Pi.
-7. Pi performs TTS and speaks the result.
+6. Brain Shard returns response text to Voice Shard.
+7. Voice Shard performs TTS and speaks the result.
 
 Performance target:
 
 - Remote STT enabled: first substantive spoken response ~`500-900 ms` (best case).
-- Local Pi STT path: typical ~`900-1600 ms`.
+- Local Voice Shard STT path: typical ~`900-1600 ms`.
 
 Transport options (implementation-agnostic):
 
@@ -722,7 +703,7 @@ Audio format guidance:
 
 ## 8. Component Responsibilities
 
-### 8.1 Raspberry Pi – Voice Node
+### 8.1 Voice Shard
 
 **Purpose**: Always-on audio interface and deterministic listener pipeline.
 
@@ -731,12 +712,12 @@ Audio format guidance:
 - Wake word detection
 - VAD (voice activity detection)
 - Speech-to-text (STT)
-- Optional remote audio streaming to Mac for accelerated STT
+- Optional remote audio streaming to Brain Shard for accelerated STT
 - Text-to-speech (TTS)
 - Intent gate (deterministic rules + tiny classifier)
-- Pi triage layer (fast gate that emits routing/latency hints)
+- Voice Shard triage layer (fast gate that emits routing/latency hints)
 - Front-door fast model (event-driven, not always-on inference)
-- Voice client that sends text to Mac mini
+- Voice client that sends text to Brain Shard
 
 **Characteristics**:
 
@@ -745,17 +726,17 @@ Audio format guidance:
 - Local network only
 - No heavy reasoning models on this node
 
-### 8.1.1 Pi Guardrails (Authoritative-Only Behavior)
+### 8.1.1 Voice Shard Guardrails (Authoritative-Only Behavior)
 
-The Pi remains a listener/transport/render node and is non-authoritative for semantic responses.
+The Voice Shard remains a listener/transport/render node and is non-authoritative for semantic responses.
 
-- Pi may emit non-semantic ACKs (earcon, LED, short wait phrase).
-- Pi must not generate semantic answers from local cache or models.
-- Pi must not claim actions were executed unless confirmed by Mac.
-- Pi must not write memory or commit state.
-- Pi speaks authoritative backend content only (`UPDATE|PLAN_PROGRESS|CLARIFY|PLAN_APPROVAL_REQUIRED|FINAL|ERROR`).
+- Voice Shard may emit non-semantic ACKs (earcon, LED, short wait phrase).
+- Voice Shard must not generate semantic answers from local cache or models.
+- Voice Shard must not claim actions were executed unless confirmed by Brain Shard.
+- Voice Shard must not write memory or commit state.
+- Voice Shard speaks authoritative backend content only (`UPDATE|PLAN_PROGRESS|CLARIFY|PLAN_APPROVAL_REQUIRED|FINAL|ERROR`).
 
-### 8.2 Mac mini – Control Plane
+### 8.2 Brain Shard – Control Plane
 
 **Purpose**: Orchestration, memory, APIs, tools, and fast local models.
 
@@ -763,8 +744,7 @@ The Pi remains a listener/transport/render node and is non-authoritative for sem
 
 - API gateway (/chat, /voice, /tools, /memory)
 - Orchestration runtime (LangGraph orchestrator + router)
-- Agent classifier
-- Model router
+- Internal Router (turn labeling + domain agent routing)
 - Agent Service
 - Tool execution engine
 - Databases
@@ -783,11 +763,70 @@ The Pi remains a listener/transport/render node and is non-authoritative for sem
 - Vector DB (embeddings)
 - Object storage (documents)
 
+### 8.2.1 Internal Router
+
+**Purpose**: Turn labeling and domain agent routing. Labels the incoming turn as in-domain or "other" using the context blob (all agents + relevance scores), routes to relevant domain agents. Job formation is NOT the Internal Router's job — that is the domain agent's responsibility.
+
+**Responsibilities**:
+
+- Dequeue event
+- Attach context blob (pushed by CIX, already available)
+- Label turn via front face transformer (in-domain | other)
+- Route to relevant domain agents
+- Store turn in RDS with routing metadata (batch reads this at night for non-routed agents)
+
+**Does not**: assemble job envelopes, make placement decisions, or write to the Job Registry. Those belong to the domain agent and Estimator respectively.
+
+### 8.2.2 Estimator
+
+**Purpose**: Placement decision maker. Reads the estimation call output produced by the domain agent, matches the complexity score against registered shard capability profiles and current load, and assigns the job to the best available machine.
+
+**Responsibilities**:
+
+- Read estimation call output: `{is_job, complexity, domain}`
+- Match complexity score (in estimated tool calls) to shard capability profiles
+- Select target Shard based on capability match and current load
+- Write placement decision to Job Registry
+
+| Complexity | Likely target |
+|---|---|
+| ≤ 1 | Inline — never reaches Estimator |
+| 2–5 | Mac mini class |
+| 6+ | GPU machine or most capable available shard |
+
+**Does not**: dispatch the job directly (that is External Router's job). Does not track ongoing job state beyond the placement write.
+
+### 8.2.3 External Router
+
+**Purpose**: Receives the Estimator's placement decision and dispatches the job to the right Shard. The boundary between internal control-plane logic and the Shard network.
+
+**Responsibilities**:
+
+- Receive placement decision from Estimator
+- Dispatch the job to the target Shard over the appropriate transport (WebSocket/gRPC)
+- Handle dispatch-level retries and errors
+
+**Does not**: make routing decisions. It executes the decision the Estimator already made.
+
+### 8.2.4 Job Registry
+
+**Purpose**: Passive source of truth for job lifecycle state. Records where each job is at any point in time. Does not make decisions.
+
+**Lifecycle states**: `created → routed → planning → executing → done | failed`
+
+**Responsibilities**:
+
+- Record job placement written by Estimator
+- Track lifecycle transitions as the job progresses through the LLM session
+- Serve as audit trail for job history
+
+**Does not**: route, schedule, or make any decisions. It is a state store, not a decision maker. (This replaces what was previously called "Scheduler".)
+
 ### 8.3 Deep Reasoning Shards
 
-**Purpose**: Heavy reasoning and large-model inference. Any device that registers with `deep_reasoning` capability becomes a deep reasoning Shard. The scheduler routes `deep_reasoning` lane jobs to whichever is available.
+**Purpose**: Heavy reasoning and large-model inference. Any device that registers with `deep_reasoning` capability becomes a deep reasoning Shard. The Estimator selects which Reasoning Shard receives the job based on complexity score, capability profiles, and current load; the External Router dispatches accordingly.
 
-**Currently**: one GPU machine running DeepSeek-Coder 33B+.
+**Currently**: one Reasoning Shard running DeepSeek-Coder 33B+.
 
 **Services**:
 
@@ -808,7 +847,7 @@ The Pi remains a listener/transport/render node and is non-authoritative for sem
 
 ## 9. Agent Architecture
 
-All agent state is owned and managed by the Agent Service. See `skyra/internal/project/README.md` for the full specification.
+All agent state is owned and managed by the Agent Service. See `skyra/internal/agent/README.md` for the full specification.
 
 ### 9.1 Agent Registry (SQLite)
 
@@ -834,9 +873,9 @@ CREATE TABLE agents (
   state.json           ← materialized current state (four sections)
   commits/             ← immutable commit history
     {commit_id}.json
+  working/             ← executor scratch pad (mutable, not versioned)
   jobs/
     {job_id}/
-      envelope.json    ← job_envelope_v1
       tasks/
         {task_id}/
           tasksheet.json  or  workplan.json
@@ -860,7 +899,7 @@ CREATE TABLE agents (
 
 Job status exists at two distinct levels that must not be conflated:
 
-- **Operational status** (scheduler jobs table): `queued | running | completed | failed` — owned by the scheduler, tracks machinery
+- **Operational status** (Job Registry): `created | routed | planning | executing | done | failed` — owned by the Job Registry, tracks machinery
 - **Semantic status** (tasksheet in object store): `forming | pending_approval | executing | done | cancelled` — owned by the Agent Service, tracks meaning
 
 ### 9.4 Vector Store (Derived Data)
@@ -872,19 +911,19 @@ The vector DB serves two purposes:
 
 ### 9.5 Retrieval Strategy (Commit + Semantic + Temporal)
 
-1. Context engine queries agent registry (SQLite) — filters to active agents only.
+1. Context engine queries agent registry (SQLite) — all agents returned, no active/inactive filter. The context blob carries all agents with relevance scores (data integrity over context management).
 2. Vector store retrieves semantically similar content with temporal metadata.
-3. Vector store retrieves local tools via semantic search over tool descriptions. Results above score threshold proceed to hydration.
-4. Agent Service hydrates each tool with agent boundary context — attaches `access` field (`status: allowed | locked`, `reason`). All tools returned to LLM, locked ones clearly marked.
-5. Object store provides recent commit context.
-6. Results re-ranked by commit recency, semantic similarity, agent relevance, temporal weight.
-7. Top results + hydrated tools injected into LLM session.
+3. Object store provides recent commit context.
+4. Results re-ranked by commit recency, semantic similarity, agent relevance, temporal weight.
+5. Top results injected into context package.
 
-**Rule**: Vector store finds relevant content and tools; object store provides authoritative state; agent registry gates retrieval by agent status.
+Tools are NOT part of the context package. Tool retrieval happens inside the LLM session: Agent Service retrieves local tools via vector search, hydrates each with an `access` field (`status: allowed | locked`), and returns the full list to the Domain Expert. Locked tools are visible but caught by BoundaryValidator before execution.
+
+**Rule**: Vector store finds relevant content; object store provides authoritative state; agent registry provides the full agent roster with relevance scores.
 
 ## 10. Orchestration Layer
 
-The orchestration runtime runs on the Mac mini as the central orchestrator and model router.
+The orchestration runtime runs on the Brain Shard as the central orchestrator and model router.
 
 Service and shard catalog reference:
 
@@ -895,56 +934,45 @@ Service and shard catalog reference:
 - **LangGraph** is the primary orchestration runtime for stateful workflows, routing, retries, and checkpointed execution.
 - **LangChain** is used for integrations (model clients, retrievers, tool wrappers), not as the primary orchestration layer.
 
-**Execution pipeline (single queue, single-session execution)**:
+**Execution pipeline (unified max-heap)**:
 
-1. Receive message
-2. Build `job_envelope_v1`
-3. Persist to queue
-4. Estimator annotates scheduler hints
-5. Scheduler assigns LLM execution lane (`fast_local` or `deep_reasoning`)
-6. Assigned LLM session performs domain routing + task formation:
+1. Receive message, persist to SQLite inbox, send transport ACK
+2. Internal Router labels turn (in-domain | other) using context blob, routes to domain agents
+3. Domain agent self-selects relevance, produces estimation call: `{is_job, complexity, domain}`
+4. Complexity ≤ 1 → execute inline. Complexity > 1 → job enters max-heap
+5. Estimator reads estimation call output, picks target Shard by capability profile + load, writes placement to Job Registry
+6. External Router dispatches job to assigned Shard
+7. Assigned LLM session performs task formation:
    - no task
    - ephemeral task (`WorkPlan`)
    - stateful task (`TaskSheet` + `Patch`)
-7. Same LLM session executes tools/steps
-8. Write memory updates
-9. Return final authoritative response
-
-`job_envelope_v1` includes:
-
-- `job_id`
-- `parent_job_id`
-- `agent_id`
-- `intent`
-- `priority`
-- `required_tools`
-- `target` (`none | control_plane | shard:<id>`)
-- `risk_level` (`low | med | high`)
-- `expect_response_by`
-- `schema_version`
+8. Same LLM session executes tools/steps
+9. Write memory updates via commits (user-approved)
+10. Return final authoritative response
 
 Safety/policy enforcement for high-risk actions is intentionally deferred to a later iteration.
 
 ### 10.1 Task Formation Pipeline
 
-Task formation runs inside the LLM session assigned by scheduler:
+Task formation runs inside the LLM session assigned by the Estimator:
 
-1. Event arrives from ingress and is queued.
-2. Estimator adds scheduler hints.
-3. Scheduler assigns execution lane/model.
-4. Inside assigned session, domain routing selects candidate project/domain context.
-5. Domain expert decides:
+1. Event arrives from ingress, persisted to SQLite inbox.
+2. Internal Router labels turn, routes to domain agents via context blob.
+3. Domain agent self-selects and produces estimation call `{is_job, complexity, domain}`.
+4. Complexity ≤ 1 → inline execution. Complexity > 1 → heap → Estimator places to capable Shard.
+5. External Router dispatches to the assigned Shard; LLM session begins.
+6. Domain Expert (inside assigned session) decides:
    - no task
    - ephemeral task (`WorkPlan`)
    - stateful task (`TaskSheet` + `Patch`)
-6. Optional review pass for high-complexity or ambiguous formations.
-7. Canonical task object continues directly into execution in the same session.
+7. Optional review pass for high-complexity or ambiguous formations.
+8. Canonical task object continues directly into execution in the same session.
 
 Important boundary:
 
-- v1 scheduler is intentionally simple (single queue + lane assignment).
-- Estimation is one scheduler input.
-- transport ACK confirms durable ingest only; execution may occur later from queue.
+- The Estimator owns placement decisions — it reads complexity from the estimation call and matches to shard capability profiles. No lane assignment — capability profiles drive routing.
+- Job Registry is a passive state tracker. It records placement and lifecycle transitions but does not make routing decisions.
+- Transport ACK confirms durable ingest only; execution may occur later from the heap.
 
 References:
 - `docs/arch/v1/task-formation.md`
@@ -954,20 +982,31 @@ References:
 
 Canonical pipeline:
 
-`event -> queue -> estimator -> scheduler -> assigned_llm_session(task_formation+execution)`
+```
+Voice Shard → Event Ingress → SQLite inbox → Internal Router → Domain Agent (estimation call)
+                                                   ↓                        ↓
+                                                  RDS              [Max-Heap] → Estimator → External Router → LLM Session
+                                                                                    ↓
+                                                                             Job Registry
+```
 
-Pi responsibilities:
+The Estimator writes placement to the Job Registry. The Job Registry tracks job lifecycle (`created → routed → planning → executing → done/failed`) but makes no routing decisions.
+
+Voice Shard responsibilities:
 
 - produce event
 - produce triage hints
 - optional non-semantic user feedback ACK
 
-Mac responsibilities:
+Brain Shard responsibilities:
 
-- own job envelopes
-- own task formation
-- own estimation and scheduling inputs
-- own execution routing/orchestration
+- own event ingress and durable inbox
+- own Internal Router (turn labeling, domain agent routing)
+- own max-heap (all work ordered by importance score)
+- own Estimator (placement decisions, capability-based Shard selection)
+- own Job Registry (job lifecycle state)
+- own External Router (job dispatch to target Shard)
+- own LLM session (task formation + execution)
 - own memory commits
 
 ## 11. Network Layout
@@ -976,14 +1015,14 @@ Mac responsibilities:
 
 - All machines on same LAN/VLAN
 - Token or mTLS between services
-- No public exposure of GPU machine
+- No public exposure of Reasoning Shard
 
 ### Trust zones
 
-| Zone    | Devices                                              | Role                                              |
-| ------- | ---------------------------------------------------- | ------------------------------------------------- |
-| Control | Mac mini                                             | Orchestration + memory + fast models              |
-| Shard   | Pi, laptops, desktops, servers, GPU machines         | Device execution layer — capability-driven        |
+| Zone    | Devices                                                                  | Role                                              |
+| ------- | ------------------------------------------------------------------------ | ------------------------------------------------- |
+| Control | Brain Shard                                                              | Orchestration + memory + fast models              |
+| Shard   | Voice Shard, laptops, desktops, servers, Reasoning Shards                | Device execution layer — capability-driven        |
 
 ## 12. Deployment Strategy
 
@@ -992,7 +1031,7 @@ Reference implementation example:
 
 ### Phase 1 (single machine)
 
-Mac mini runs:
+Brain Shard runs:
 
 - Llama conversational model
 - Qwen coding model
@@ -1002,12 +1041,12 @@ Mac mini runs:
 
 ### Phase 2 (two machines)
 
-- GPU box hosts DeepSeek
-- Mac mini runs control plane + local models
+- Reasoning Shard hosts DeepSeek
+- Brain Shard runs control plane + local models
 
 ### Phase 3 (three machines)
 
-- Raspberry Pi handles voice
+- Voice Shard handles voice
 - Full modular architecture
 
 ## 13. Security Baseline
@@ -1043,24 +1082,24 @@ Skyra uses two different acknowledgements that must not be conflated.
 
 Transport ACK (machine-to-machine):
 
-- sent from Mac to Pi only after durable inbox write
+- sent from Brain Shard to Voice Shard only after durable inbox write
 - drives outbox delete behavior
 - never spoken to the user
 
 User Feedback ACK (human-facing):
 
 - earcon, LED, or optional short phrase
-- chosen by Pi using triage `ack_policy`
+- chosen by Voice Shard using triage `ack_policy`
 - independent from transport reliability ACK
 - may be emitted before queued execution starts
 
 ## 15. End-State Role Assignment
 
-| Machine      | Role                                             |
-| ------------ | ------------------------------------------------ |
-| GPU Box      | DeepSeek reasoning model                         |
-| Mac mini     | LangGraph orchestration runtime, APIs, memory, tools, fast models |
-| Raspberry Pi | Voice Shard (always-on listener, front-door model, TTS) |
+| Shard          | Role                                             |
+| -------------- | ------------------------------------------------ |
+| Reasoning Shard | DeepSeek reasoning model                        |
+| Brain Shard    | LangGraph orchestration runtime, APIs, memory, tools, fast models |
+| Voice Shard    | Always-on listener, front-door model, TTS        |
 
 ## 16. Example Capabilities
 
@@ -1123,7 +1162,7 @@ If confidence is low:
 ### 17.5 Implementation
 
 - Prometheus metrics on each machine
-- Simple dashboard in the Mac mini control plane
+- Simple dashboard in the Brain Shard control plane
 - Alerts when DeepSeek usage spikes unusually
 - Weekly summaries of model usage patterns
 
@@ -1137,7 +1176,7 @@ The following sections describe high-level architectural concepts that will be d
 
 ### 18.1 TV Node Architecture (Planned)
 
-The system may include a dedicated TV node consisting of a small computer (mini PC or Raspberry Pi) connected to a television via HDMI. This node will run a Skyra Shard and act as the primary media execution environment.
+The system may include a dedicated TV node consisting of a small computer (mini PC or Voice Shard-class device) connected to a television via HDMI. This node will run a Skyra Shard and act as the primary media execution environment.
 
 In this model:
 
