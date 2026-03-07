@@ -218,7 +218,7 @@ Idempotency:
 
 ## 10. Queue, Scheduler, and Execution Start
 
-Task formation and execution run in the same assigned LLM context after queueing and scheduler lane assignment.
+Task formation and execution run in the same assigned LLM context after queueing and Estimator placement.
 
 Execution model:
 

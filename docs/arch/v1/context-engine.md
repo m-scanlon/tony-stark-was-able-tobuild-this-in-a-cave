@@ -118,7 +118,7 @@ For every LLM session, the context engine assembles a **context package** — a 
 
 ### Injection Order
 
-> Note: Section 10 supersedes this section for the revised model. Tools are no longer part of the context package — they are retrieved by the Agent Service inside the LLM session. The order below reflects the baseline design; treat section 10 as authoritative.
+> Note: Section 10 supersedes this section for the revised model. **Tools are no longer part of the context package** — they are retrieved by the Agent Service inside the LLM session during planning. The example JSON below still includes a `tools` array from the baseline design — ignore it. Treat section 10 as authoritative.
 
 Order matters. Items injected first have the most influence on the LLM's behavior.
 
@@ -322,7 +322,7 @@ The retrieval steps in section 5 remain relevant but their role changes. They ar
 
 ---
 
-## 9. Related Docs
+## 11. Related Docs
 
 - `docs/arch/v1/importance-vectors.md` — full importance vector design, scoring formula, decay, long term memory, self-tuning
 - `docs/arch/v1/lifecycle.md` — full 8-stage pipeline

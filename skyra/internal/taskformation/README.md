@@ -13,7 +13,7 @@ Purpose:
 Design reference:
 
 - `docs/arch/v1/task-formation.md`
-- `skyra/internal/agent/README.md` — project service, object store, tool registry
+- `skyra/internal/agent/README.md` — Agent Service, object store, tool registry
 
 Notes:
 

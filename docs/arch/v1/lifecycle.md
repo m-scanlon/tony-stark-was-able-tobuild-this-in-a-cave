@@ -187,4 +187,4 @@ voice_event_v1
 - `docs/arch/v1/scheduler.md` — unified heap, inference types, complexity scoring, preemption
 - `skyra/internal/delegation/README.md` — Estimator, placement decisions
 - `skyra/schemas/ingress/voice/` — voice_event schema
-- `docs/arch/v1/next-steps.md` — open questions on job_envelope_v1 and executor loop
+- `docs/arch/v1/next-steps.md` — open design questions after architecture revision
