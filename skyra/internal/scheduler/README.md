@@ -26,22 +26,27 @@ It is intentionally simple in v1. Single queue, state tracking only.
 ```
 event
   → inbox (SQLite, event_id PK)
-  → queue
-  → Estimator (assigns lane, shard, creates job record → Job Registry)
+  → Internal Router (labels turn, routes to domain agents)
+  → Domain Agent (estimation call → {is_job, complexity, domain})
+  → Max-Heap (all work ordered by importance score)
+  → Estimator (reads complexity, matches to capable shard → Job Registry)
   → assigned LLM session (task formation + execution)
   → Job Registry (marks planning → executing → completed / failed)
 ```
 
-Canonical pipeline reference: `docs/arch/v1/scyra.md` section 10.2
+Canonical pipeline reference: `docs/arch/v1/dataflow-walk-notes.md`, `docs/arch/v1/scheduler.md`
 
-## Execution Lanes
+## Shard Placement
 
-| Lane | Used For |
+The Estimator matches complexity score (in estimated tool calls) against registered shard capability profiles. There are no hardcoded lanes — routing is capability-profile-based.
+
+| Complexity | Likely target |
 |---|---|
-| `fast_local` | Short, low-cost requests handled by local Brain Shard models |
-| `deep_reasoning` | Complex requests routed to a Shard with deep_reasoning capability |
+| ≤ 1 | Inline execution — never reaches heap or Estimator |
+| 2–5 | Mac mini class |
+| 6+ | GPU machine or most capable available shard |
 
-The Estimator makes the lane assignment. The Job Registry records it.
+The Estimator makes the placement decision. The Job Registry records it.
 
 ## Job Lifecycle
 
@@ -57,22 +62,19 @@ created → routed → planning → executing → completed
 - `completed`: session finished successfully
 - `failed`: unrecoverable error
 
-## Job Envelope
+## Job Entry Contract
 
-Each job entering the Job Registry carries a `job_envelope_v1`:
+Each job entering the heap originates from an estimation call produced by the domain agent:
 
-- `job_id`
-- `parent_job_id`
-- `agent_id`
-- `intent`
-- `priority`
-- `required_tools`
-- `target` (`none | control_plane | shard:<id>`)
-- `risk_level` (`low | med | high`)
-- `expect_response_by`
-- `schema_version`
+```json
+{
+  "is_job": true,
+  "complexity": 3,
+  "domain": "servers"
+}
+```
 
-Note: `job_envelope_v1` schema is not yet locked. See `docs/arch/v1/gaps.md` G1.
+Complexity is measured in estimated tool calls. This is the primary placement signal — the Estimator reads it and matches against shard capability profiles. The estimation call schema is not yet locked. See `docs/arch/v1/gaps.md` G1.
 
 ## Data Model
 
@@ -87,15 +89,14 @@ Access rules:
 
 ## v1 Constraints
 
-- Single queue, no priority tiers
-- Lane assignment is the only routing decision
-- No backpressure or overload handling
-- No job cancellation or pause/resume
-- transport ACK confirms durable ingest only — execution may occur later from queue
+- Backpressure and overload policies are undefined — see `docs/arch/v1/gaps.md` G6
+- Preemptive scheduling is supported — higher priority work can interrupt in-flight jobs. Interrupted job's context window is serialized to a FIFO stack and resumed when the machine is free. See `docs/arch/v1/scheduler.md`.
+- Transport ACK confirms durable ingest only — execution may occur later from the heap
 
 ## Related Docs
 
-- `docs/arch/v1/scyra.md` — canonical pipeline and job envelope
-- `docs/arch/v1/task-formation.md` — what happens inside the assigned LLM session
-- `docs/arch/v1/gaps.md` — known open issues including job_envelope_v1 schema lock
-- `skyra/internal/delegation/estimator/DESIGN.md` — estimator design
+- `docs/arch/v1/scheduler.md` — unified heap, three inference types, complexity scoring, preemptive scheduling
+- `docs/arch/v1/dataflow-walk-notes.md` — updated canonical pipeline
+- `docs/arch/v1/task-formation.md` — domain agent as doorkeeper, estimation call
+- `docs/arch/v1/gaps.md` — known open issues including estimation call schema lock (G1)
+- `skyra/internal/delegation/README.md` — estimator placement role

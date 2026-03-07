@@ -88,15 +88,15 @@ Locked during the pipeline design walkthrough.
 
 **Router split (Internal + External).**
 A single "Router" was too much responsibility in one component. Splitting it makes the roles explicit:
-- Internal Router = job formation. It's a context operation — pull context, resolve agent, assemble envelope. No dispatch knowledge required.
+- Internal Router = turn labeling and domain agent routing. It labels the turn (in-domain | other) using the context blob, routes to relevant domain agents, and drops the turn in RDS. Job formation is NOT the Internal Router's job — that moved to the domain agent.
 - External Router = dispatch. It knows which shard to call and how. No context knowledge required.
 These are different concerns and should fail independently.
 
 **Estimator is the scheduler.**
 "Estimator" was previously just a complexity scorer. That framing was wrong — complexity scoring is only useful if something acts on it. The Estimator now owns the full placement decision: reads the envelope, consults the agent domain for rough complexity, checks shard capability profiles and current load, and picks a shard. It's the scheduler. The name stays "Estimator" to reflect that it's doing estimation to drive a decision, not running a planning algorithm.
 
-**"Scheduler" is retired as a term.**
-The old "Scheduler" concept conflated two things: placement decisions and lifecycle tracking. Those are now separate components with separate responsibilities. Using "Scheduler" anywhere in v1 docs is wrong — replace with "Estimator" (placement) or "Job Registry" (lifecycle) as appropriate.
+**"Scheduler" as a component name is retired.**
+The old "Scheduler" component conflated two things: placement decisions and lifecycle tracking. Those are now separate: "Estimator" (placement) and "Job Registry" (lifecycle). `docs/arch/v1/scheduler.md` exists but describes the heap-based scheduling *system* (unified max-heap, inference types, preemption) — not a component called "Scheduler".
 
 **Job Registry is passive.**
 The Job Registry does not decide anything. It is a state machine store — components write transitions to it, nothing more. Estimator writes on placement. LLM Session writes as the job progresses through planning, executing, done/failed. The registry is the source of truth for operational job state, queryable for monitoring and recovery, but it does not drive the pipeline.
