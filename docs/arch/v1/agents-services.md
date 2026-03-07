@@ -149,7 +149,28 @@ General-purpose Shards deployed on workstations and servers. Capability profile 
   - `skyra/internal/executor/executor.go`
   - `skyra/internal/executor/security.go`
 
-### 3.3 Shard-to-Shard Delegation (v1 direction)
+### 3.3 TV Shard (Voice Input via Remote)
+
+Smart TVs with voice remotes register as ingress shards. The remote delivers audio to the TV OS — whether via Bluetooth, RF, or a proprietary protocol is irrelevant to Skyra. The TV OS is the recording device.
+
+Capability profile:
+
+- `voice_input`: TV OS receives voice from the remote and exposes it via OS voice API (Android TV voice API, Tizen SDK, webOS SDK). The Skyra TV shard hooks this API before the native assistant processes the audio.
+- `speaker`: TV audio output (TTS playback)
+- `display`: TV screen output (optional visual rendering)
+
+How it works:
+
+- User speaks into the TV remote.
+- Remote transmits audio to the TV via its native protocol (Bluetooth, RF, infrared — opaque to Skyra).
+- TV OS raises a voice input event.
+- Skyra TV shard intercepts the event via the OS API hook — before it reaches the native assistant.
+- Shard packages the audio as a `voice_event` and sends it to the brain.
+- The remote is invisible to Skyra. The TV is the ingress shard.
+
+The TV shard registers `voice_input` in its capability profile. The Shard Capability Registry sees it as an ingress-capable shard, same as the Raspberry Pi Voice Shard. Spatial awareness applies: the TV shard's network tag scopes it to the room it's in.
+
+### 3.4 Shard-to-Shard Delegation (v1 direction)
 
 Shard-to-shard calls are allowed, but only through control-plane mediation:
 
@@ -171,9 +192,10 @@ v1 recommendation:
 ## 5. Ownership Summary
 
 - Voice Shard: capture + transport + render (voice capability profile)
+- TV Shard: intercept remote voice via OS API hook, package as voice_event, render TTS/display output
 - Machine Shards: execute commands only
 - Control-plane services: label turns + domain agent self-selection + form tasks + orchestrate + commit agent state
-- Agent Service: own agent registry, object store, domain tool registry, commit history
+- Agent Service: own agent registry, object store, domain tools (filesystem files in object store), commit history
 - Tooling Services: own shard capability registry, capability resolution, and execution dispatch/audit
 
 If you ask, "is Domain Expert a shard?":

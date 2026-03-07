@@ -50,7 +50,7 @@ The Executor must:
 6. Consult Resource Manager before constrained steps.
 7. Persist checkpoints for crash/restart recovery.
 8. Emit user-facing lifecycle notifications through Notifier.
-9. Run BoundaryValidator before each step — check proposed tool calls against the project boundary. If a tool is locked, pause execution and send a permission prompt to the user. User responds `allow_always | allow_once | deny`. On `deny`, trigger bounded replan rather than halting the task.
+9. Run BoundaryValidator before each step — check proposed tool calls against the agent boundary. If a tool is locked, pause execution and send a permission prompt to the user. User responds `allow_always | allow_once | deny`. On `deny`, trigger bounded replan rather than halting the task.
 
 ## 6.4 Execution Loop
 

@@ -50,7 +50,7 @@ Voice Shard → Event Ingress → SQLite inbox → Internal Router → [Max-Heap
 - `job` — high priority. Long-running execution.
 - `batch` — very low priority. Weight updates, pattern detection. Runs on idle compute at night.
 
-**Preemptive scheduling:** Higher priority work interrupts in-flight jobs at tool call boundaries. Interrupted job's context window serialized to FIFO stack. Resume = pop context, continue generation.
+**Preemptive scheduling:** Higher priority work interrupts in-flight jobs at tool call boundaries. Interrupted job is re-queued on the heap with its context blob intact. Resume = pick up from heap, continue generation. No FIFO stack — preemption is a natural property of heap re-entry.
 
 ---
 

@@ -333,7 +333,7 @@ Duplicate source events:
 
 - Executor runtime design (draft): `docs/arch/v1/executor.md`
 - Scheduler — unified heap, inference types, complexity scoring: `docs/arch/v1/scheduler.md`
-- Agent Service (object store, commits, tool registry): `skyra/internal/agent/README.md`
+- Agent Service (object store, domain tools, boundary enforcement): `skyra/internal/agent/README.md`
 - Delegation Engine (Estimator): `skyra/internal/delegation/README.md`
 
 ## 15. Estimator Role (Updated)
