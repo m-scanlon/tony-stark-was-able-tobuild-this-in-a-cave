@@ -12,12 +12,12 @@ This document tracks known architecture gaps that must be resolved before produc
 
 | ID | Gap | Priority | Why it matters | Suggested owner |
 | --- | --- | --- | --- | --- |
-| G1 | `job_envelope_v1` schema not fully locked | P0 | Cross-node compatibility and routing correctness depend on one canonical contract. | Control Plane |
+| G1 | Estimation call schema not locked | P0 | The estimation call output (`{is_job, complexity, domain}`) is the handoff contract between the domain agent and the Estimator. Everything downstream depends on it. Domain agent now owns job formation — the old `job_envelope_v1` assembled by the Internal Router is retired. The new schema is simpler but still needs to be finalized. | Control Plane |
 | G2 | End-to-end idempotency beyond ingress is incomplete | P0 | Retries can create duplicate tasks, duplicate side effects, or duplicate commits. | Ingress + Task Formation + Executor |
 | G3 | Stateful commit safety boundary is underdefined | P0 | Risk of corrupt/partial state changes without strict pre-commit checks and conflict handling. Two-level status (operational in scheduler jobs table vs semantic in tasksheet) must be coordinated on failure/rollback. | Task Formation + Agent Service |
 | G4 | ~~Reconciliation UX policy is not fully specified~~ **CLOSED for v1** | P1 | **v1 decision**: Provisional responses cut from v1. Voice Shard emits non-semantic ACKs only (earcon/LED/short wait phrase). Voice Shard renders only Brain Shard-authored messages (`UPDATE`, `PLAN_PROGRESS`, `CLARIFY`, `PLAN_APPROVAL_REQUIRED`, `FINAL`, `ERROR`). No split-brain risk in v1. Provisional response path (front-door model speaks before Brain Shard responds, then reconciles on `FINAL`) deferred to v2 — see note in `docs/arch/v1/scyra.md` section 7.1. | Voice Shard + Control Plane |
 | G5 | AuthN/AuthZ model is not concretely implemented | P0 | Device/agent channels remain security-sensitive attack surface. | Platform/Security |
-| G6 | Backpressure and overload policies are undefined | P1 | Queue growth and latency spikes can collapse responsiveness under load. | Ingress + Scheduler |
+| G6 | Backpressure and overload policies are undefined | P1 | Heap growth and latency spikes can collapse responsiveness under load. Max heap depth, starvation prevention, and priority bump policies for long-waiting items are undefined. | Ingress + Heap/Estimator |
 | G7 | Executor/Resource Manager contracts are abstract | P1 | Stage execution decisions cannot be implemented predictably without exact API contracts. | Executor + Resource Manager |
 | G8 | Observability and SLOs are not defined end-to-end | P1 | Hard to debug reliability and latency regressions without traceability and targets. | Platform/Operations |
 | G9 | Degradation and cold-start behavior is incomplete | P1 | Unclear runtime behavior when STT/model/estimator/context systems fail or lag. | Voice Shard + Orchestrator |
@@ -35,7 +35,8 @@ This document tracks known architecture gaps that must be resolved before produc
 ## Recommended Next Actions
 
 1. **Lock canonical contracts (`P0`)**
-   - Finalize `job_envelope_v1` JSON schema with `schema_version`.
+   - Finalize estimation call schema (`{is_job, complexity, domain}` + any additional Estimator fields).
+   - Define "other" turn storage schema in RDS (what fields, what retention policy).
    - Define idempotency keys for `event_id`, `job_id`, `task_id`, and stateful commit operations.
    - Define commit preconditions and conflict behavior for stateful mutations.
 

@@ -15,22 +15,16 @@ Every request that enters Skyra moves through the same pipeline, regardless of c
 
 ---
 
-## Stage 2 — Domain Routing
+## Stage 2 — Domain Agent Self-Selection
 
-The event is resolved to an agent.
+There is no central classifier. Domain agents are the doorkeepers of their own domains.
 
-Inputs:
-- event text and metadata
-- session hints from `voice_event_v1.session_state`
-- agent registry
-- vector search over agent state
+The front face transformer reads the context blob — which contains all registered agents with their relevance scores — and labels the turn as **in-domain** or **other**.
 
-Outputs:
-- `agent_id`
-- `routing_confidence`
-- `top_candidates[]`
+- **In-domain**: routed to the relevant domain agents. Each agent receives the full context blob and self-selects — it decides whether the turn belongs to it, checks for job impact, and produces an estimation call if a job is warranted.
+- **Other**: stored in RDS. The nightly batch process runs the turn against all agents to ensure nothing is permanently missed.
 
-Low confidence → ambiguity handling (clarification request or conservative ephemeral path).
+If a turn spans multiple domains, multiple agents can each self-select independently.
 
 ---
 
@@ -106,13 +100,16 @@ Note: `PLAN_APPROVAL_REQUIRED` (this gate) and `requires_approval` on a local to
 
 ---
 
-## Stage 7 — Scheduler
+## Stage 7 — Heap and Placement
 
-The approved task enters the scheduler queue.
+The approved task enters the unified max-heap.
 
-- Lane assigned: `fast_local | deep_reasoning`
+- All work is ordered by importance score — no separate queues or lanes
+- The Estimator reads the estimation call output (`complexity` in tool calls) and routes to the best available shard via capability profiles
 - Jobs table tracks operational status: `queued → running → completed | failed`
 - Semantic phases (planning / executing / validating / replanning / done) are tracked separately in the task artifact
+
+See `docs/arch/v1/scheduler.md` for full heap design, three inference types, and preemptive scheduling.
 
 ---
 
@@ -142,10 +139,20 @@ Progress snapshots sent to Estimator at each step boundary (and on a heartbeat f
 voice_event_v1
       |
       v
-  [Ingress] — generates event_id, persists, queues
+  [Ingress] — generates event_id, persists to SQLite inbox
       |
       v
-  [Domain Routing] — resolves agent_id
+  [Internal Router] — drops off turn, routes to domain agents
+      |
+      +-- other ---------> RDS (batch picks up at night)
+      |
+      v
+  [Domain Agent] — self-selects, estimation call
+      |
+      +-- complexity ≤ 1 --> execute inline, done
+      |
+      v
+  [Heap] → Estimator places to capable machine
       |
       v
   [Domain Expert] — no_task | WorkPlan | TaskSheet+Patch
@@ -162,10 +169,7 @@ voice_event_v1
   [Plan Approval Gate] — APPROVE | REVISE | CANCEL
       |
       v
-  [Scheduler] — lane assigned, queued
-      |
-      v
-  [Executor] — step-by-step, validate, checkpoint, replan
+  [Executor] — step-by-step, validate, preemptible, replan
       |
       v
      done
@@ -180,6 +184,7 @@ voice_event_v1
 - `docs/arch/v1/executor.md` — executor design
 - `docs/arch/v1/domain-expert/README.md` — planning phase
 - `skyra/internal/agent/README.md` — agent service, tool hydration, boundary enforcement
-- `skyra/internal/scheduler/README.md` — scheduler, job lifecycle, lanes
+- `docs/arch/v1/scheduler.md` — unified heap, inference types, complexity scoring, preemption
+- `skyra/internal/delegation/README.md` — Estimator, placement decisions
 - `skyra/schemas/ingress/voice/` — voice_event schema
 - `docs/arch/v1/next-steps.md` — open questions on job_envelope_v1 and executor loop
