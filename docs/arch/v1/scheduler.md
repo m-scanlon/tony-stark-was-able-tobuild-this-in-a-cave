@@ -53,9 +53,11 @@ Jobs can be interrupted by higher priority work. See: Preemptive Scheduling belo
 
 **Priority: Very low.**
 
-Weight updates, pattern detection, cross-domain analysis. Runs on idle compute — typically at night when estimation and job work is quiet.
+Weight updates for non-routed domains, pattern detection, cross-domain analysis. Runs on idle compute — typically at night when estimation and job work is quiet.
 
-On ingress, every turn is stored in RDS with a record of which domain agents were routed to in real-time. The batch process reads this at night and runs the turn against every agent that wasn't reached in real-time. This is how data integrity is preserved — nothing is permanently missed.
+**Important distinction:** domains that were routed to in real-time get their weight updates immediately via lightweight signal processing — not deferred to batch. Deferring the weight update for a selected domain would cause it to decay even though it was just used. The batch only handles domains that were NOT reached in real-time.
+
+On ingress, every turn is stored in RDS with a record of which domain agents were routed to. The batch process reads this at night and runs the turn against every agent that wasn't in that set. This is how data integrity is preserved — nothing is permanently missed.
 
 Batch work items enter the heap at very low importance. They sit at the bottom and get picked up when no higher priority work is waiting. No separate scheduler needed.
 

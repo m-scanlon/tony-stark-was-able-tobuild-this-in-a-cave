@@ -88,18 +88,25 @@ The context blob includes all registered agents with their current relevance sco
 
 This means the Internal Router does not need to interface with the Context Engine at request time. The context came with the event.
 
-When the payload reaches the domain agent, the context blob acts as a relevance signal applied directly to the object store. **Weight updates are deferred to batch** — they do not happen in real-time. Items in the object store are updated during the nightly batch pass, not on every turn.
+When the payload reaches the domain agent, the context blob acts as a relevance signal applied directly to the object store.
+
+**Weight updates for routed domains happen immediately** — lightweight signal processing, not a full inference call. The turn arrived, the domain was selected, its relevance scores get bumped for the concepts in that turn right now. If this doesn't happen, the selected domain decays even though it was just used. That's the wrong behavior.
+
+**Weight updates for non-routed domains are deferred to batch** — every agent that wasn't reached in real-time gets the accumulated session turns at night.
 
 ```
 event arrives with context blob attached (all agents + relevance scores)
   → front face transformer labels turn: in-domain | other
   → in-domain: route to relevant domain agents
       → each agent self-selects relevance
+      → lightweight real-time weight update (bump scores for concepts in this turn)
       → each agent checks for job impact
       → job formed if warranted
   → other: store in RDS, batch picks up at night
-  → batch (night): all agents × accumulated turns → weight updates → pattern detection
+  → batch (night): non-routed agents × accumulated turns → weight updates → pattern detection
 ```
+
+The real-time weight update is the insurance policy against decay for selected domains. The batch is the catch-all for everything else.
 
 Semantic similarity alone is not enough — an item must also meet a minimum vector score before it's considered for retrieval. The vector threshold and decay rate are configurable and will be tuned empirically. Eventually Skyra tunes these herself based on what surfaces useful context vs noise.
 
