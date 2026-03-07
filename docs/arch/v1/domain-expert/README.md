@@ -24,8 +24,8 @@ Code references:
 Inputs:
 
 - user request/event text
-- agent routing result (`domain_id`, confidence, candidates)
-- context window + memory retrieval results
+- context blob (all agents with relevance scores, session history, retrieved context — attached at hydration by CIX)
+- domain agent self-selection result (the domain agent receives the context blob and determines relevance before the Domain Expert runs)
 - tool registry/allowlist + policies
 
 Output:

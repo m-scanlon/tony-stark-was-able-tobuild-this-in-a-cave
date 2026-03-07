@@ -20,9 +20,9 @@ The Executor is not a blind script runner. It is an adaptive runtime loop with:
 Placement in end-to-end flow:
 
 ```text
-Event → Internal Router (job_envelope_v1) → Estimator → External Router → LLM Session (Domain Expert + Executor)
-                                                  |
-                                            Job Registry
+Event → Internal Router → Domain Agent (estimation call) → [Max-Heap] → Estimator → External Router → LLM Session (Domain Expert + Executor)
+                                                                               |
+                                                                         Job Registry
 ```
 
 Authority boundary:
@@ -117,7 +117,7 @@ Persist after each step:
 
 ## 6.7 Estimator Feedback Interface
 
-The Estimator made the original placement decision — it read `job_envelope_v1`, did a shallow consult with the agent domain to score job complexity, then selected the target shard based on capability profiles and current load. It wrote that placement to the Job Registry.
+The Estimator made the original placement decision — it read the estimation call output (`{is_job, complexity, domain}`), matched the complexity score against shard capability profiles and current load, then selected the target shard. It wrote that placement to the Job Registry.
 
 During execution, the LLM Session sends progress snapshots back to the Estimator:
 
@@ -213,7 +213,7 @@ Notifier owns channel fanout (Voice Shard, mobile, etc.).
 
 - `UpdateProgress(snapshot) -> UpdatedEstimate`
 
-Note: the Estimator also owns the upstream placement decision (`PlaceJob(job_envelope_v1) -> PlacementDecision`). That contract belongs to the Estimator's own interface spec, not here. The Executor only interacts with the Estimator via progress updates during execution.
+Note: the Estimator also owns the upstream placement decision (`PlaceJob(estimation_output) -> PlacementDecision`). That contract belongs to the Estimator's own interface spec, not here. The Executor only interacts with the Estimator via progress updates during execution.
 
 ### Executor <-> Resource Manager
 

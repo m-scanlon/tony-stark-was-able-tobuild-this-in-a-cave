@@ -111,13 +111,14 @@ For every LLM session, the context engine assembles a **context package** — a 
 
 ### Injection Order
 
+> Note: Section 10 supersedes this section for the revised model. Tools are no longer part of the context package — they are retrieved by the Agent Service inside the LLM session. The order below reflects the baseline design; treat section 10 as authoritative.
+
 Order matters. Items injected first have the most influence on the LLM's behavior.
 
 1. **`skyra.user`** — system agent, always first. Cross-domain user profile: preferences, habits, facts about the user. Never omitted.
 2. **Domain agent snapshot** — the active domain agent's knowledge, goals, decisions, and boundary. Retrieved based on routing result.
-3. **Hydrated local tools** — tools retrieved via vector search over the agent's tool registry, joined with boundary access status. Locked tools included, clearly marked.
-4. **Recent turns** — turn history from the active session, most recent first, up to token budget.
-5. **Current job context** — if this turn is a continuation (`pending_job_id` set), the in-flight job's task artifact and current stage are included.
+3. **Recent turns** — turn history from the active session, most recent first, up to token budget.
+4. **Current job context** — if this turn is a continuation (`pending_job_id` set), the in-flight job's task artifact and current stage are included.
 
 ### Context Package Structure
 
@@ -216,7 +217,7 @@ context_package {
 The context engine follows a fixed retrieval order. Each step gates the next.
 
 1. **Agent registry (SQLite)** — all registered agents, with relevance scores. No active/inactive filter — all agents are present in the context blob. Fast, no vector search.
-2. **Domain routing** — select the most relevant domain agent from the filtered set. Uses event text, session hints, and vector similarity over agent state.
+2. **Domain routing** — select the most relevant domain agents from the full agent list. Uses event text, session hints, relevance scores, and vector similarity over agent state. All agents are candidates — relevance scores determine weighting.
 3. **Vector search — agent state** — retrieve semantically similar content from the domain agent's state index. Temporal metadata used for reranking.
 4. **Vector search — local tools** — retrieve tools by semantic similarity to the current request. Results below score threshold are dropped before hydration.
 5. **Tool hydration** — Agent Service joins raw tool results against `state.json` boundary. Attaches `access` field to every tool. No tools hidden.
@@ -275,7 +276,7 @@ The context engine is not a query engine. It is a continuously running backgroun
 
 On each cycle, the loop runs inference and commits observations it considers relevant. Examples: "User has been asking about backups across three sessions." "A job is running that touches the filesystem agent." "Last two turns were about the same topic — this is a continuing thread."
 
-**Request time** — Internal Router asks for context. Context engine reads its latest committed state and assembles the package. Fast shallow read, not a full retrieval pass. The background loop already did the work.
+**Request time** — context is already embedded in the event payload, pushed by CIX before the event arrives. The context engine's committed state is a fast shallow read when additional retrieval is needed. The background loop already did the work.
 
 ### Commit Model
 

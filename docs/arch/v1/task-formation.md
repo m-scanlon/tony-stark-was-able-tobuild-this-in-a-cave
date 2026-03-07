@@ -257,8 +257,8 @@ Execution start guarantees:
 
 Important boundary:
 
-- scheduler v1 is intentionally simple (single queue + lane assignment)
-- estimator is only one scheduler component, not the scheduler itself
+- scheduling is handled by the unified max-heap — see `docs/arch/v1/scheduler.md`
+- the Estimator reads the estimation call output and makes placement decisions
 - formation does not decide final scheduling policy
 
 ## 11. Failure and Ambiguity Handling
@@ -322,83 +322,26 @@ Duplicate source events:
 ## 14. Related Docs
 
 - Executor runtime design (draft): `docs/arch/v1/executor.md`
+- Scheduler — unified heap, inference types, complexity scoring: `docs/arch/v1/scheduler.md`
 - Agent Service (object store, commits, tool registry): `skyra/internal/agent/README.md`
-- Scheduler Service (job lifecycle, lane assignment): `skyra/internal/scheduler/README.md`
+- Delegation Engine (Estimator): `skyra/internal/delegation/README.md`
 
-## 15. Appendix A: Estimator Documentation Agent Prompt
+## 15. Estimator Role (Updated)
 
-Use this prompt when generating the Estimator design documentation for Skyra Task Formation.
+> Note: The Estimator's role changed significantly with the architecture revision. The old prompt-based design spec below this section is superseded. See `skyra/internal/delegation/README.md` for the current Estimator design.
 
-```text
-Write a comprehensive design document for the Estimator component of Skyra's Task Formation System, based on the following specifications. The Estimator is responsible for predicting task duration and resource needs, and for dynamically updating those predictions during execution. The job execution layer is not yet fully defined, so define interfaces abstractly.
+The Estimator now has a single, clear responsibility: **placement**. It reads the estimation call output from the domain agent and routes the job to the best available machine.
 
-Context:
-Skyra processes events into tasks via a Task Formation pipeline (see attached task-formation.md). After the Domain Expert creates a WorkPlan or TaskSheet, the Estimator produces initial estimates. During task execution, the Estimator receives progress updates and refines estimates, which are used for user communication and scheduler hints.
-
-Requirements:
-
-Purpose
-
-Predict how long a task will take (initial estimate).
-
-Classify tasks into duration classes (instant, short, long, unknown) to guide scheduling and user interaction.
-
-Suggest checkpoint intervals for long tasks.
-
-Provide resource hints (GPU, network, etc.) to the scheduler.
-
-Dynamically re-estimate remaining time during execution based on progress.
-
-Inputs – Initial Estimation
-
-Hydrated job (after Domain Expert) including WorkPlan/TaskSheet, agent context, user ID, etc.
-
-Snapshot of current system resources (GPU load, memory, network latency).
-
-Historical data: embeddings of similar past tasks with their actual durations and resource usage.
-
-Inputs – Dynamic Re‑estimation (during execution)
-
-Progress snapshots from the executor (abstractly defined): e.g., elapsed time, steps completed, current step, partial results, resource usage, errors.
-
-Original task features and initial estimate.
-
-Outputs
-
-Initial: duration class, estimated seconds (with confidence), checkpoint interval, resource hints, complexity score.
-
-Re‑estimation: updated remaining seconds, new confidence, optionally a reason for change.
-
-All outputs may be used by scheduler, threshold review, and user notification system.
-
-Learning & Adaptation
-
-Store features and actual outcomes (duration, resource consumption) for every completed task.
-
-Periodically retrain a model (e.g., gradient boosting, small neural net) to improve accuracy.
-
-Include progress snapshots in training to improve re‑estimation.
-
-Cold-start fallback rules until enough data exists.
-
-Architecture & Integration
-
-The Estimator is a service on the Brain Shard, exposed via an internal API.
-
-Initial estimation occurs after Domain Expert, before threshold review (if any).
-
-During execution, the executor (to be defined) sends progress updates to the Estimator; the Estimator returns updated estimates.
-
-Estimates are attached to the task object and can be queried by the scheduler or notification system.
-
-Open Points
-
-The exact executor interface is TBD; define the expected progress snapshot schema.
-
-How frequently re‑estimation occurs (e.g., every 30 seconds, after each step) is configurable and may depend on duration class.
-
-Notification logic (when to inform the user) is outside this doc but should reference the estimator's outputs.
+Input:
+```json
+{
+  "is_job": true,
+  "complexity": 3,
+  "domain": "servers"
+}
 ```
+
+Complexity in estimated tool calls is the primary placement signal. The Estimator matches against registered shard capability profiles and current load. No duration prediction, no checkpoint intervals, no duration classes — those were part of the old design that has been retired.
 
 ## Task Formation Flow Diagram
 
