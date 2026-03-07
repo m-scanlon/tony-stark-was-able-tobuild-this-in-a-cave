@@ -36,97 +36,62 @@ Every device in the Skyra network runs a lightweight Shard daemon. A Shard boots
 
 ```mermaid
 flowchart TB
-  %% User
   USER([User])
 
-  %% Voice Shard
-  subgraph PI[Voice Shard]
-    WW[Wake Word]
-    VAD[VAD]
-    STT[Speech-to-Text]
-    GATE[Intent Gate]
-    TRIAGE[Voice Shard Triage]
-    LCACHE[Listener Context Cache]
-    FDOOR[Front-Door Fast Model]
-    OBOX[Event Outbox]
-    VCLIENT[Voice Client]
-    TTS[Text to Speech]
-    WW --> VAD --> STT --> GATE --> TRIAGE --> FDOOR
-    LCACHE --> FDOOR
-    FDOOR --> OBOX --> VCLIENT --> TTS
+  subgraph IS[Ingress Shard]
+    ISHARD[Input Capture<br/>triage · outbox · hydration]
+    LCACHE[Context Cache<br/>kept warm by CIX]
   end
 
-  %% Control Plane
-  subgraph CTRL[Brain Shard • Control Plane]
-    direction LR
+  subgraph BRAIN[Brain Shard • Control Plane]
     APIGW[API Gateway]
-    INGRESS[Event Ingress]
-    INBOX[(SQLite Event Inbox)]
+    INBOX[(SQLite Inbox)]
     IRTR[Internal Router<br/>labels turn]
-    DAGENT[Domain Agent<br/>estimation call]
-    HEAP[(Max-Heap)]
-    EST[Estimator<br/>placement]
+    DAGENT[Domain Agent<br/>self-selects · estimation call]
+    HEAP[(Max-Heap<br/>all work by importance score)]
+    EST[Estimator<br/>complexity → placement]
     JOBREG[(Job Registry)]
     ERTR[External Router]
-    SESSION[Assigned LLM Session<br/>planning + execution]
-    CIX[Context Injector]
-    PROJ[Agent Service]
-    OBJ[Object Store]
-    VDB[Vector DB]
+    SESSION[LLM Session<br/>planning + execution]
+    CRE[Context Retrieval Engine<br/>background loop]
+    CIX[Context Injector<br/>state-aware push daemon]
+    AREG[(Agent Registry)]
+    OBJ[(Object Store)]
+    VDB[(Vector DB)]
 
-    APIGW --> INGRESS --> INBOX --> IRTR --> DAGENT --> HEAP --> EST --> ERTR --> SESSION
+    APIGW --> INBOX --> IRTR --> DAGENT --> HEAP --> EST --> ERTR --> SESSION
     EST -->|placement written| JOBREG
-    INGRESS -->|context push| CIX
-    SESSION --> PROJ
-    PROJ --> OBJ
-    PROJ --> VDB
+    SESSION <-->|reads · commits| OBJ
+    SESSION <-->|tool retrieval| VDB
+    CRE --> AREG
+    CRE --> OBJ
+    CRE --> VDB
+    OBJ -.->|state change| CIX
   end
 
-  %% Shards — any device that registers capabilities
-  subgraph GPUSHARD[GPU Shard • deep_reasoning]
-    DEEP[DeepSeek Model]
-  end
-
-  subgraph LAPTOP[Laptop • Shard]
-    LAGENT[Shard\nWebSocket Client]
-    LEXEC[Command Executor]
-    LAGENT --> LEXEC
-  end
-
-  subgraph DESKTOP[Desktop • Shard]
-    DAGENT2[Shard\nWebSocket Client]
-    DEXEC[Command Executor]
-    DAGENT2 --> DEXEC
-  end
-
-  subgraph SERVER[Server • Shard]
-    SAGENT[Shard\nWebSocket Client]
-    SEXEC[Command Executor]
-    SAGENT --> SEXEC
+  subgraph EXEC[Execution Shards]
+    GPU[GPU Shard<br/>deep_reasoning]
+    MACH[Machine Shards<br/>command execution]
   end
 
   %% Request path
-  USER -->|audio| WW
-  VCLIENT -->|voice_event_v1| APIGW
-  INBOX -->|ACK event_id| OBOX
+  USER -->|input| ISHARD
+  LCACHE -->|context attached at hydration| ISHARD
+  ISHARD -->|event + embedded context| APIGW
+  INBOX -->|ACK| ISHARD
 
-  %% Response path
-  SESSION -->|FINAL / UPDATE / ERROR| APIGW
-  APIGW -->|response| VCLIENT
-  TTS -->|speech| USER
+  %% Shard dispatch
+  ERTR --> GPU
+  SESSION -->|commands| ERTR
+  ERTR --> MACH
 
-  %% Shard dispatch (External Router)
-  ERTR -->|deep_reasoning job| DEEP
-  CIX -->|context package push| LCACHE
-  SESSION -->|shard commands| ERTR
-  ERTR -->|commands| LAGENT
-  ERTR -->|commands| DAGENT2
-  ERTR -->|commands| SAGENT
+  %% Response
+  SESSION -->|FINAL · UPDATE · ERROR| APIGW
+  APIGW -->|response| ISHARD
+  ISHARD -->|renders| USER
 
-  %% Secure outbound connections (Shards initiate)
-  LAGENT -.->|outbound WSS| CTRL
-  DAGENT2 -.->|outbound WSS| CTRL
-  SAGENT -.->|outbound WSS| CTRL
+  %% CIX pushes context proactively to ingress shards
+  CIX -->|context package| LCACHE
 ```
 
 ### 3.3 Shard Security Model
@@ -362,73 +327,88 @@ Correctness-first recommendation path:
 
 ```mermaid
 flowchart LR
-  %% ===== Nodes =====
-  subgraph PI[Voice Shard]
-    direction LR
-    WW[Wake Word<br/>openWakeWord or Porcupine]
-    VAD[Voice Activity Detection]
-    STT[Speech to Text<br/>Whisper small or base]
-    TTS[Text to Speech<br/>Piper or Coqui]
-    GATE[Intent Gate<br/>deterministic]
-    TRIAGE[Voice Shard Triage<br/>fast gate]
-    LCACHE[Listener Context Cache<br/>base + live + injected]
-    FDOOR[Front-Door Fast Model\nLlama 3.2 3B]
-    UACK[User Feedback ACK<br/>earcon led spoken hint]
-    OBOX[Local Event Outbox<br/>durable plus retry]
-    VCLIENT[Voice Client<br/>HTTP or gRPC to API]
-    WW --> VAD --> STT --> GATE --> TRIAGE --> FDOOR
-    TRIAGE --> UACK
-    LCACHE --> FDOOR
-    FDOOR --> TTS
-    FDOOR --> OBOX
-    OBOX --> VCLIENT
+  USER([User])
+
+  subgraph IS[Ingress Shard]
+    direction TB
+    ISHARD[Input Capture<br/>triage · outbox · hydration]
+    LCACHE[Context Cache<br/>kept warm by CIX]
   end
 
-  subgraph MAC[Brain Shard • Control Plane]
-    direction LR
-    APIGW[API Gateway<br/>FastAPI or Node<br/>voice chat tools memory]
-    INGRESS[Event Ingress<br/>WS or gRPC receiver]
-    INBOX[(SQLite Inbox<br/>PRIMARY KEY event_id)]
-    IRTR[Internal Router<br/>labels turn<br/>routes to domain agents]
-    DAGENT[Domain Agent<br/>self-selects<br/>estimation call]
-    HEAP[(Max-Heap<br/>all work by importance)]
-    EST[Estimator<br/>reads complexity<br/>picks Shard by capability]
-    JOBREG[(Job Registry<br/>job lifecycle state)]
-    ERTR[External Router<br/>dispatches to target Shard]
-    SESSION[Assigned LLM Session<br/>planning + execution]
-    CIX[Context Injector Service<br/>watches state, pushes to devices]
+  subgraph BRAIN[Brain Shard • Control Plane]
+    direction TB
 
-    CODER[Coding Tool Model<br/>Qwen2.5 Coder 7B]
+    subgraph REQ[Request Pipeline]
+      direction LR
+      APIGW[API Gateway] --> INBOX[(SQLite Inbox<br/>event_id PK)]
+      INBOX --> IRTR[Internal Router<br/>labels turn · routes to domain agents]
+      IRTR --> DAGENT[Domain Agent<br/>self-selects · estimation call]
+      DAGENT --> HEAP[(Max-Heap<br/>all work by importance score)]
+      HEAP --> EST[Estimator<br/>complexity → capability profile → placement]
+      EST --> ERTR[External Router]
+      ERTR --> SESSION[LLM Session<br/>planning + execution]
+      EST -->|placement written| JOBREG[(Job Registry<br/>lifecycle state)]
+    end
 
-    PROJ[Agent Service<br/>Registry Commits Tools]
-    TOOLS[Tool Skills Runner<br/>SSH scripts Slack]
-    OBJ[(Object Store<br/>.skyra/agents<br/>versioned state)]
-    VDB[(Vector DB<br/>Chroma<br/>semantic index + tool registry)]
+    subgraph CTX[Context Engine]
+      direction LR
+      CRE[Context Retrieval Engine<br/>background loop<br/>watches jobs · turns · agent state]
+      CIX[Context Injector<br/>state-aware push daemon<br/>keeps ingress caches warm]
+    end
 
-    APIGW --> INGRESS --> INBOX --> IRTR --> DAGENT --> HEAP --> EST --> ERTR --> SESSION
-    EST -->|placement written| JOBREG
-    INGRESS -->|state change| CIX
-    SESSION --> CODER
+    subgraph DATA[Data Sources]
+      direction TB
+      AREG[(Agent Registry<br/>SQLite · all agents + relevance scores)]
+      OBJ[(Object Store<br/>.skyra/agents · versioned state)]
+      VDB[(Vector DB<br/>semantic index · tool registry)]
+    end
+
+    PROJ[Agent Service<br/>owns all agent state]
+    TOOLS[Tool Runner<br/>SSH · scripts · APIs]
+
+    %% CRE queries data sources (background)
+    CRE -->|queries| AREG
+    CRE -->|queries| OBJ
+    CRE -->|queries| VDB
+
+    %% State changes trigger CIX
+    OBJ -.->|agent commit / state change| CIX
+
+    %% LLM Session reads and writes through Agent Service
     SESSION --> PROJ
-    SESSION --> TOOLS
     PROJ --> OBJ
     PROJ --> VDB
+    SESSION --> TOOLS
   end
 
-  subgraph GPUSHARD[GPU Shard • deep_reasoning]
-    LLM[DeepSeek Reasoning Model<br/>33B plus<br/>LLM Server]
+  subgraph EXEC[Execution Shards]
+    direction TB
+    GPU[GPU Shard<br/>deep_reasoning<br/>DeepSeek 33B+]
+    MACH[Machine Shards<br/>command execution]
   end
 
-  %% ===== Links between machines =====
-  VCLIENT -->|voice_event_v1 + context_state| APIGW
-  PI -.->|optional audio stream for remote STT| APIGW
+  %% ===== Request path =====
+  USER -->|input| ISHARD
+  LCACHE -->|context attached at hydration| ISHARD
+  ISHARD -->|event + embedded context| APIGW
+  INBOX -->|transport ACK| ISHARD
+
+  %% ===== Shard dispatch =====
+  ERTR -->|deep_reasoning job| GPU
+  SESSION -->|shard commands| ERTR
+  ERTR --> MACH
+
+  %% ===== Response path =====
+  SESSION -->|FINAL · UPDATE · ERROR| APIGW
+  APIGW -->|authoritative response| ISHARD
+  ISHARD -->|renders| USER
+
+  %% ===== Context push path =====
   CIX -->|compressed context package| LCACHE
-  INBOX -->|transport ACK event_id| OBOX
-  ERTR -->|deep_reasoning job| LLM
-  LLM -->|completion| SESSION
-  SESSION -->|FINAL / UPDATE / ERROR| APIGW
-  APIGW -->|authoritative result| VCLIENT
-  VCLIENT -->|final speech output| TTS
+
+  %% Shards initiate outbound connections
+  GPU -.->|outbound WSS| BRAIN
+  MACH -.->|outbound WSS| BRAIN
 ```
 
 ## 7. Voice Request Flow
