@@ -377,4 +377,81 @@ Importance scores map naturally onto PostgreSQL columns — filterable, sortable
 
 ---
 
+## Context Engine Makes the Front-Door Model Cheap
+
+**The idea:** Because the context engine does its heavy lifting in the background — continuously watching, inferring, and committing — the model sitting at the front door doesn't need to be powerful for most conversations. It receives a pre-assembled, pre-reasoned context package. The hard cognitive work already happened.
+
+This inverts the usual assumption about voice AI: that you need a capable model on the hot path. You don't. You need a capable background loop. The front-door model's job is routing and synthesis, not reasoning from scratch.
+
+The implication: a 3B parameter model on a Pi can carry on a competent conversation because the context package handed to it already contains the domain knowledge, the relevant memory, the active job state. The model is pattern-completing over good data, not doing raw inference.
+
+**Why this matters:**
+- Lower power consumption on always-on edge devices
+- Lower latency on the hot path — smaller model, faster tokens
+- Gradual shard escalation becomes natural: start cheap, promote to a heavier model only when complexity actually warrants it
+
+**Open questions:**
+- What's the right signal for "this conversation has outgrown the front-door model"?
+- How does the handoff feel to the user when the conversation promotes to a heavier shard?
+
+---
+
+## Dynamic Shard Escalation — Conversations Self-Promote
+
+**The idea:** The context window is job state. Planning and execution happen in one LLM session. That session can live on any shard. Which means when a conversation gets more complex than the current shard can handle well — or simpler than what it's running on — the system can migrate the session to a better-matched shard mid-conversation, seamlessly.
+
+The user starts a casual exchange on the Pi's 3B model. The topic shifts toward heavy reasoning. The Estimator sees the complexity signal, puts the job back on the heap with updated complexity, and the External Router places it on the GPU shard instead. The user experiences unbroken continuity. The system silently promoted.
+
+This also runs in reverse: a session that started heavy but resolved can demote to a cheaper shard for follow-up. The network self-regulates.
+
+**The key insight:** The architecture already supports this. Because the context window is the state, "moving a session" is just moving a context window. The infrastructure — heap, External Router, capability profiles — already handles it. This isn't a new feature; it's an emergent property of the existing design.
+
+**The dynamic escalation flow:**
+```
+session on Pi 3B (low complexity)
+  → conversation shifts, complexity signal rises
+  → Estimator re-evaluates, promotes job on heap
+  → External Router places to GPU shard
+  → context window transferred
+  → session continues — user hears no seam
+```
+
+**Open questions:**
+- What's the trigger threshold for promotion/demotion — complexity estimate, confidence drop, explicit shard hint?
+- How does context window transfer work at the wire level — serialized state, re-hydrated session, or something else?
+- What happens to in-flight tool calls during a mid-session shard transfer?
+- Can the user override — "stay on the fast model, this doesn't need heavy reasoning"?
+
+---
+
+## Multi-Location Spatial Awareness via Network Co-Location
+
+**The insight:** The ingress shard is the location anchor. It's physically in the space with the user, on the same network as every other shard at that location. When a request comes in, the capability resolver doesn't need to infer location from the request text — it looks at which network the ingress shard is on and matches capabilities from shards sharing that network fingerprint. Spatial awareness falls out of network co-location.
+
+**How it works:**
+- At registration, every shard fingerprints its network: SSID, gateway MAC, local subnet. This becomes its location tag.
+- First time a shard comes online on an unknown network, the system prompts once to name the location ("what should I call this?"). After that, automatic.
+- The capability resolver uses the ingress shard's network tag as the default location filter. All shards sharing that tag are "in the room."
+
+**The flow:**
+```
+"turn the TV off"
+→ came in through living room Pi (network: home-main)
+→ resolver filters capabilities to shards on home-main
+→ finds TV shard
+→ dispatches
+```
+
+Travel to vacation home — the Pi there is on `vacation-home` fingerprint. Same request resolves to the vacation home TV automatically. No location specified, no disambiguation. The ingress shard is the location.
+
+**Remote control (explicit cross-location):**
+"Turn off the vacation home TV" while at home — the user names the location. Resolver filters by that location tag instead of the ingress shard's network. Same resolver, different filter input.
+
+**Open questions:**
+- What happens when a shard is reachable but on a different network (VPN, tunnel)? Does tunnel origin or physical network take precedence?
+- How does the system handle a shard that moves networks — laptop taken to vacation home?
+- What's the location naming UX — voice prompt, app, something else?
+
+---
+
 ## More ideas to add here as they come up

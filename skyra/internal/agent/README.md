@@ -8,9 +8,9 @@ Note: earlier architecture docs refer to this as the **Project Service** or **Me
 
 ## Core Principles
 
-- **Single source of truth** — all agent data lives in exactly one canonical location. The AI never edits state directly. All changes occur through explicit commits.
-- **Append-only commit history** — agent changes are immutable commit objects. Each commit contains a full snapshot, links to its parent, and can be used for rollback.
-- **Vector index is derived data** — the vector DB is not the source of truth. It indexes agent state for semantic retrieval and can be deleted and rebuilt at any time.
+- **Single source of truth** — all agent data lives in exactly one canonical location. The AI never edits state directly. All changes go through the commit gate.
+- **Git is the version control** — each agent directory is an independent git repo. Commit history, rollback, diff, and audit trail are all git primitives. No custom commit infrastructure.
+- **Domains are independently versionable** — separate git root per agent. Rolling back `jarvis` does not touch `home`. Each agent owns its own history.
 
 ## What It Owns
 
@@ -21,57 +21,64 @@ A lightweight index of all agents. Used by the context engine as a fast first ga
 - Last active timestamp
 
 **Object Store Interface**
-The only entry point for reading and mutating agent state on disk. Filesystem in Phase 1, S3/MinIO in Phase 2 with no structural changes required.
+The only entry point for reading and mutating agent state on disk. Each agent directory is an independent git repo managed via go-git — no git binary required at runtime.
 
-- Current agent state (knowledge, artifact mapping, boundary definition)
-- Immutable commit history
-- HEAD pointer management
-- Rollback and audit trail
+- Current agent state (`state.json` — knowledge, artifact mapping, boundary definition)
+- Commit history, HEAD, rollback, diff — all standard git operations via go-git
+- `create_agent` initializes the directory and runs `git init`
+- `propose_commit` stages changes and waits for user approval before committing
+- The LLM can navigate and inspect any agent's git history directly using shell git commands
 
-**Local Tool Registry (Vector DB)**
-Each agent has a set of local tools registered and indexed semantically. The tool description is embedded and indexed — vector search runs against these embeddings using the current request as the query. Tools are retrieved by semantic similarity, not injected wholesale.
+**Tools**
 
-Each tool record in the registry:
+Tools live in the object store under `tools/`. No vector index. The LLM discovers and uses tools by walking the filesystem directly — `ls`, `cat`, execute. The object store is self-describing.
+
+Tool definition (at `.skyra/agents/{agent_id}/tools/{tool_name}/tool.json`):
 
 ```json
 {
-  "id": "tool-uuid",
-  "score": 0.92,
-  "name": "write_file",
-  "description": "Writes content to a file at the specified path.",
-  "input_schema": {
-    "type": "object",
-    "properties": {
-      "path": { "type": "string" },
-      "content": { "type": "string" }
-    },
-    "required": ["path", "content"]
-  },
-  "agent_id": "jarvis",
-  "categories": ["filesystem_write"],
-  "requires_approval": true
+  "name": "read_thermostat",
+  "description": "Read the current thermostat temperature and mode.",
+  "categories": ["sensor_read"],
+  "requires_approval": false,
+  "required_capabilities": ["thermostat.read"],
+  "input_schema": { ... },
+  "impl": {
+    "kind": "shell",
+    "script": ".skyra/agents/home/tools/read_thermostat/run.sh"
+  }
 }
 ```
 
-`score` is the semantic similarity score from the vector search. The Agent Service applies a score threshold before hydration — results below the threshold are dropped. Lock status is not stored on the tool record. It is computed at hydration time by joining the tool record against the agent boundary in `state.json`.
+`impl.kind` can be `shell`, `http`, or `builtin`. Shell tools point to a script in the same directory — the LLM can read and execute it directly. Tool updates are commits — same versioning and audit trail as agent state.
+
+Lock status is computed at runtime by joining against the agent boundary in `state.json`. Not stored on the tool definition itself.
+
+## Two Layers, Two Purposes
+
+- Object Store Tools (this service): tool definitions live as files in `tools/` inside the agent git repo. The LLM discovers them by walking the filesystem. No registry, no vector index.
+- Shard Capability Registry (tooling/orchestrator): global runtime capability inventory for shard selection and dispatch. The Agent Service does not own this.
 
 ## Object Store Structure
 
 ```
-.skyra/agents/{agent_id}/
-  HEAD.json            ← pointer to current commit
-  state.json           ← materialized current state (four sections below)
-  commits/             ← immutable commit history
-    {commit_id}.json
-  working/             ← scratch space (mutable, not versioned — see Working State below)
+.skyra/agents/{agent_id}/    ← independent git repo (go-git managed)
+  .git/                      ← git history, HEAD, rollback — all standard git
+  .gitignore                 ← working/ is ignored
+  state.json                 ← current committed state (knowledge, boundary, artifact)
+  tools/
+    {tool_name}/
+      tool.json              ← tool definition (input schema, impl kind, capabilities)
+      run.sh                 ← shell impl, executable directly by the LLM
+  working/                   ← scratch space, gitignored, cleaned up after job
   jobs/
     {job_id}/
-      envelope.json    ← job envelope
       tasks/
         {task_id}/
           tasksheet.json  or  workplan.json
-          notes.md
 ```
+
+Each agent is an isolated git root. The LLM navigates the filesystem with shell tools and git commands — `ls`, `cat`, `git log`, `git diff`, `git show`. No special API needed to inspect state, tools, or history.
 
 ## Working State vs Committed State
 
@@ -79,7 +86,7 @@ The object store has two distinct partitions:
 
 **Working state** (`working/`) — the executor's scratch pad. The system writes freely here during job execution to test ideas, validate approaches, and reason through problems on paper. No user approval required. Working state is mutable and throwaway — it does not appear in the version history. Cleaned up after job completion.
 
-**Committed state** (`state.json` + `commits/`) — requires user approval. When the executor produces output worth persisting canonically, it proposes a commit via `propose_commit`. The user accepts or rejects. Only accepted commits update `state.json` and enter the commit history.
+**Committed state** (`state.json`) — requires user approval. When the executor produces output worth persisting canonically, it proposes a commit via `propose_commit`. The user accepts or rejects. Only accepted commits update `state.json` and enter the git history via go-git.
 
 This distinction gives the system room to think without making permanent decisions. The audit trail stays clean — only intentional, user-approved changes appear in the commit log.
 
@@ -127,89 +134,34 @@ No external classifier makes routing decisions. The agent knows its domain bette
 }
 ```
 
-### Commit Object Format
+### Commits
 
-Each commit is immutable and append-only.
-
-```json
-{
-  "commit_id": "2026-02-09T21-10-33Z",
-  "agent": "jarvis",
-  "parent": "2026-02-09T20-55-12Z",
-  "actor": {
-    "type": "ai",
-    "model": "qwen2.5-coder:7b",
-    "user": "mike"
-  },
-  "message": "...",
-  "timestamp": "2026-02-09T21-10-33Z",
-  "changes": [
-    {
-      "op": "set",
-      "path": "/knowledge/decisions/0",
-      "value": "..."
-    }
-  ],
-  "snapshot": {}
-}
-```
+Git commits via go-git. The commit message carries the actor metadata — model, user, job ID. The git log is the audit trail. Rollback is `git checkout {hash}`. Diff is `git diff`. No custom format needed.
 
 ## What It Exposes
 
 ### Global Tools
 Available to every LLM session regardless of agent. Always injected directly into the session. Never retrieved — always present.
 
-- `get_agent_state` — read current state for an agent
-- `get_agent_facts` — read facts and assumptions
-- `get_commit_history` — read the commit log
-- `list_agents` — read the registry
-- `get_job_tasks` — read tasks under a job
-- `create_agent` — register a new agent
-- `propose_commit` — submit a patch against agent state
-- `apply_commit` — apply an approved patch and update HEAD
-- `rollback_commit` — revert to a previous commit
+- `list_agents` — read the agent registry (SQLite)
+- `create_agent` — register a new agent, `git init` its directory, write initial `state.json`
+- `propose_commit` — stage changes to `state.json` and request user approval before committing via go-git
 - `update_agent_status` — set active / paused / archived
 - `update_last_active` — called by scheduler on job completion
 
-### Local Tool Registry
-Per-agent tools registered at agent setup. Retrieved via vector search — not injected directly. The LLM sees all retrieved tools, including locked ones, with their access status attached.
+History, diff, and rollback are git operations the LLM calls directly via shell: `git log`, `git diff`, `git show`, `git checkout`.
 
-## Tool Hydration
+## Tool Access
 
-Tool hydration is the intermediary step between raw vector DB results and what the LLM session receives. The Agent Service runs hydration on every tool in the result set before returning anything to the Domain Expert.
+Tools live in the object store filesystem. The LLM reads `tool.json` directly. Before any tool executes, the BoundaryValidator checks it against the agent boundary in `state.json` and computes lock status at that moment — not stored on the tool, derived fresh each time.
 
-Hydration joins the raw tool record against the agent boundary in `state.json` and computes the `access` field:
-
-```json
-{
-  "id": "tool-uuid",
-  "score": 0.92,
-  "name": "write_file",
-  "description": "Writes content to a file at the specified path.",
-  "input_schema": { ... },
-  "agent_id": "jarvis",
-  "categories": ["filesystem_write"],
-  "requires_approval": true,
-  "access": {
-    "status": "locked",
-    "reason": "Filesystem writes are restricted for this agent."
-  }
-}
-```
-
-`access.status` is either `allowed` or `locked`. Lock status is always derived fresh at hydration time — it is never stored on the tool record itself, because the same tool may be locked in one agent and open in another.
-
-The LLM receives the full hydrated list. It can see and reason over all tools — including locked ones — but the BoundaryValidator enforces what actually executes.
+The same tool may be locked in one agent and open in another — lock status is always a function of the agent's current boundary, not a property of the tool definition itself.
 
 ## Boundary Enforcement
 
 The `boundary` section in `state.json` is enforced in code at two layers. Plain-text restrictions are insufficient — the LLM cannot be relied upon to honor prose rules under all conditions.
 
-### Layer 1: Hydration (retrieval time)
-
-After vector search returns results, the Agent Service hydrates each tool with its access status for the current agent. No tools are hidden. The LLM sees everything, with locked tools clearly marked. This gives the LLM full situational awareness — it knows what exists and what it can use.
-
-### Layer 2: BoundaryValidator (runtime)
+### Layer 1: BoundaryValidator (runtime)
 
 Before any tool call is dispatched to execution, the BoundaryValidator checks the proposed call against the agent boundary. This is pure code — no LLM in the loop.
 
@@ -248,6 +200,7 @@ If the tool is locked, execution pauses and a permission prompt is sent to the u
 - Does not decide which tools are relevant — that is the context engine's job
 - Does not enforce approval during execution — approval is surfaced at plan review only
 - Does not manage system-level tool execution (shell, HTTP) — that is the tooling service's job
+- Does not own shard capability inventory or shard-to-shard delegation — that is the tooling/orchestrator layer
 
 ## Tool Approval vs Plan Approval Gate
 

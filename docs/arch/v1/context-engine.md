@@ -226,11 +226,11 @@ The context engine follows a fixed retrieval order. Each step gates the next.
 1. **Agent registry (SQLite)** — all registered agents, with relevance scores. No active/inactive filter — all agents are present in the context blob. Fast, no vector search.
 2. **Domain routing** — select the most relevant domain agents from the full agent list. Uses event text, session hints, relevance scores, and vector similarity over agent state. All agents are candidates — relevance scores determine weighting.
 3. **Vector search — agent state** — retrieve semantically similar content from the domain agent's state index. Temporal metadata used for reranking.
-4. **Vector search — local tools** — retrieve tools by semantic similarity to the current request. Results below score threshold are dropped before hydration.
-5. **Tool hydration** — Agent Service joins raw tool results against `state.json` boundary. Attaches `access` field to every tool. No tools hidden.
-6. **Object store — recent commits** — pull recent commit context for the domain agent to give the LLM visibility into recent state changes.
-7. **Rerank** — results reranked by: commit recency, semantic similarity, agent relevance, temporal weight.
-8. **Token budget enforcement** — trim to fit within available token budget. Recent turns and active job context are always preserved; retrieved content is trimmed first.
+4. **Object store — recent commits** — pull recent commit context for the domain agent to give the LLM visibility into recent state changes.
+5. **Rerank** — results reranked by: commit recency, semantic similarity, agent relevance, temporal weight.
+6. **Token budget enforcement** — trim to fit within available token budget. Recent turns and active job context are always preserved; retrieved content is trimmed first.
+
+Tools are not retrieved by the context engine. They live in the object store under `tools/` and are discovered by the LLM walking the filesystem during execution.
 
 ---
 

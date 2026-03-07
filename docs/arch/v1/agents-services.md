@@ -68,29 +68,46 @@ The front face transformer labels the incoming turn (in-domain or "other") using
 
 Note: previously called "Project Service" and before that "Memory Service". The Agent Service supersedes those definitions with a more clearly scoped responsibility model. See `skyra/internal/agent/README.md`.
 
-- Role: single owner of all agent state. Manages agent registry, object store commits, rollback, audit trail, and the local tool registry.
+- Role: single owner of all agent state. Manages agent registry, object store commits, rollback, and audit trail. Tools live in the object store — no separate tool registry.
 - Owns:
   - Agent Registry (SQLite) — fast index of all agents with status and last_active_at
   - Object Store Interface — commits, HEAD, state.json, rollback
-  - Local Tool Registry (Vector DB) — per-agent tools with `categories[]` (operation tags for boundary enforcement) and `requires_approval` flag, retrieved via vector search
+  - Tools — stored under `tools/` in the object store, versioned via commits, discovered by the LLM walking the filesystem
 - Code:
   - `skyra/internal/agent/`
   - `skyra/internal/memory/objectstore/fs/store.go`
   - `skyra/internal/memory/objectstore/s3/store.go`
-  - `skyra/internal/memory/vectorstore/chroma/store.go`
-  - `skyra/internal/memory/vectorstore/qdrant/store.go`
   - `skyra/internal/memory/commit/`
 - Design:
   - `skyra/internal/agent/README.md`
 
 ### 2.7 Tooling Services
 
-- Role: allowlisted tool execution and auditing.
+- Role: allowlisted tool execution, shard capability registry, runtime capability resolution, and auditing.
+- Owns:
+  - Shard Capability Registry (global runtime index) — shard-reported capabilities, health/load, location, trust metadata
+  - Capability Resolver — binds a selected domain tool to a concrete shard capability at execution time
 - Code:
   - `skyra/internal/tools/registry.go`
   - `skyra/internal/tools/allowlist.go`
   - `skyra/internal/tools/exec/shell.go`
   - `skyra/internal/tools/audit/log.go`
+
+### 2.8 Capability Binding Model (v1)
+
+Tools live in the object store. The LLM discovers them by walking the filesystem. When the LLM selects a tool with `required_capabilities[]`, the orchestrator resolves that against the Shard Capability Registry to find the right execution target.
+
+Two layers — one for tool definitions, one for execution targets:
+
+- Object Store Tools (Agent Service): tool definitions the LLM reads and selects during execution. Navigable directly via filesystem.
+- Shard Capability Registry (Tooling Services): concrete executable capabilities exposed by shards at runtime.
+
+Binding flow:
+
+1. Domain Expert selects a domain tool during planning.
+2. Orchestrator requests capability resolution for that tool's `required_capabilities[]`.
+3. Capability Resolver selects a shard using policy constraints (boundary/location/trust) plus runtime state (health/load/latency).
+4. Tooling service dispatches execution and records the resolved binding for audit/replay.
 
 ## 3. Shards
 
@@ -132,6 +149,17 @@ General-purpose Shards deployed on workstations and servers. Capability profile 
   - `skyra/internal/executor/executor.go`
   - `skyra/internal/executor/security.go`
 
+### 3.3 Shard-to-Shard Delegation (v1 direction)
+
+Shard-to-shard calls are allowed, but only through control-plane mediation:
+
+- A shard requests delegation for a capability it cannot satisfy locally.
+- Control plane validates policy and emits a short-lived delegation token.
+- Target shard executes and returns results through control-plane-tracked channels.
+- Every delegation edge is audited (`source_shard`, `target_shard`, `capability_id`, `job_id`).
+
+No unmanaged peer mesh is allowed in v1.
+
 ## 4. Single vs Multiple Vector DBs
 
 v1 recommendation:
@@ -145,7 +173,8 @@ v1 recommendation:
 - Voice Shard: capture + transport + render (voice capability profile)
 - Machine Shards: execute commands only
 - Control-plane services: label turns + domain agent self-selection + form tasks + orchestrate + commit agent state
-- Agent Service: own agent registry, object store, local tool registry, commit history
+- Agent Service: own agent registry, object store, domain tool registry, commit history
+- Tooling Services: own shard capability registry, capability resolution, and execution dispatch/audit
 
 If you ask, "is Domain Expert a shard?":
 

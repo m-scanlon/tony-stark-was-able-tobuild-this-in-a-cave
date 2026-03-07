@@ -27,11 +27,21 @@ Output:
 {
   "is_job": true,
   "complexity": 3,
+  "reasoning_depth": 2,
+  "cross_domain": false,
+  "reversible": true,
+  "output_scope": "fact",
   "domain": "servers"
 }
 ```
 
-Complexity is measured in **estimated tool calls**. This is the unit of complexity — concrete, measurable, directly tied to compute cost.
+- `complexity` — estimated tool calls. Primary placement signal.
+- `reasoning_depth` — inferential steps required (1 = direct lookup, 2 = moderate synthesis, 3 = deep multi-step reasoning).
+- `cross_domain` — true if the request spans multiple domain agents.
+- `reversible` — false if the action cannot be undone (send message, delete data, external API write).
+- `output_scope` — `fact | plan | commit`. Commits carry higher evaluation cost than facts.
+
+`complexity` (tool call count) drives the inline vs heap threshold. The other fields inform shard selection and evaluation depth — a low tool-call job that is irreversible and cross-domain should not be treated as lightweight.
 
 **Inline execution threshold: complexity ≤ 1.**
 
@@ -96,20 +106,28 @@ FIFO ordering within the interrupted job stack: first interrupted, first resumed
 
 ## Estimator
 
-The Estimator's job is placement. When a job enters the heap with `complexity > 1`, the Estimator:
+The Estimator is **an inference call, not a service**. It fires when the External Router picks up an estimation work item from the heap. There is no separate Estimator process — the External Router owns the heap, handles priority ordering, manages preemption, and dispatches work items. When an estimation item is dequeued, a prompt runs against the domain agent's estimation output and available shard state. That prompt is the Estimator.
 
-1. Reads the complexity score and domain from the estimation output
-2. Checks available shard capability profiles and current load
-3. Assigns the job to the best available machine
+The Estimator prompt:
+
+1. Reads the estimation output (`is_job`, `complexity`, `domain`) from the domain agent
+2. Checks current shard capability profiles and load
+3. Decides: execute inline or place on heap as a full job
+
+If `complexity ≤ 1`: execute inline immediately — the Estimator does the work itself, never forming a job.
+
+If `complexity > 1`: place the job back onto the heap targeting the best available shard.
 
 | Complexity range | Likely target |
 |---|---|
-| ≤ 1 | Inline (never reaches Estimator) |
+| ≤ 1 | Inline (Estimator executes directly) |
 | 2–5 | Mac mini (fast, capable) |
 | 6–15 | Mac mini or GPU machine depending on load |
 | 16+ | GPU machine (deep reasoning) |
 
 These ranges are illustrative. Actual routing is based on registered capability profiles, not hardcoded rules.
+
+Because the Estimator is a prompt, estimation quality improves as model quality improves — no code changes required.
 
 ---
 

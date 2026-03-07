@@ -8,35 +8,35 @@ This package tree hosts delegation-time decisioning components used by the contr
 - `telemetry/`: request/outcome telemetry contracts and rolling stats interfaces
 - `api/`: HTTP handlers/contracts for estimator and telemetry endpoints
 
-## Estimator Role (Updated)
+## Estimator Role
 
-The Estimator's responsibility is **placement**. It reads the estimation call output produced by the domain agent:
+The Estimator is **an inference call, not a service**. It fires when the External Router picks up an estimation work item from the heap. The External Router owns the heap — priority ordering, preemption, and dispatch. When an estimation item is dequeued, a prompt runs. That prompt is the Estimator.
+
+Input — estimation output from the domain agent:
 
 ```json
 {
   "is_job": true,
   "complexity": 3,
+  "reasoning_depth": 2,
+  "cross_domain": false,
+  "reversible": true,
+  "output_scope": "fact",
   "domain": "servers"
 }
 ```
 
-Complexity is measured in estimated tool calls. The Estimator matches this against registered shard capability profiles and current load, then assigns the job to the best available machine.
+Complexity is measured in estimated tool calls. The Estimator reads this, checks current shard capability profiles and load, and decides:
 
-- Complexity ≤ 1 → execute inline (never reaches the Estimator)
-- Complexity 2–5 → Mac mini class
-- Complexity 6+ → GPU machine or most capable available shard
+- `complexity ≤ 1` → execute inline immediately. The Estimator does the work itself — no job formed, no heap placement.
+- `complexity > 1` → place job onto the heap targeting the best available shard.
 
 Placement ranges are illustrative. Actual routing uses capability profiles, not hardcoded rules.
 
-The Estimator no longer reads a complex `job_envelope_v1` assembled by the Internal Router. Complexity score in tool calls is the primary placement signal.
+Because the Estimator is a prompt, estimation quality improves as model quality improves — no code changes required.
 
 ## Related Modules
 
 - `../taskformation/`: event-to-task formation pipeline
 - `../../docs/arch/v1/task-formation.md`: architecture/design reference for task formation
-- `../../docs/arch/v1/scheduler.md`: unified heap, inference types, complexity scoring
-
-## Notes
-
-- This is intentionally in-process with orchestration for now.
-- Package boundaries are designed so the estimator can be split into a standalone service later if needed.
+- `../../docs/arch/v1/scheduler.md`: unified heap, inference types, complexity scoring, External Router heap ownership

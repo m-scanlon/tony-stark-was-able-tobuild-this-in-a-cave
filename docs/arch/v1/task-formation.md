@@ -124,9 +124,19 @@ Output:
 {
   "is_job": true,
   "complexity": 3,
+  "reasoning_depth": 2,
+  "cross_domain": false,
+  "reversible": true,
+  "output_scope": "fact",
   "domain": "servers"
 }
 ```
+
+- `complexity` — estimated tool calls. Primary placement signal and inline threshold.
+- `reasoning_depth` — inferential steps required (1 = direct, 2 = moderate, 3 = deep).
+- `cross_domain` — true if the request spans multiple domain agents.
+- `reversible` — false if the action cannot be undone.
+- `output_scope` — `fact | plan | commit`.
 
 Complexity is measured in **estimated tool calls**.
 
