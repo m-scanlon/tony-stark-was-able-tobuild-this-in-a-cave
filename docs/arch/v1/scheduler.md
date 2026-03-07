@@ -90,17 +90,11 @@ The front face transformer's importance assessment is the primary input. The sys
 
 Higher priority work can interrupt a running job. A new estimation call arriving while all machines are busy preempts the lowest priority in-flight job.
 
-**The context window is the job state.** To interrupt a job:
+**The context window is the job state.** Preemption is a natural property of the heap-driven execution model — no special mechanism needed.
 
-1. Wait for the current tool call boundary — jobs are never interrupted mid-tool-call
-2. Serialize the full context window at that boundary
-3. Push serialized context onto a **FIFO stack**
-4. Machine handles the high priority work
-5. When machine is free, pop context from FIFO and resume generation
+Between tool calls, the job is on the heap. Higher priority work gets picked up first. The job waits. When the machine is free and the job is the highest priority item, it resumes from its context blob. The LLM does not know it waited — the context contains everything: completed tool calls, outputs, remaining intent. Resume is seamless.
 
-The LLM does not know it was interrupted. The context contains everything — completed steps, tool outputs, remaining intent. Resume is seamless.
-
-FIFO ordering within the interrupted job stack: first interrupted, first resumed. Fair and simple.
+The only constraint: a running tool call is never interrupted mid-execution. The preemption point is always the re-queue after tool completion.
 
 ---
 

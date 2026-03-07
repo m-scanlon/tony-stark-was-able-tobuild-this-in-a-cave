@@ -76,14 +76,14 @@ The `skyra.` prefix is reserved. `create_agent` must reject any `agent_id` that 
 
 ```
 .skyra/agents/
-  skyra.user/          ← system agent, always present
-    HEAD.json
+  skyra.user/          ← system agent, always present (independent git repo)
+    .git/
     state.json
-    commits/
-  {agent_id}/          ← domain agents, one per user-created domain
-    HEAD.json
+    tools/
+  {agent_id}/          ← domain agents, one per user-created domain (independent git repo)
+    .git/
     state.json
-    commits/
+    tools/
     jobs/
 ```
 

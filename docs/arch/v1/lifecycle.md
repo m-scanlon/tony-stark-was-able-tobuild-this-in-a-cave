@@ -39,7 +39,7 @@ Outputs exactly one of:
 
 Tool system:
 - **Global tools** — always injected (agent state operations, propose commit, etc.)
-- **Local tools** — retrieved via vector search, hydrated with access status by Agent Service before being handed to the LLM
+- **Local tools** — stored as files under `tools/` in the agent's git repo. Discovered by the LLM walking the filesystem during execution. BoundaryValidator enforces access status at runtime before dispatch.
 
 Planning events the Domain Expert may emit:
 - `CLARIFY` — missing information blocks safe planning

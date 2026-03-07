@@ -118,7 +118,7 @@ For every LLM session, the context engine assembles a **context package** — a 
 
 ### Injection Order
 
-> Note: Section 10 supersedes this section for the revised model. **Tools are no longer part of the context package** — they are retrieved by the Agent Service inside the LLM session during planning. The example JSON below still includes a `tools` array from the baseline design — ignore it. Treat section 10 as authoritative.
+> Note: Section 10 supersedes this section for the revised model. **Tools are not part of the context package** — they are files in the agent's git repo, discovered by the LLM walking the filesystem during execution. The example JSON below has been updated to remove tools. Treat section 10 as authoritative.
 
 Order matters. Items injected first have the most influence on the LLM's behavior.
 
@@ -149,19 +149,6 @@ Order matters. Items injected first have the most influence on the LLM's behavio
     "knowledge": { ... },
     "boundary": { ... }
   },
-  "tools": [
-    {
-      "name": "write_file",
-      "description": "...",
-      "input_schema": { ... },
-      "categories": ["filesystem_write"],
-      "requires_approval": true,
-      "access": {
-        "status": "locked",
-        "reason": "Filesystem writes are restricted for this agent."
-      }
-    }
-  ],
   "recent_turns": [
     {
       "turn_id": "turn_8f4c",

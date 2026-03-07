@@ -162,7 +162,7 @@ Responsibilities:
 - validate critical assumptions with tools when needed
 - include citations in TaskSheet evidence when external/docs lookup is used
 
-Note: before local tools are returned to the Domain Expert, the Agent Service runs a hydration step — each tool is enriched with an `access` field derived from the agent boundary in `state.json`. The Domain Expert receives all retrieved tools, including locked ones, with their access status attached. Locked tools that the LLM proposes calling are caught by the BoundaryValidator at runtime before execution. See `skyra/internal/agent/README.md` for the full hydration and enforcement model.
+Note: tools live as files under `tools/` in the agent's git repo. The LLM discovers them by walking the filesystem during execution. Lock status is computed at runtime by the BoundaryValidator — joining the tool's `categories[]` against the agent boundary in `state.json` before any tool dispatch. See `skyra/internal/agent/README.md`.
 
 Expected output contract:
 
