@@ -130,5 +130,3 @@ Because the Estimator is a prompt, estimation quality improves as model quality 
 - What is the exact composite formula for importance score?
 - How does wait time factor in — do low priority items get a priority bump over time to prevent starvation?
 - What triggers a complexity score revision — can the domain agent revise the estimate mid-execution?
-- What is the maximum FIFO depth for interrupted jobs?
-- How does the system handle a job that gets interrupted repeatedly?
