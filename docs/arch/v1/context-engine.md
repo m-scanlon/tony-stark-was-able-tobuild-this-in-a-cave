@@ -254,7 +254,7 @@ Turn history is the primary source for the `recent_turns` section of the context
 - Where are turn records persisted on the Brain Shard — SQLite, JSONL, or object store?
 - How many recent turns are included by default before token budget pressure kicks in?
 - Does the context engine run on every request, or is the package cached and invalidated on state change?
-- How does the context engine handle domain routing ambiguity — does it inject multiple candidate agents or block until routing resolves?
+- Domain agents self-select — but what happens if no agent self-selects for an interactive (non-batch) turn? Clarification request, conservative ephemeral path, or just store in RDS and wait for batch?
 
 ---
 

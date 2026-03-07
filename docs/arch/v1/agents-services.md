@@ -32,12 +32,15 @@ Practical rule:
   - `skyra/internal/controlplane/orchestrator.go`
   - `skyra/internal/controlplane/router.go`
 
-### 2.3 Classifier + Domain Routing Service
+### 2.3 Domain Agent Self-Selection
 
-- Role: chooses domain/agent candidate set and confidence.
-- Code:
-  - `skyra/internal/controlplane/classifier.go`
-  - `skyra/internal/taskformation/routing.go`
+There is no central classifier. Domain agents are the doorkeepers of their own domains.
+
+The front face transformer labels the incoming turn (in-domain or "other") using the context blob — which contains all registered agents with their relevance scores. Relevant domain agents receive the full context blob and self-select. No service chooses an agent on their behalf.
+
+- Code (front face transformer / labeling):
+  - `skyra/internal/controlplane/classifier.go` _(needs update to reflect self-selection model)_
+  - `skyra/internal/taskformation/routing.go` _(needs update)_
 
 ### 2.4 Task Formation Service
 
@@ -141,7 +144,7 @@ v1 recommendation:
 
 - Voice Shard: capture + transport + render (voice capability profile)
 - Machine Shards: execute commands only
-- Control-plane services: classify + form tasks + orchestrate + commit agent state
+- Control-plane services: label turns + domain agent self-selection + form tasks + orchestrate + commit agent state
 - Agent Service: own agent registry, object store, local tool registry, commit history
 
 If you ask, "is Domain Expert a shard?":

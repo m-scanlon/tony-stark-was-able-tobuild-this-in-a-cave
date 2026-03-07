@@ -53,7 +53,7 @@ Planning events the Domain Expert may emit:
 A larger model reviews the plan if complexity or risk thresholds are crossed.
 
 Triggers:
-- low routing confidence
+- low formation confidence
 - broad stateful patch scope
 - multi-system dependency count above threshold
 - ambiguous intent

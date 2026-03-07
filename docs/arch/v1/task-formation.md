@@ -183,7 +183,7 @@ Optional review by a larger model for complex/high-risk formations.
 
 Typical triggers:
 
-- low routing confidence
+- low formation confidence
 - broad stateful patch scope
 - multi-system dependency count above threshold
 - ambiguous intent wording
