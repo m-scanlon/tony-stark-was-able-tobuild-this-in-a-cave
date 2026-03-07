@@ -221,19 +221,21 @@ flowchart TB
 
 ---
 
-## 4. Concurrency and Job Model (Simple v1)
+## 4. Concurrency and Job Model (v1)
 
-Skyra v1 uses a single durable request queue for inbound voice/chat events.
+All work in Skyra flows through a unified max-heap ordered by importance score. Three inference types: `estimation` (very high priority), `job` (high priority), `batch` (very low priority — idle compute at night). No separate queues or lanes.
 
-Simple flow:
+Flow:
 
-1. Voice Shard/chat ingress writes request to queue (`event_id` idempotent).
-2. Brain Shard durably stores it, sends transport ACK, and the task remains queued.
-3. Internal Router reads the event from the queue, pulls relevant context from the Context Engine, resolves the domain/agent, and assembles `job_envelope_v1`. This is the job formation step.
-4. Estimator reads `job_envelope_v1`, does a shallow consult with the agent domain to get rough job complexity, picks the target Shard based on capability profiles and current load, and writes the placement decision to the Job Registry. The Estimator owns the placement decision.
-5. External Router receives the placement decision from the Estimator and dispatches the job to the right Shard.
+1. Voice Shard/chat ingress writes event to SQLite inbox (`event_id` idempotent). Brain Shard sends transport ACK.
+2. Internal Router reads event, labels turn as in-domain or "other" using the context blob (all agents + relevance scores), and routes to relevant domain agents. Does not assemble a job envelope.
+3. Domain agent self-selects relevance and produces an **estimation call**: `{is_job, complexity, domain}`. Complexity is measured in estimated tool calls. Complexity ≤ 1 → execute inline immediately, never enters heap.
+4. For complexity > 1: job enters the max-heap. Estimator reads the estimation call output, matches complexity score against shard capability profiles and current load, and writes the placement decision to the Job Registry.
+5. External Router dispatches to the assigned Shard.
 6. The assigned LLM session performs both task planning and task execution in one continuous context.
 7. System emits `UPDATE|PLAN_PROGRESS|CLARIFY|PLAN_APPROVAL_REQUIRED|FINAL|ERROR` events as work progresses.
+
+Higher priority work can preempt in-flight jobs at tool call boundaries. Interrupted job's context window is serialized to a FIFO stack and resumed when the machine is free. See `docs/arch/v1/scheduler.md`.
 
 ## 5. Model and Runtime Roles
 
@@ -389,20 +391,20 @@ flowchart LR
     INGRESS[Event Ingress<br/>WS or gRPC receiver]
     INBOX[(SQLite Inbox<br/>PRIMARY KEY event_id)]
     QUEUE[(Durable Request Queue)]
-    IRTR[Internal Router<br/>job formation<br/>assembles job_envelope_v1]
+    IRTR[Internal Router<br/>labels turn<br/>routes to domain agents]
     EST[Estimator<br/>placement decision<br/>picks Shard by capability + load]
     JOBREG[(Job Registry<br/>job lifecycle state)]
     ERTR[External Router<br/>dispatches to target Shard]
     SESSION[Assigned LLM Session<br/>task formation + execution]
     ORCH_RT[Skyra Orchestration Runtime<br/>LangGraph Orchestrator and Router]
     CIX[Context Injector Service<br/>Rank Compress Push]
-    CLASS[Project + Intent Classifier]
+    CLASS[Domain Agent Self-Selection<br/>doorkeeper model]
 
     CODER[Coding Tool Model<br/>Qwen2.5 Coder 7B]
 
     PROJ[Agent Service<br/>Registry Commits Tools]
     TOOLS[Tool Skills Runner<br/>SSH scripts Slack]
-    OBJ[(Object Store<br/>.skyra projects<br/>versioned state)]
+    OBJ[(Object Store<br/>.skyra/agents<br/>versioned state)]
     VDB[(Vector DB<br/>Chroma<br/>semantic index + tool registry)]
 
     APIGW --> INGRESS --> INBOX --> QUEUE --> IRTR --> EST --> ERTR --> SESSION --> ORCH_RT
@@ -461,10 +463,11 @@ sequenceDiagram
   Mac-->>Pi: Transport ACK(event_id) after durable inbox write
   Mac->>CIX: Fan-out context_state (available_for_injection)
 
-  Mac->>Mac: Enqueue event
-  Mac->>Mac: Internal Router — pull context, resolve agent, assemble job_envelope_v1
-  Mac->>Mac: Estimator — shallow domain consult, pick Shard, write placement to Job Registry
-  Mac->>Mac: External Router — dispatch to target Shard
+  Mac->>Mac: Internal Router — label turn (in-domain | other), route to domain agents
+  Mac->>Mac: Domain agent — self-selects, produces estimation call {is_job, complexity, domain}
+  Mac->>Mac: Max-heap — job enters heap (complexity > 1) or executes inline (≤ 1)
+  Mac->>Mac: Estimator — reads complexity, picks Shard by capability profile, writes to Job Registry
+  Mac->>Mac: External Router — dispatch to assigned Shard
   Mac->>Mac: Assigned LLM session — planning phase
   Mac->>PROJ: Retrieve project state + hydrated tools
   PROJ-->>Mac: Project state + tools with access status
@@ -696,10 +699,10 @@ When enabled:
 3. Voice Shard streams audio chunks to Brain Shard over a low-latency channel.
 4. Brain Shard performs streaming or fast batch STT.
 5. Brain Shard continues normal processing:
-   - job envelope creation
-   - triage
+   - turn labeling and domain agent routing
+   - estimation call
+   - heap placement
    - task formation
-   - routing
    - execution
 6. Brain Shard returns response text to Voice Shard.
 7. Voice Shard performs TTS and speaks the result.
@@ -764,8 +767,7 @@ The Voice Shard remains a listener/transport/render node and is non-authoritativ
 
 - API gateway (/chat, /voice, /tools, /memory)
 - Orchestration runtime (LangGraph orchestrator + router)
-- Agent classifier
-- Model router
+- Internal Router (turn labeling + domain agent routing)
 - Agent Service
 - Tool execution engine
 - Databases
@@ -786,28 +788,34 @@ The Voice Shard remains a listener/transport/render node and is non-authoritativ
 
 ### 8.2.1 Internal Router
 
-**Purpose**: Job formation step. Reads the event from the queue, pulls relevant context from the Context Engine, resolves the domain/agent, and assembles `job_envelope_v1`. Nothing downstream of this point works without the envelope.
+**Purpose**: Turn labeling and domain agent routing. Labels the incoming turn as in-domain or "other" using the context blob (all agents + relevance scores), routes to relevant domain agents. Job formation is NOT the Internal Router's job — that is the domain agent's responsibility.
 
 **Responsibilities**:
 
 - Dequeue event
-- Pull relevant context package from Context Engine
-- Resolve which agent/domain owns the event
-- Assemble and emit `job_envelope_v1` (transcript + resolved agent + context package)
+- Attach context blob (pushed by CIX, already available)
+- Label turn via front face transformer (in-domain | other)
+- Route to relevant domain agents
+- Store turn in RDS with routing metadata (batch reads this at night for non-routed agents)
 
-**Does not**: make placement decisions, select models, or write to the Job Registry. Those belong to the Estimator.
+**Does not**: assemble job envelopes, make placement decisions, or write to the Job Registry. Those belong to the domain agent and Estimator respectively.
 
 ### 8.2.2 Estimator
 
-**Purpose**: Placement decision maker and scheduler. Reads `job_envelope_v1`, does a shallow consult with the agent domain to get rough job complexity, then selects the target Shard based on capability profiles and current load. This is the routing decision point for every job.
+**Purpose**: Placement decision maker. Reads the estimation call output produced by the domain agent, matches the complexity score against registered shard capability profiles and current load, and assigns the job to the best available machine.
 
 **Responsibilities**:
 
-- Read `job_envelope_v1`
-- Perform shallow domain consult for complexity estimate
-- Annotate latency/cost/risk hints
-- Select target Shard by matching job requirements to Shard capability profiles and current load
+- Read estimation call output: `{is_job, complexity, domain}`
+- Match complexity score (in estimated tool calls) to shard capability profiles
+- Select target Shard based on capability match and current load
 - Write placement decision to Job Registry
+
+| Complexity | Likely target |
+|---|---|
+| ≤ 1 | Inline — never reaches Estimator |
+| 2–5 | Mac mini class |
+| 6+ | GPU machine or most capable available shard |
 
 **Does not**: dispatch the job directly (that is External Router's job). Does not track ongoing job state beyond the placement write.
 
@@ -818,7 +826,7 @@ The Voice Shard remains a listener/transport/render node and is non-authoritativ
 **Responsibilities**:
 
 - Receive placement decision from Estimator
-- Dispatch `job_envelope_v1` to the target Shard over the appropriate transport (WebSocket/gRPC)
+- Dispatch the job to the target Shard over the appropriate transport (WebSocket/gRPC)
 - Handle dispatch-level retries and errors
 
 **Does not**: make routing decisions. It executes the decision the Estimator already made.
@@ -839,7 +847,7 @@ The Voice Shard remains a listener/transport/render node and is non-authoritativ
 
 ### 8.3 Deep Reasoning Shards
 
-**Purpose**: Heavy reasoning and large-model inference. Any device that registers with `deep_reasoning` capability becomes a deep reasoning Shard. The Estimator selects which Reasoning Shard receives a `deep_reasoning` lane job based on capability profiles and current load; the External Router dispatches accordingly.
+**Purpose**: Heavy reasoning and large-model inference. Any device that registers with `deep_reasoning` capability becomes a deep reasoning Shard. The Estimator selects which Reasoning Shard receives the job based on complexity score, capability profiles, and current load; the External Router dispatches accordingly.
 
 **Currently**: one Reasoning Shard running DeepSeek-Coder 33B+.
 
@@ -888,9 +896,9 @@ CREATE TABLE agents (
   state.json           ← materialized current state (four sections)
   commits/             ← immutable commit history
     {commit_id}.json
+  working/             ← executor scratch pad (mutable, not versioned)
   jobs/
     {job_id}/
-      envelope.json    ← job_envelope_v1
       tasks/
         {task_id}/
           tasksheet.json  or  workplan.json
@@ -926,15 +934,15 @@ The vector DB serves two purposes:
 
 ### 9.5 Retrieval Strategy (Commit + Semantic + Temporal)
 
-1. Context engine queries agent registry (SQLite) — filters to active agents only.
+1. Context engine queries agent registry (SQLite) — all agents returned, no active/inactive filter. The context blob carries all agents with relevance scores (data integrity over context management).
 2. Vector store retrieves semantically similar content with temporal metadata.
-3. Vector store retrieves local tools via semantic search over tool descriptions. Results above score threshold proceed to hydration.
-4. Agent Service hydrates each tool with agent boundary context — attaches `access` field (`status: allowed | locked`, `reason`). All tools returned to LLM, locked ones clearly marked.
-5. Object store provides recent commit context.
-6. Results re-ranked by commit recency, semantic similarity, agent relevance, temporal weight.
-7. Top results + hydrated tools injected into LLM session.
+3. Object store provides recent commit context.
+4. Results re-ranked by commit recency, semantic similarity, agent relevance, temporal weight.
+5. Top results injected into context package.
 
-**Rule**: Vector store finds relevant content and tools; object store provides authoritative state; agent registry gates retrieval by agent status.
+Tools are NOT part of the context package. Tool retrieval happens inside the LLM session: Agent Service retrieves local tools via vector search, hydrates each with an `access` field (`status: allowed | locked`), and returns the full list to the Domain Expert. Locked tools are visible but caught by BoundaryValidator before execution.
+
+**Rule**: Vector store finds relevant content; object store provides authoritative state; agent registry provides the full agent roster with relevance scores.
 
 ## 10. Orchestration Layer
 
@@ -949,33 +957,21 @@ Service and shard catalog reference:
 - **LangGraph** is the primary orchestration runtime for stateful workflows, routing, retries, and checkpointed execution.
 - **LangChain** is used for integrations (model clients, retrievers, tool wrappers), not as the primary orchestration layer.
 
-**Execution pipeline (single queue, single-session execution)**:
+**Execution pipeline (unified max-heap)**:
 
-1. Receive message
-2. Persist to queue
-3. Internal Router reads event from queue, pulls context from Context Engine, resolves agent, assembles `job_envelope_v1`
-4. Estimator reads `job_envelope_v1`, does shallow domain consult for complexity, picks target Shard by capability + load, writes placement to Job Registry
-5. External Router dispatches job to target Shard
-6. Assigned LLM session performs domain routing + task formation:
+1. Receive message, persist to SQLite inbox, send transport ACK
+2. Internal Router labels turn (in-domain | other) using context blob, routes to domain agents
+3. Domain agent self-selects relevance, produces estimation call: `{is_job, complexity, domain}`
+4. Complexity ≤ 1 → execute inline. Complexity > 1 → job enters max-heap
+5. Estimator reads estimation call output, picks target Shard by capability profile + load, writes placement to Job Registry
+6. External Router dispatches job to assigned Shard
+7. Assigned LLM session performs task formation:
    - no task
    - ephemeral task (`WorkPlan`)
    - stateful task (`TaskSheet` + `Patch`)
-7. Same LLM session executes tools/steps
-8. Write memory updates
-9. Return final authoritative response
-
-`job_envelope_v1` includes:
-
-- `job_id`
-- `parent_job_id`
-- `agent_id`
-- `intent`
-- `priority`
-- `required_tools`
-- `target` (`none | control_plane | shard:<id>`)
-- `risk_level` (`low | med | high`)
-- `expect_response_by`
-- `schema_version`
+8. Same LLM session executes tools/steps
+9. Write memory updates via commits (user-approved)
+10. Return final authoritative response
 
 Safety/policy enforcement for high-risk actions is intentionally deferred to a later iteration.
 
@@ -983,12 +979,12 @@ Safety/policy enforcement for high-risk actions is intentionally deferred to a l
 
 Task formation runs inside the LLM session assigned by the Estimator:
 
-1. Event arrives from ingress and is queued.
-2. Internal Router assembles `job_envelope_v1` (pulls context, resolves agent).
-3. Estimator does shallow domain consult, picks target Shard, writes placement to Job Registry.
-4. External Router dispatches to the assigned Shard; LLM session begins.
-5. Inside assigned session, domain routing selects candidate project/domain context.
-6. Domain expert decides:
+1. Event arrives from ingress, persisted to SQLite inbox.
+2. Internal Router labels turn, routes to domain agents via context blob.
+3. Domain agent self-selects and produces estimation call `{is_job, complexity, domain}`.
+4. Complexity ≤ 1 → inline execution. Complexity > 1 → heap → Estimator places to capable Shard.
+5. External Router dispatches to the assigned Shard; LLM session begins.
+6. Domain Expert (inside assigned session) decides:
    - no task
    - ephemeral task (`WorkPlan`)
    - stateful task (`TaskSheet` + `Patch`)
@@ -997,9 +993,9 @@ Task formation runs inside the LLM session assigned by the Estimator:
 
 Important boundary:
 
-- v1 uses a single queue. The Estimator owns lane assignment — it is the scheduling decision maker.
+- The Estimator owns placement decisions — it reads complexity from the estimation call and matches to shard capability profiles. No lane assignment — capability profiles drive routing.
 - Job Registry is a passive state tracker. It records placement and lifecycle transitions but does not make routing decisions.
-- transport ACK confirms durable ingest only; execution may occur later from queue.
+- Transport ACK confirms durable ingest only; execution may occur later from the heap.
 
 References:
 - `docs/arch/v1/task-formation.md`
@@ -1009,7 +1005,13 @@ References:
 
 Canonical pipeline:
 
-`Voice Shard → Event Ingress → SQLite inbox → Queue → Internal Router → Estimator → External Router → LLM Session (planning + execution)`
+```
+Voice Shard → Event Ingress → SQLite inbox → Internal Router → Domain Agent (estimation call)
+                                                   ↓                        ↓
+                                                  RDS              [Max-Heap] → Estimator → External Router → LLM Session
+                                                                                    ↓
+                                                                             Job Registry
+```
 
 The Estimator writes placement to the Job Registry. The Job Registry tracks job lifecycle (`created → routed → planning → executing → done/failed`) but makes no routing decisions.
 
@@ -1022,7 +1024,8 @@ Voice Shard responsibilities:
 Brain Shard responsibilities:
 
 - own event ingress and durable inbox
-- own Internal Router (context pull, agent resolution, job_envelope_v1 assembly)
+- own Internal Router (turn labeling, domain agent routing)
+- own max-heap (all work ordered by importance score)
 - own Estimator (placement decisions, capability-based Shard selection)
 - own Job Registry (job lifecycle state)
 - own External Router (job dispatch to target Shard)
