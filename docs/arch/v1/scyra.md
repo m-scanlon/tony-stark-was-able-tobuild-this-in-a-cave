@@ -62,24 +62,22 @@ flowchart TB
     APIGW[API Gateway]
     INGRESS[Event Ingress]
     INBOX[(SQLite Event Inbox)]
-    QUEUE[(Durable Request Queue)]
-    IRTR[Internal Router]
-    EST[Estimator]
+    IRTR[Internal Router<br/>labels turn]
+    DAGENT[Domain Agent<br/>estimation call]
+    HEAP[(Max-Heap)]
+    EST[Estimator<br/>placement]
     JOBREG[(Job Registry)]
     ERTR[External Router]
-    SESSION[Assigned LLM Session]
-    ORCH[Orchestrator]
+    SESSION[Assigned LLM Session<br/>planning + execution]
     CIX[Context Injector]
-    CODER[Coding Model]
     PROJ[Agent Service]
     OBJ[Object Store]
     VDB[Vector DB]
 
-    APIGW --> INGRESS --> INBOX --> QUEUE --> IRTR --> EST --> ERTR --> SESSION --> ORCH
+    APIGW --> INGRESS --> INBOX --> IRTR --> DAGENT --> HEAP --> EST --> ERTR --> SESSION
     EST -->|placement written| JOBREG
-    INGRESS -->|context_state fan-out| CIX
-    ORCH --> CODER
-    ORCH --> PROJ
+    INGRESS -->|context push| CIX
+    SESSION --> PROJ
     PROJ --> OBJ
     PROJ --> VDB
   end
@@ -96,9 +94,9 @@ flowchart TB
   end
 
   subgraph DESKTOP[Desktop • Shard]
-    DAGENT[Shard\nWebSocket Client]
+    DAGENT2[Shard\nWebSocket Client]
     DEXEC[Command Executor]
-    DAGENT --> DEXEC
+    DAGENT2 --> DEXEC
   end
 
   subgraph SERVER[Server • Shard]
@@ -113,20 +111,21 @@ flowchart TB
   INBOX -->|ACK event_id| OBOX
 
   %% Response path
-  ORCH -->|FINAL / UPDATE / ERROR| APIGW
-  APIGW -->|mac response| VCLIENT
+  SESSION -->|FINAL / UPDATE / ERROR| APIGW
+  APIGW -->|response| VCLIENT
   TTS -->|speech| USER
 
-  %% Shard routing
-  ORCH -->|deep_reasoning tasks| DEEP
+  %% Shard dispatch (External Router)
+  ERTR -->|deep_reasoning job| DEEP
   CIX -->|context package push| LCACHE
-  ORCH -->|high-level commands| LAGENT
-  ORCH -->|high-level commands| DAGENT
-  ORCH -->|high-level commands| SAGENT
+  SESSION -->|shard commands| ERTR
+  ERTR -->|commands| LAGENT
+  ERTR -->|commands| DAGENT2
+  ERTR -->|commands| SAGENT
 
   %% Secure outbound connections (Shards initiate)
   LAGENT -.->|outbound WSS| CTRL
-  DAGENT -.->|outbound WSS| CTRL
+  DAGENT2 -.->|outbound WSS| CTRL
   SAGENT -.->|outbound WSS| CTRL
 ```
 
@@ -390,15 +389,14 @@ flowchart LR
     APIGW[API Gateway<br/>FastAPI or Node<br/>voice chat tools memory]
     INGRESS[Event Ingress<br/>WS or gRPC receiver]
     INBOX[(SQLite Inbox<br/>PRIMARY KEY event_id)]
-    QUEUE[(Durable Request Queue)]
     IRTR[Internal Router<br/>labels turn<br/>routes to domain agents]
-    EST[Estimator<br/>placement decision<br/>picks Shard by capability + load]
+    DAGENT[Domain Agent<br/>self-selects<br/>estimation call]
+    HEAP[(Max-Heap<br/>all work by importance)]
+    EST[Estimator<br/>reads complexity<br/>picks Shard by capability]
     JOBREG[(Job Registry<br/>job lifecycle state)]
     ERTR[External Router<br/>dispatches to target Shard]
-    SESSION[Assigned LLM Session<br/>task formation + execution]
-    ORCH_RT[Skyra Orchestration Runtime<br/>LangGraph Orchestrator and Router]
-    CIX[Context Injector Service<br/>Rank Compress Push]
-    CLASS[Domain Agent Self-Selection<br/>doorkeeper model]
+    SESSION[Assigned LLM Session<br/>planning + execution]
+    CIX[Context Injector Service<br/>watches state, pushes to devices]
 
     CODER[Coding Tool Model<br/>Qwen2.5 Coder 7B]
 
@@ -407,16 +405,14 @@ flowchart LR
     OBJ[(Object Store<br/>.skyra/agents<br/>versioned state)]
     VDB[(Vector DB<br/>Chroma<br/>semantic index + tool registry)]
 
-    APIGW --> INGRESS --> INBOX --> QUEUE --> IRTR --> EST --> ERTR --> SESSION --> ORCH_RT
+    APIGW --> INGRESS --> INBOX --> IRTR --> DAGENT --> HEAP --> EST --> ERTR --> SESSION
     EST -->|placement written| JOBREG
-    INGRESS -->|context_state fan-out| CIX
-    ORCH_RT --> CLASS
-    ORCH_RT --> CODER
-    ORCH_RT --> PROJ
-    CLASS --> CIX
+    INGRESS -->|state change| CIX
+    SESSION --> CODER
+    SESSION --> PROJ
+    SESSION --> TOOLS
     PROJ --> OBJ
     PROJ --> VDB
-    ORCH_RT --> TOOLS
   end
 
   subgraph GPUSHARD[GPU Shard • deep_reasoning]
@@ -428,8 +424,9 @@ flowchart LR
   PI -.->|optional audio stream for remote STT| APIGW
   CIX -->|compressed context package| LCACHE
   INBOX -->|transport ACK event_id| OBOX
-  ORCH_RT -->|deep_reasoning task| LLM
-  LLM -->|completion| ORCH_RT
+  ERTR -->|deep_reasoning job| LLM
+  LLM -->|completion| SESSION
+  SESSION -->|FINAL / UPDATE / ERROR| APIGW
   APIGW -->|authoritative result| VCLIENT
   VCLIENT -->|final speech output| TTS
 ```
