@@ -143,11 +143,24 @@ Git commits via go-git. The commit message carries the actor metadata — model,
 ### Global Tools
 Available to every LLM session regardless of agent. Always injected directly into the session. Never retrieved — always present.
 
+**Agent management**
 - `list_agents` — read the agent registry (SQLite)
 - `create_agent` — register a new agent, `git init` its directory, write initial `state.json`
 - `propose_commit` — stage changes to `state.json` and request user approval before committing via go-git
 - `update_agent_status` — set active / paused / archived
 - `update_last_active` — called by scheduler on job completion
+
+**Delegation**
+- `delegate report` — report task result back to the delegator when the ReAct loop exits. Every domain agent calls this to signal task completion or failure.
+
+**Cron scheduling**
+Every agent can schedule recurring invocations of its own skills. An agent cannot cron another agent's skills — scope is enforced at creation time.
+
+- `create_cron` — schedule a recurring skill invocation. Requires user approval via BoundaryValidator before writing to the cron registry. Args: `skill`, `args`, `schedule` (cron expression).
+- `list_crons` — list all active crons registered by this agent.
+- `delete_cron` — remove a scheduled cron job.
+
+Approved crons are stored in SQLite and picked up by the cron daemon on the control plane shard. The daemon fires a heap event at each trigger time — identical to a user-initiated request in the execution path. Output is committed to the agent object store. No live user session is attached to a cron-triggered job.
 
 History, diff, and rollback are git operations the LLM calls directly via shell: `git log`, `git diff`, `git show`, `git checkout`.
 

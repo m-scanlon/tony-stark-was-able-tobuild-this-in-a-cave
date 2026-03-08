@@ -13,9 +13,42 @@
 - **Working state** — `working/` is gitignored scratch space. Committed state requires user approval via `propose_commit`.
 - **Preemptive scheduling** — natural property of heap re-entry. No FIFO stack needed.
 
+- **Skyra as delegation layer** — Skyra knows her own tools and that other agents exist, but not what tools those agents expose. She delegates via `skyra <agent> <tool> [args]`. She can fan out to multiple domains simultaneously.
+- **Two-level reasoning** — Skyra gets the agent registry (agent names + domain descriptions) in her context. She reasons at domain level. Each agent gets its own tool list injected at inference time. Neither gets more than they need.
+- **Unified syntax** — `skyra <agent> <tool> [args]` throughout. No skyrad prefix. Personal agent is also named `skyra` so system tools are `skyra skyra reply`.
+- **Router structure** — switch on `command.agent`. `case "skyra"` handles system primitives (switch on `command.tool`, currently only `reply`). `case redis.get("agent:" + command.agent)` handles all dynamic agents — validates tool exists, builds context (Skyra's command + user message + tool list from Redis), pushes inference job to heap. `default` errors agent not found.
+- **Every agent needs a delegation entry point tool** — registered in Redis at agent creation. The router validates it before building context for the inference call.
+- **Router is hybrid** — `skyra` system primitives are hardcoded. All other agents are fully dynamic via Redis. Adding a new agent = registering in Redis, no router code changes.
+- **Redis as live registry + SQLite as backing store** — Redis owns real-time tool/agent state. Keyspace notifications push updates. SQLite persists for brain restarts. CLI reads Redis directly on each tool call validation — no local cache.
+- **Tools live in the capability registry (Redis), not the object store** — object store is purely state and memory. Tool definitions live in Redis. Router reads Redis to dispatch.
+- **Agent state is distributed** — agent registry tracks location per component: `storage` (which shard holds the object store), `websocket` (which shard manages the connection). The registry is the location map.
+- **Two core system agents** — `skyra` (user interaction, the face) and `delegate` (multi-agent coordinator, the engine). Both hardcoded in router. Redis-independent. Always available.
+- **Three system skills** — `skyra delegate fan_out` (opens job, fans out), `skyra delegate report` (agent → delegate), `skyra skyra reply` (Skyra → user only). Nothing else talks to the user.
+- **Delegate is an active coordinator** — validates exit conditions, reprompts failing agents with context (up to N retries), escalates to Skyra only when retries exhausted. Has lightweight inference.
+- **ReAct loop per domain agent** — every agent runs Reason → Act → Observe → Repeat until task complete, then `skyra delegate report`. Multi-step skill calls within a single task. Delegate reprompt restarts the loop with failure context injected.
+- **Delegator is the progressive delivery mechanism** — as each task completes and reports back via `skyra delegate report`, the delegator notifies Skyra incrementally. Skyra decides whether to reply to the user immediately or wait for all tasks. Job pops when all tasks complete or TTL expires.
+- **Job/task data structure** — SQLite is source of truth (jobs table + tasks table). Redis pub/sub is the real-time signal. Router writes to both on task completion. Dispatcher subscribes to Redis, reads SQLite to confirm state, pops job when all tasks complete.
+- **Progressive delivery resolved** — open questions 1 and 2 (quick reply + progressive delivery, decoupled response delivery) are closed. The delegator owns incremental updates. Skyra owns the reply decision.
+
 ---
 
 ## Open Design Questions
+
+### 7. Job Tree Tracking — RESOLVED
+
+The delegator owns the job tree. `skyra delegate` creates a job with N tasks (one per agent). Tasks report back via `skyra delegate report`. Delegator notifies Skyra incrementally. Job pops when all tasks complete.
+
+SQLite schema:
+```
+jobs:  job_id, turn_id, session_id, status, created_at, completed_at
+tasks: task_id, job_id, agent, status, result, created_at, completed_at
+```
+
+Open questions remaining:
+- What happens if one task fails — does the job partial-succeed or fail entirely?
+- Does Skyra always reply incrementally or does she decide per job?
+
+---
 
 ### 1. Quick Reply + Progressive Delivery Model
 

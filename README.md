@@ -89,4 +89,5 @@ For the architecture and implementation details:
 - Task formation: `docs/arch/v1/task-formation.md`
 - Agent service: `skyra/internal/agent/README.md`
 - Scheduler: `skyra/internal/scheduler/README.md`
+- Design principles: `docs/arch/v1/principles.md`
 - Open gaps: `docs/arch/v1/gaps.md`

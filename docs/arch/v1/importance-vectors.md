@@ -29,19 +29,21 @@ This is a big feature. The full scoring algorithm is a V2/V3 problem — the des
 ```
 v: {
   global:   [long_term, medium_term, session],
-  regional: [long_term, medium_term, session]
+  regional: [long_term, medium_term, session],
+  affect:   [valence, arousal, dominance]
 }
 ```
 
 - **global** — importance across the entire system, all domains, all time. Life significance. Major decisions, defining moments, patterns that hold across all domains.
 - **regional** — importance within a specific domain or context. High in the relevant domain, near zero in others. Scopes data naturally without hardcoded rules.
+- **affect** — the emotional state present when this memory was created. Encoded using the VAD model: valence (positive/negative), arousal (calm/excited), dominance (in control/overwhelmed). Enables affect-similarity matching at retrieval time — memories formed in the same emotional state surface first.
 
-Each dimension has its own time horizon profile:
+Each global/regional dimension has its own time horizon profile:
 - **long_term** — importance over months and years
 - **medium_term** — importance over days and weeks
 - **session** — importance right now, in this conversation
 
-Scale: 0–100. Arbitrary — designed to be tuned empirically.
+Scale: 0–100 for global/regional. -1.0 to 1.0 for affect dimensions. All designed to be tuned empirically.
 
 ---
 
@@ -88,14 +90,15 @@ session {
 At query time the Context Retriever scores every candidate item:
 
 ```
-score = global * regional * semantic_similarity
+score = global * regional * semantic_similarity * affect_similarity
 ```
 
+- **affect_similarity** — cosine distance between the current affect state and the affect vector on the memory item. Memories formed in the same emotional state score higher. The incoming affect signal from the ingress shard is the query.
 - Items must meet a minimum vector score threshold before semantic similarity is even computed. Below threshold — not considered.
 - Highest scoring items that fit the token budget surface.
 - The retrieval engine doesn't care if an item is a turn, a commit, or a long term memory entry — everything is a scored item in the same index.
 
-Semantic similarity alone is not enough. The vector score gates retrieval. Semantic similarity confirms relevance within the gate.
+Semantic similarity alone is not enough. The vector score gates retrieval. Semantic similarity and affect similarity confirm relevance within the gate.
 
 Threshold values are configurable and will be tuned empirically.
 
