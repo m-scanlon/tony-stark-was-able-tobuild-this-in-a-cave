@@ -106,14 +106,6 @@ Rules:
 - Skyra must never commit inferences to `skyra.user` mid-task as a side effect of domain work
 - Commits to `skyra.user` are separate deliberate acts, not incidental to task execution
 - When Skyra learns something that should update the user profile during a domain session, it flags it for review at the end of the session — it does not commit inline
-
-### ==== SUGGESTIONS BY KUNJ ====
-Remove the `knowledge` artifact from `skyra.user` `state.json`. Instead utilize `langmem` knowledge graph generation per user for user preferences. Knowledge Graphs can be stored in `.skyra/agents/user/preferences`. Memory is loaded in when loading `skyra.user` into the system prompt. 
-
-`langmem` update is a scheduled task. During the day's session, Skyra manages chats and at 12:00 AM every night, preference update cycle converts these conversations into `langmem` Memory Triplets to update the User Preference memory.
-
-NEED TO RESEARCH MORE ON THIS BEFORE IMPLEMENTING INTO THE PROJECT
-### ==== END OF SUGGESTIONS ====
 ---
 
 ## Cross-Agent Write Protocol (Deferred — v2)
