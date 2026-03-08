@@ -134,6 +134,6 @@ I'm building this in public.
 
 No funding round. No pitch deck. No ask. If what you just read made you feel something — if you recognized the pattern, if you've thought about this too — come watch it get built.
 
-[discord]
+https://discord.com/channels/1478802859356061967/1478802861365399594
 
 *Co-authored by SKANZ & Claude*
