@@ -161,7 +161,182 @@ Because V3 runs across agents it can spot cross-domain patterns. Something that 
 
 ---
 
-## 8. Related Docs
+### ===== SUGGESTIONS BY KUNJ =====
+## 8. Proposed Entity-Memory Refinements (Draft)
+
+These refinements preserve the current importance-vector model and add a stricter entity layer for v2+.
+
+### 8.1 Entity Creation Policy
+
+- Not every noun becomes memory automatically.
+- Entity extraction should be hybrid:
+  - deterministic candidate extraction (rules/NER)
+  - LLM confirmation/classification
+- Create a memory entity only when the candidate is likely to be reused beyond a one-off turn.
+- Track all entities by stable canonical `entity_id` (never by alias text).
+
+### 8.2 Entity-Importance Dimensions
+
+For each memory entity:
+
+- Global:
+  - `GLT` (global long-term)
+  - `GST` (global short-term)
+  - `GS` (global session, ephemeral)
+- Domain:
+  - `DLT` (domain long-term)
+  - `DST` (domain short-term)
+  - `DS` (domain session, ephemeral)
+
+`GS` and `DS` are session-scoped and derived from deterministic session signals (for example mention frequency, retrieval usage, final-answer usage). Avoid random initialization.
+
+### 8.3 Sparse Entity-Domain Matrix
+
+Use a sparse matrix `D[i,j]` where:
+
+- `i` = entity id
+- `j` = domain id
+- `D[i,j]` stores domain importance state for that entity-domain pair
+
+Do not pre-materialize all entity-domain pairs. Missing pair implies zero/unknown and is created only when an entity appears in that domain.
+
+At session start:
+
+- load entity global values (`GLT`, `GST`)
+- load active-domain values from `D[i,j]`
+- derive ephemeral `GS`, `DS` from session semantic similarity + deterministic session evidence
+
+### 8.4 Session Updates and End-of-Session Consolidation
+
+During session, track measurable usage events per entity:
+
+- retrieved
+- cited in reasoning
+- used in final response
+- used in tool arguments
+- cross-domain dependency hop
+
+At session end:
+
+- expire session-only values (`GS`, `DS`) via session table/TTL
+- compute update deltas for `GI` (global) and `DI` (domain) from the usage log
+- apply deltas to persistent horizons (`GLT`, `GST`, `DLT`, `DST`) with bounded update rules
+
+### 8.5 Aliases and Disambiguation
+
+Each canonical entity may hold multiple aliases (for example two different "Sonia" entities):
+
+- `aliases[]` with normalized form
+- `alias_confidence`
+- `source` (where alias came from)
+- `last_seen_at`
+
+Alias text maps to canonical `entity_id` through resolution logic; retrieval and ranking always operate on canonical ids.
+
+### 8.6 LangMem Integration Boundary
+
+LangMem can be used for:
+
+- candidate entity extraction
+- candidate alias extraction
+- candidate merge/split suggestions
+
+But persistent writes should pass deterministic validation:
+
+- dedupe checks
+- merge/split guardrails
+- canonical id enforcement
+- bounds checks on importance updates
+
+### 8.7 Equation Placeholder (To Be Locked Later)
+
+For each persistent horizon use a bounded decay-and-gain form:
+
+`new_value = clamp(old_value * decay + gain - penalty, 0, 100)`
+
+- short-term (`GST`, `DST`) should decay faster
+- long-term (`GLT`, `DLT`) should decay slower
+- exact coefficients remain an open calibration task
+
+### 8.8 Worked Example — "Sonia" Disambiguation in Dating Domain
+
+User query:
+
+`Find a good date spot for Sonia based on her preferences.`
+
+Entity candidates extracted from the turn:
+
+- `date spot`
+- `Sonia`
+- `preferences`
+
+Creation decisions:
+
+- `date spot` -> no new person/entity record required (handled by domain + place entities)
+- `Sonia` -> resolve to existing canonical entity or create one if not found
+- `preferences` -> attach to resolved person entity or pull from related memories
+
+Assume two canonical entities already exist:
+
+```json
+{
+  "entity_id": "sonia_cousin",
+  "aliases": ["Sonia", "cousin sonia", "Sonia Joshi", "Sonia from Ahmedabad"],
+  "global": { "GLT": 56, "GST": 34 },
+  "domain_matrix": {
+    "family": { "DLT": 92, "DST": 61 },
+    "dating": { "DLT": 0, "DST": 0 }
+  }
+}
+```
+
+```json
+{
+  "entity_id": "sonia_partner",
+  "aliases": ["Sonia", "my gf Sonia", "Sonia Purohit", "Sonia from Worcester"],
+  "global": { "GLT": 23, "GST": 98 },
+  "domain_matrix": {
+    "dating": { "DLT": 3, "DST": 98 },
+    "social": { "DLT": 15, "DST": 73 }
+  }
+}
+```
+
+At session start in `dating` domain:
+
+- both entities may have high semantic similarity to the token "Sonia"
+- domain-weighted scoring should strongly favor `sonia_partner`
+- ephemeral `GS`/`DS` values are derived from deterministic session signals (not random)
+
+Illustrative session-scoped outcomes:
+
+```json
+{
+  "session_entity_scores": [
+    { "entity_id": "sonia_partner", "SSS": 0.97, "GS": 100, "DS": 100 },
+    { "entity_id": "sonia_cousin", "SSS": 0.93, "GS": 12, "DS": 1 }
+  ]
+}
+```
+
+Interpretation:
+
+- semantic signal alone is not enough (both look similar)
+- `sonia_partner` wins because dating `DLT/DST` and session `DS` are high
+- `sonia_cousin` is suppressed in the dating context due to near-zero domain weights
+
+If planning then evaluates candidate date spots (for example `tridents_booksellers_cafe`, `kelly_ice_rink`, `jp_licks`) and selects one:
+
+- selected spot -> domain importance bump (`DI` up)
+- repeatedly used winning entity (`sonia_partner`) -> `DI` up, possible `GI` up
+- retrieved but unused competitor entities (`sonia_cousin`, rejected spots) -> domain penalty/decay path
+
+This is the intended disambiguation behavior of the entity + importance-vector model.
+
+---
+
+### ==== END OF SUGGESTIONS ====
+## 9. Related Docs
 
 - `docs/arch/v1/context-engine.md` — Context Retriever reads importance vectors at query time
 - `docs/arch/v1/agents/README.md` — agent state lives in the object store, carries vectors
