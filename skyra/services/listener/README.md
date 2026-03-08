@@ -342,7 +342,80 @@ This is a drop-in addition before the front-door model invocation. Nothing in th
 
 ---
 
-## 12. Related Docs
+## 12. Latency Target and Streaming UX
+
+The target for perceived response latency is **1–1.5 seconds** from end of utterance to first audio. This is the threshold where voice feels alive rather than robotic. Everything below is designed around hitting that number.
+
+### Latency Budget (Simple Turn)
+
+| Step | Baseline | Streaming |
+|---|---|---|
+| VAD trailing silence | 300–500ms | 300–500ms |
+| STT | 1–2.5s | ~0ms (overlapped with speaking) |
+| Network + ingress | ~15ms | ~15ms |
+| Routing | ~50ms | ~50ms |
+| LLM inference → `reply_to_user(...)` | 300–700ms | 300–700ms |
+| TTS first audio | ~150ms | ~50ms (first sentence only) |
+| **Total** | **~2–4s** | **~1–1.5s** |
+
+Streaming is the unlock. Both ends.
+
+---
+
+### Streaming STT
+
+Instead of waiting for VAD to cut before running Whisper, the Voice Shard streams raw audio to the Brain Shard in real time as the user speaks. The Brain Shard runs STT continuously. By the time VAD detects end of speech, the transcript is already complete or near-complete — the STT wait collapses to near zero.
+
+How it works:
+- Voice Shard opens a streaming audio channel to Brain Shard on wake word detection
+- Brain Shard runs a streaming-capable STT model (Whisper with streaming wrapper, or Faster-Whisper) and emits partial transcripts
+- VAD end-of-speech signal triggers finalization of the transcript
+- LLM inference fires immediately on the final transcript — no additional STT delay
+
+This is the single biggest latency win. STT on the baseline path is 1–2.5s. With streaming, it becomes ~0ms of added latency after VAD cuts.
+
+**Tradeoff:** Streams raw audio over the local network. Acceptable on a trusted home network. Adds complexity to the transport layer.
+
+**Note:** Section 1 documents "Optional: stream audio to Brain Shard for faster STT" — this section is the full design intent behind that note.
+
+---
+
+### Streaming TTS
+
+The LLM generates response text token by token. TTS does not need to wait for the full response before speaking — it only needs the first sentence.
+
+How it works:
+- LLM streams tokens to TTS as they are generated
+- TTS (Piper) starts synthesizing and playing audio after the first sentence boundary (`"."`, `"!"`, `"?"`, or a fixed token count)
+- Subsequent sentences are synthesized while the first is playing — no gap
+
+Effect: the user hears the first word of the response ~150–200ms after the LLM starts generating. For a 3-sentence response, the user is hearing sentence 1 while sentences 2 and 3 are being generated in parallel.
+
+**Tradeoff:** The LLM must stream its output rather than batch-generating the full response. All models used in Skyra support token streaming. No architectural change required — just wire the stream from LLM output directly into TTS input.
+
+---
+
+### Combined Effect
+
+With both streaming STT and streaming TTS active:
+
+```
+User stops speaking
+        │
+        ├─ transcript already assembled (streaming STT)
+        │
+        ├─ LLM inference fires immediately → ~300–500ms
+        │
+        ├─ first tokens stream into TTS → ~100ms
+        │
+        └─ user hears first word: ~500–700ms after stop
+```
+
+On a warm model with a short reply, response starts before the user has finished processing that they've stopped speaking. That's the target.
+
+---
+
+## 13. Related Docs
 
 - `skyra/services/context-injector/README.md` — context package format, push strategy, trigger model
 - `docs/arch/v1/scyra.md` — full system architecture and voice request flow

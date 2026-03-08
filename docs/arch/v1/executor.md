@@ -4,16 +4,21 @@
 
 ## 6.1 Overview
 
-The Executor is the step runner for Skyra task execution. It consumes `WorkPlan` (ephemeral) or `TaskSheet` (stateful), executes step-by-step, validates outcomes, handles assumption drift, and coordinates controlled replanning when needed.
+The Executor is the heap-driven execution loop for Skyra task execution. It consumes `WorkPlan` (ephemeral) or `TaskSheet` (stateful) and executes via repeated heap re-entry — one tool call per heap cycle.
 
-The Executor is not a blind script runner. It is an adaptive runtime loop with:
+**The heap is the execution loop.** The LLM session picks up a job from the heap, runs until it hits a tool call, the tool executes, and the job re-enters the heap with the updated context blob. This repeats until one of two exit conditions is reached:
 
-- step validation
-- assumption checking
-- local corrective actions
-- bounded replanning
-- progress reporting to Estimator
-- checkpoint persistence for resume/recovery
+- `finished` tool — job is done, context blob committed
+- `contact_user` tool — job parks on the heap, waiting for user response
+
+Every other tool call re-queues. The context window is the job state — no separate checkpoint or serialization needed. Preemption is free: higher priority work simply gets picked up first while the job waits on the heap.
+
+The Executor handles:
+
+- tool call validation (BoundaryValidator before each dispatch)
+- assumption drift detection and bounded replanning
+- working state writes (scratch pad, no approval needed)
+- commit proposals for canonical state changes (user-gated)
 
 ## 6.2 Role in Pipeline
 
@@ -45,31 +50,26 @@ The Executor must:
 6. Consult Resource Manager before constrained steps.
 7. Persist checkpoints for crash/restart recovery.
 8. Emit user-facing lifecycle notifications through Notifier.
-9. Run BoundaryValidator before each step — check proposed tool calls against the project boundary. If a tool is locked, pause execution and send a permission prompt to the user. User responds `allow_always | allow_once | deny`. On `deny`, trigger bounded replan rather than halting the task.
+9. Run BoundaryValidator before each step — check proposed tool calls against the agent boundary. If a tool is locked, pause execution and send a permission prompt to the user. User responds `allow_always | allow_once | deny`. On `deny`, trigger bounded replan rather than halting the task.
 
-## 6.4 Step Execution Model
+## 6.4 Execution Loop
 
-Each step contains:
+The execution loop is heap-driven. Each cycle:
 
-- `step_id`
-- `goal`
-- `inputs`
-- `tools_required`
-- `expected_output`
-- `validation_criteria`
-- `resource_hints`
-- `timeout_seconds`
+1. Job is picked up from the heap.
+2. LLM session resumes from the current context blob.
+3. LLM runs and emits a tool call.
+4. BoundaryValidator checks the tool against the agent boundary. If locked: permission prompt to user (`allow_always | allow_once | deny`). `allow_always` commits a boundary update to `state.json` before resuming. `deny` triggers bounded replan.
+5. Tool executes.
+6. Result appended to context blob.
+7. Check exit conditions:
+   - `finished` tool → job complete, commit if stateful, done
+   - `contact_user` tool → park job on heap, waiting for user response
+   - any other tool → re-queue job on heap with updated context blob, repeat
 
-Execution loop per step:
+The importance score on the heap item can be updated between cycles — if the job discovers something that raises the stakes, its score bumps up and it gets prioritized accordingly.
 
-1. Pre-check resources with Resource Manager.
-2. Run BoundaryValidator: check all tool calls in this step against the project boundary (`categories[]`, `tool_patterns`). If a tool is locked, pause execution and send a permission prompt to the user (`tool`, `why`, `how`). User responds `allow_always | allow_once | deny`. `allow_always` commits a boundary update to `state.json` immediately before execution resumes. `deny` triggers bounded replan for the remaining steps.
-3. Execute step with specified tools/models.
-3. Capture outputs + runtime metadata.
-4. Validate output against criteria.
-5. Check assumptions and environmental expectations.
-6. If pass: persist checkpoint and proceed.
-7. If fail: classify severity, attempt local fixes, then replan if needed.
+Steps from the `WorkPlan` or `TaskSheet` remain valid as planning artifacts — they describe intent and expected sequence. But execution doesn't follow them mechanically. The LLM drives tool selection turn by turn, with the plan as context.
 
 ## 6.5 Severity Levels for Assumption Changes
 
@@ -152,21 +152,15 @@ Placement note:
 - Executor control loop runs on the Brain Shard control plane.
 - Individual steps may execute locally or be delegated to Shards with matching capability profiles.
 
-## 6.9 Preemptive Scheduling and Job Suspension
+## 6.9 Preemptive Scheduling
 
-Higher priority work can interrupt a running job. A new estimation call arriving while all machines are busy preempts the lowest priority in-flight job.
+Preemption is a natural property of the heap-driven execution model — no special mechanism needed.
 
-**The context window is the job state.** Suspension and resumption are context operations:
+Between tool calls, the job is on the heap. Higher priority work just gets picked up first. The job waits. When the machine is free and the job is the highest priority item, it gets picked up again and resumes from its context blob.
 
-1. Wait for the current tool call boundary — jobs are never interrupted mid-tool-call.
-2. Serialize the full context window at that boundary.
-3. Push serialized context onto a **FIFO stack** (first interrupted, first resumed).
-4. Machine handles the higher priority work.
-5. When machine is free, pop context from FIFO and resume generation.
+**The context window is the job state.** Nothing is serialized specially for preemption — the context blob that re-entered the heap already contains everything: completed tool calls, outputs, remaining intent. Resume is seamless. The LLM does not know it waited.
 
-The LLM does not know it was interrupted. The context contains everything — completed steps, tool outputs, remaining intent. Resume is seamless.
-
-This replaces the previous checkpoint model for preemption. The context window is the checkpoint — no separate step-state serialization needed.
+The only scheduling constraint: a running tool call is never interrupted mid-execution. The preemption point is always the re-queue after tool completion.
 
 ## 6.9a Persistence and Fault Tolerance
 

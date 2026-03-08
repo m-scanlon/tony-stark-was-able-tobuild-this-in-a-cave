@@ -19,18 +19,28 @@ Every device in the Skyra network runs a Shard. The Voice Shard has voice capabi
 
 ## 3. Distributed Shard Architecture
 
-### 3.1 Shard Model Overview
+### 3.1 Skyrad — The Universal Daemon
 
-Every device in the Skyra network runs a lightweight Shard daemon. A Shard boots, fingerprints the device's hardware and software environment, registers its capabilities with the control plane, and listens for commands. The Brain Shard remains the central orchestrator, sending high-level commands to Shards for execution.
+Every device in the Skyra network runs the same binary: **skyrad**. There is no separate "Brain Shard binary" or "Voice Shard binary." It is always skyrad. What differs between devices is which services are running on top of it.
 
-**Shards are execution-only components and do not perform reasoning, memory access, or model inference** (except the Voice Shard's front-door fast model, which is a registered capability of that Shard and runs only as a non-authoritative voice interface).
+**Boot sequence:**
+1. skyrad starts on the device
+2. Fingerprints hardware — compute class, VRAM, mic/speaker, network, peripherals
+3. Reports capability profile to the elected brain
+4. Brain evaluates the profile and sends back a **service package** — exactly the services this device should run, nothing more
+5. skyrad installs and runs those services
 
-**Key Concepts:**
+A Pi with a mic and speaker gets the voice service package: STT, TTS, wake word, front-door model. A GPU machine gets the inference service package: DeepSeek endpoint, inference service. The Mac mini gets the full control plane: orchestrator, heap, agent service, scheduler, context engine.
 
-- **Control Plane**: Brain Shard maintains intelligence, memory, and decision-making
-- **Shards**: Lightweight daemons on target devices, identified by capability profile
-- **Command Distribution**: High-level intents sent to Shards for execution
-- **Secure Execution**: Allowlisted actions only, with authenticated connections
+**The brain is just the most capable skyrad node.** It runs more services than anyone else, but it is the same daemon, same registration model. If a more capable node comes online, the network can re-elect it as the new brain. The system self-organizes around capability.
+
+**Deployment is zero-config:** install skyrad on a new device, boot, register. The brain determines what to push. No manual service configuration per device.
+
+**Key properties:**
+- One binary, all devices
+- Capability-driven service installation — brain pushes the right package per device
+- The brain is an elected role, not a hardcoded machine
+- Shards report capabilities; the brain routes work based on what each shard advertises
 
 ### 3.2 Distributed System Diagram
 

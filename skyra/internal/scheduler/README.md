@@ -90,7 +90,7 @@ Access rules:
 ## v1 Constraints
 
 - Backpressure and overload policies are undefined — see `docs/arch/v1/gaps.md` G6
-- Preemptive scheduling is supported — higher priority work can interrupt in-flight jobs. Interrupted job's context window is serialized to a FIFO stack and resumed when the machine is free. See `docs/arch/v1/scheduler.md`.
+- Preemptive scheduling is supported — preemption is a natural property of heap re-entry. Between tool calls, the job is on the heap. Higher priority work gets picked up first. When the machine is free, the job resumes from its context blob. No FIFO stack needed. See `docs/arch/v1/scheduler.md`.
 - Transport ACK confirms durable ingest only — execution may occur later from the heap
 
 ## Related Docs

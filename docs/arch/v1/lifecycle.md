@@ -39,7 +39,7 @@ Outputs exactly one of:
 
 Tool system:
 - **Global tools** — always injected (agent state operations, propose commit, etc.)
-- **Local tools** — retrieved via vector search, hydrated with access status by Agent Service before being handed to the LLM
+- **Local tools** — stored as files under `tools/` in the agent's git repo. Discovered by the LLM walking the filesystem during execution. BoundaryValidator enforces access status at runtime before dispatch.
 
 Planning events the Domain Expert may emit:
 - `CLARIFY` — missing information blocks safe planning
@@ -106,7 +106,7 @@ The approved task enters the unified max-heap.
 
 - All work is ordered by importance score — no separate queues or lanes
 - The Estimator reads the estimation call output (`complexity` in tool calls) and routes to the best available shard via capability profiles
-- Jobs table tracks operational status: `queued → running → completed | failed`
+- Jobs table tracks operational status: `created → routed → planning → executing → completed | failed`
 - Semantic phases (planning / executing / validating / replanning / done) are tracked separately in the task artifact
 
 See `docs/arch/v1/scheduler.md` for full heap design, three inference types, and preemptive scheduling.
@@ -183,7 +183,7 @@ voice_event_v1
 - `docs/arch/v1/task-formation.md` — task formation detail
 - `docs/arch/v1/executor.md` — executor design
 - `docs/arch/v1/domain-expert/README.md` — planning phase
-- `skyra/internal/agent/README.md` — agent service, tool hydration, boundary enforcement
+- `skyra/internal/agent/README.md` — agent service, object store, boundary enforcement
 - `docs/arch/v1/scheduler.md` — unified heap, inference types, complexity scoring, preemption
 - `skyra/internal/delegation/README.md` — Estimator, placement decisions
 - `skyra/schemas/ingress/voice/` — voice_event schema

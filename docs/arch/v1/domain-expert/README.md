@@ -64,11 +64,9 @@ The Domain Expert operates within a two-layer tool system:
 
 **Global tools** — always injected into every LLM session. Owned by the Agent Service. Cover all agent state operations (read state, propose commit, rollback, list agents, etc.). Never retrieved — always present.
 
-**Local tools** — per-project tools stored in the vector DB tool registry. Retrieved via vector search based on the current request. Each local tool carries `categories[]` (operation tags for boundary enforcement) and a `requires_approval` field.
+**Local tools** — files under `tools/` in the agent's git repo. Discovered by the LLM walking the filesystem (`ls`, `cat`, `grep`) during execution. Each tool definition carries `categories[]` (operation tags for boundary enforcement) and a `requires_approval` field.
 
-Before local tools are returned to the Domain Expert, the Agent Service runs a hydration step: each tool is joined against the agent's boundary in `state.json` and enriched with an `access` field (`status: allowed | locked`, `reason`). The Domain Expert receives all retrieved tools — including locked ones — with their access status clearly attached. No tools are hidden. The LLM can reason over what is available and what is restricted.
-
-Locked tools that the LLM attempts to call are caught at runtime by the BoundaryValidator before execution. See `skyra/internal/agent/README.md` for the full enforcement model.
+Lock status is computed at runtime by the BoundaryValidator — joining the tool's `categories[]` against the agent boundary in `state.json` before any tool dispatch. Locked tools trigger a permission prompt before execution. See `skyra/internal/agent/README.md`.
 
 `requires_approval` on a local tool means the tool is surfaced and highlighted to the user during plan review. It does NOT pause execution mid-run. See Section 8 for the distinction between this and `PLAN_APPROVAL_REQUIRED`.
 
@@ -155,4 +153,4 @@ Tool mapping:
 - `docs/arch/v1/task-formation.md`
 - `docs/arch/v1/agents-services.md`
 - `docs/arch/v1/scyra.md`
-- `skyra/internal/agent/README.md` — agent service, global tools, local tool registry
+- `skyra/internal/agent/README.md` — agent service, global tools, object store tool model

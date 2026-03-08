@@ -124,9 +124,19 @@ Output:
 {
   "is_job": true,
   "complexity": 3,
+  "reasoning_depth": 2,
+  "cross_domain": false,
+  "reversible": true,
+  "output_scope": "fact",
   "domain": "servers"
 }
 ```
+
+- `complexity` — estimated tool calls. Primary placement signal and inline threshold.
+- `reasoning_depth` — inferential steps required (1 = direct, 2 = moderate, 3 = deep).
+- `cross_domain` — true if the request spans multiple domain agents.
+- `reversible` — false if the action cannot be undone.
+- `output_scope` — `fact | plan | commit`.
 
 Complexity is measured in **estimated tool calls**.
 
@@ -152,7 +162,7 @@ Responsibilities:
 - validate critical assumptions with tools when needed
 - include citations in TaskSheet evidence when external/docs lookup is used
 
-Note: before local tools are returned to the Domain Expert, the Agent Service runs a hydration step — each tool is enriched with an `access` field derived from the agent boundary in `state.json`. The Domain Expert receives all retrieved tools, including locked ones, with their access status attached. Locked tools that the LLM proposes calling are caught by the BoundaryValidator at runtime before execution. See `skyra/internal/agent/README.md` for the full hydration and enforcement model.
+Note: tools live as files under `tools/` in the agent's git repo. The LLM discovers them by walking the filesystem during execution. Lock status is computed at runtime by the BoundaryValidator — joining the tool's `categories[]` against the agent boundary in `state.json` before any tool dispatch. See `skyra/internal/agent/README.md`.
 
 Expected output contract:
 
@@ -323,7 +333,7 @@ Duplicate source events:
 
 - Executor runtime design (draft): `docs/arch/v1/executor.md`
 - Scheduler — unified heap, inference types, complexity scoring: `docs/arch/v1/scheduler.md`
-- Agent Service (object store, commits, tool registry): `skyra/internal/agent/README.md`
+- Agent Service (object store, domain tools, boundary enforcement): `skyra/internal/agent/README.md`
 - Delegation Engine (Estimator): `skyra/internal/delegation/README.md`
 
 ## 15. Estimator Role (Updated)

@@ -118,7 +118,7 @@ For every LLM session, the context engine assembles a **context package** — a 
 
 ### Injection Order
 
-> Note: Section 10 supersedes this section for the revised model. **Tools are no longer part of the context package** — they are retrieved by the Agent Service inside the LLM session during planning. The example JSON below still includes a `tools` array from the baseline design — ignore it. Treat section 10 as authoritative.
+> Note: Section 10 supersedes this section for the revised model. **Tools are not part of the context package** — they are files in the agent's git repo, discovered by the LLM walking the filesystem during execution. The example JSON below has been updated to remove tools. Treat section 10 as authoritative.
 
 Order matters. Items injected first have the most influence on the LLM's behavior.
 
@@ -149,19 +149,6 @@ Order matters. Items injected first have the most influence on the LLM's behavio
     "knowledge": { ... },
     "boundary": { ... }
   },
-  "tools": [
-    {
-      "name": "write_file",
-      "description": "...",
-      "input_schema": { ... },
-      "categories": ["filesystem_write"],
-      "requires_approval": true,
-      "access": {
-        "status": "locked",
-        "reason": "Filesystem writes are restricted for this agent."
-      }
-    }
-  ],
   "recent_turns": [
     {
       "turn_id": "turn_8f4c",
@@ -226,11 +213,11 @@ The context engine follows a fixed retrieval order. Each step gates the next.
 1. **Agent registry (SQLite)** — all registered agents, with relevance scores. No active/inactive filter — all agents are present in the context blob. Fast, no vector search.
 2. **Domain routing** — select the most relevant domain agents from the full agent list. Uses event text, session hints, relevance scores, and vector similarity over agent state. All agents are candidates — relevance scores determine weighting.
 3. **Vector search — agent state** — retrieve semantically similar content from the domain agent's state index. Temporal metadata used for reranking.
-4. **Vector search — local tools** — retrieve tools by semantic similarity to the current request. Results below score threshold are dropped before hydration.
-5. **Tool hydration** — Agent Service joins raw tool results against `state.json` boundary. Attaches `access` field to every tool. No tools hidden.
-6. **Object store — recent commits** — pull recent commit context for the domain agent to give the LLM visibility into recent state changes.
-7. **Rerank** — results reranked by: commit recency, semantic similarity, agent relevance, temporal weight.
-8. **Token budget enforcement** — trim to fit within available token budget. Recent turns and active job context are always preserved; retrieved content is trimmed first.
+4. **Object store — recent commits** — pull recent commit context for the domain agent to give the LLM visibility into recent state changes.
+5. **Rerank** — results reranked by: commit recency, semantic similarity, agent relevance, temporal weight.
+6. **Token budget enforcement** — trim to fit within available token budget. Recent turns and active job context are always preserved; retrieved content is trimmed first.
+
+Tools are not retrieved by the context engine. They live in the object store under `tools/` and are discovered by the LLM walking the filesystem during execution.
 
 ---
 
@@ -328,6 +315,6 @@ The retrieval steps in section 5 remain relevant but their role changes. They ar
 - `docs/arch/v1/lifecycle.md` — full 8-stage pipeline
 - `docs/arch/v1/domain-expert/README.md` — planning phase, tool system
 - `docs/arch/v1/agents/README.md` — agent model, system vs domain agents
-- `skyra/internal/agent/README.md` — agent service, tool hydration, boundary enforcement
+- `skyra/internal/agent/README.md` — agent service, object store, boundary enforcement
 - `skyra/schemas/ingress/voice/` — voice_event schema, turn_id and session_state
 - `skyra/internal/context/` — implementation home

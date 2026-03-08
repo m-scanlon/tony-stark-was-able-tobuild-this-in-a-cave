@@ -22,6 +22,7 @@
   "turn_id": "turn_8f4c",
   "ts": "2026-02-20T18:10:12Z",
   "device_id": "pi-livingroom-01",
+  "location_tag": "home-main",
   "transcript": "what did I decide about backups",
   "triage_hints": {
     "intent": {
@@ -40,5 +41,29 @@
   "session_state": {
     "pending_job_id": null,
     "waiting_for": null
+  },
+  "context_blob": {
+    "cache_ts": "2026-02-20T18:09:55Z",
+    "agents": [
+      {
+        "agent_id": "jarvis",
+        "relevance_score": 0.87,
+        "status": "active"
+      },
+      {
+        "agent_id": "skyra.user",
+        "relevance_score": 1.0,
+        "status": "active"
+      }
+    ],
+    "recent_turns": [
+      {
+        "turn_id": "turn_8f4a",
+        "user_text": "...",
+        "assistant_text": "...",
+        "ts": "2026-02-20T18:08:00Z"
+      }
+    ],
+    "active_job": null
   }
 }
