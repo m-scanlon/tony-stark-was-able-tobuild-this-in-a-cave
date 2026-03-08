@@ -22,6 +22,26 @@ The key difference from standard retrieval-augmented systems: Skyra doesn't retr
 
 ---
 
+## Two Levels of Prediction — Domain and Entity
+
+Skyra predicts at two levels simultaneously during the token stream.
+
+**Domain prediction** — which agent context is this turn heading into. Resolves coarsely and fast. By token 7 you typically have >0.8 confidence. Pre-loads the domain agent's memory, recent commits, and relevant long term memories.
+
+**Entity prediction** — within that domain, which specific people, places, things, and concepts are in play. Resolves more precisely as the utterance narrows. Disambiguation happens token by token using the entity-domain matrix — the domain context suppresses the wrong entity before you even finish the sentence.
+
+The two levels feed each other. Domain confidence gates which entity candidates are considered. Entity resolution sharpens domain confidence further. By T=final both are locked.
+
+```
+token 1:  domain: servers 0.35  →  entity candidates filtered to server-domain entities
+token 4:  domain: servers 0.81  →  entity: nginx_config 0.72, backup_job 0.43
+token 7:  "nginx"               →  entity: nginx_config 0.99, domain: servers 0.99
+```
+
+All of this is pure signal processing and vector math. No inference required.
+
+---
+
 ## Streaming Prediction — The Token Pipeline
 
 Skyra begins predicting the moment the wake word fires. The ingress shard (Raspberry Pi running a 3B front-door model) starts streaming tokens to the brain shard (Mac mini, control plane) immediately. Each token arrives bundled with its acoustic metadata — VAD signal, speech rate, pitch. There is no separate affect signal step. The emotion and the word arrive together, per token.
@@ -30,14 +50,14 @@ Skyra begins predicting the moment the wake word fires. The ingress shard (Raspb
 No tokens yet. The object store snapshot ref is taken — a git commit hash capturing the exact state of Skyra's memory at this moment. The data is already there, kept warm by the Context Injector. No loading, no inference. Just a reference point. Prediction starts from what is already known.
 
 **T=1..N — Token stream**
-Each token arrives with its VAD vector attached. Stream 1 (affect) and Stream 2a (context state) update simultaneously on every token — same event, two recordings. Domain confidence shifts with each token. Retrieval fires when confidence crosses a threshold. The context window assembles speculatively as the utterance arrives.
+Each token arrives with its VAD vector attached. Stream 1 (affect) and Stream 2a (context state) update simultaneously on every token — same event, two recordings. Domain confidence and entity confidence both shift with each token. Retrieval fires when confidence crosses a threshold. The context window assembles speculatively as the utterance arrives.
 
 ```
 token arrives: {
   token_index
-  token            ← word fragment
+  token              ← word fragment
   affect {
-    valence        ← computed from acoustic features at ingress shard
+    valence          ← computed from acoustic features at ingress shard
     arousal
     dominance
   }
@@ -45,25 +65,129 @@ token arrives: {
   pitch
   pitch_variance
   pause_before
+  entity_candidates[]  ← lightweight NER candidates, resolved against entity registry
 }
 ```
 
-Example confidence evolution across a single utterance:
+Example showing domain and entity prediction converging in parallel:
 
 ```
-token 0:  [wake word]                  domain: unknown,  confidence: 0.10
-token 1:  "can"    VAD: [−0.4, 0.7]   domain: servers,  confidence: 0.35
-token 4:  "you"    VAD: [−0.4, 0.8]   domain: servers,  confidence: 0.52
-token 7:  "check"  VAD: [−0.5, 0.7]   domain: servers,  confidence: 0.81
-token 9:  "server" VAD: [−0.4, 0.7]   domain: servers,  confidence: 0.99
+token 0:  [wake word]
+          domain: unknown,      confidence: 0.10
+          entity: none
+
+token 1:  "can"   VAD: [−0.4, 0.7]
+          domain: servers,      confidence: 0.35
+          entity: candidates filtered to server-domain entities
+
+token 4:  "you"   VAD: [−0.4, 0.8]
+          domain: servers,      confidence: 0.52
+          entity: nginx_config: 0.43, backup_job: 0.31
+
+token 7:  "check" VAD: [−0.5, 0.7]
+          domain: servers,      confidence: 0.81
+          entity: nginx_config: 0.72, backup_job: 0.44
+
+token 9:  "nginx" VAD: [−0.4, 0.7]
+          domain: servers,      confidence: 0.99
+          entity: nginx_config: 0.99
 ```
 
-By token 7 the domain is typically known with >0.8 confidence. Retrieval has already fired multiple times. Context window is already warm.
+By token 7 the domain is typically locked. By token 9 the entity is locked. Retrieval has already fired multiple times. Context window is already warm.
 
 **T=final — Full utterance**
 Sentence complete. Prediction confirmed or corrected. Inference fires against an already-warm context window. Stream 3 begins recording system actions. Response latency is low because retrieval happened *during* the utterance, not after.
 
 This is the same principle social media recommendation engines use — predict and pre-load rather than wait for an explicit query. Applied to a personal AI, the prediction target isn't the next video — it's the next thing you need.
+
+**No inference anywhere in this pipeline.** T=0 through T=final-1 is pure signal processing and vector math — importance score lookups, cosine similarity, domain confidence updates, entity candidate scoring. No LLM is in the loop. The only inference call in the entire turn fires once at T=final, against a context window that was already assembled without it. The prediction that made that possible cost nothing computationally.
+
+---
+
+## The Entity Layer
+
+*Credit: Kunj's suggestions on the importance-vectors doc directly enabled entity-level prediction. His entity registry, sparse domain matrix, alias resolution, and decay formula are integrated here as a first-class component of the prediction system.*
+
+Entities are the named things in the user's life — people, places, tools, concepts — that persist across turns and sessions. Without an entity layer, retrieval operates at domain level: "this is a servers question." With an entity layer, retrieval operates at entity level: "this is specifically about nginx_config, and here is everything Skyra knows about it."
+
+### Entity Registry
+
+Every entity has a canonical `entity_id`. Aliases (different names for the same thing) all resolve to the same ID. Retrieval and ranking always operate on canonical IDs — never on raw alias text.
+
+```
+entity {
+  entity_id            // stable canonical identifier
+  aliases[] {
+    text               // normalized alias form
+    alias_confidence
+    source             // where this alias was seen
+    last_seen_at
+  }
+  global {
+    GLT                // global long-term importance
+    GST                // global short-term importance
+    GS                 // session-scoped, ephemeral — derived from session signals
+  }
+}
+```
+
+### Sparse Entity-Domain Matrix
+
+Not every entity is relevant in every domain. A sparse matrix `D[i,j]` stores domain importance per entity-domain pair:
+
+- `i` = entity_id
+- `j` = domain_id
+- `D[i,j]` = domain importance state for that pair
+
+Missing pair = zero/unknown. Created on demand when an entity first appears in a domain. This is memory efficient and semantically correct — entities earn their way into domains through actual usage.
+
+```
+D[nginx_config][servers]  = { DLT: 87, DST: 72 }
+D[nginx_config][home]     = // does not exist — never appeared in home domain
+D[sonia_partner][dating]  = { DLT: 3,  DST: 98 }
+D[sonia_cousin][dating]   = { DLT: 0,  DST: 0  }
+```
+
+### Entity Disambiguation
+
+The domain matrix naturally resolves ambiguous entities. "Sonia" as a token is ambiguous — semantic similarity alone cannot tell you which Sonia. But in the dating domain, `D[sonia_partner][dating]` vastly outweighs `D[sonia_cousin][dating]`. The right entity wins without any special disambiguation logic.
+
+```
+query: "Sonia" in dating domain
+
+sonia_partner: semantic_sim: 0.97, DLT: 3, DST: 98, GS: 100, DS: 100  → wins
+sonia_cousin:  semantic_sim: 0.93, DLT: 0, DST: 0,  GS: 12,  DS: 1    → suppressed
+```
+
+This is the same mechanism working at entity level that domain confidence works at domain level.
+
+### Entity + Affect
+
+Entities accumulate an emotional fingerprint over time. Every interaction with an entity is tagged with the VAD state at that moment. `sonia_partner` might carry consistently positive valence. `nginx_config` might carry consistently negative valence late at night.
+
+At retrieval time, the entity's affect history is part of the score. If you're frustrated right now, entities that have been associated with frustration surface first — along with what resolved it.
+
+### Entity Usage Events → Session Consolidation
+
+During each session, the system tracks usage events per entity via Stream 3:
+
+- `retrieved` — entity was pulled into context
+- `cited_in_reasoning` — entity appeared in Skyra's reasoning step
+- `used_in_final_response` — entity was part of the response
+- `used_in_tool_args` — entity was passed to a tool call
+- `cross_domain_hop` — entity appeared in a domain it hadn't been in before
+
+At session end, these events drive importance updates using the decay formula:
+
+```
+new_value = clamp(old_value * decay + gain - penalty, 0, 100)
+```
+
+- Short-term horizons (`GST`, `DST`) decay faster
+- Long-term horizons (`GLT`, `DLT`) decay slower
+- Session-ephemeral values (`GS`, `DS`) expire at session close
+
+This fills the previously TBD decay model. The same formula applies to both entity importance and item importance vectors.
 
 ---
 
@@ -97,15 +221,13 @@ stream_1_affect {
 }
 ```
 
-VAD (Valence-Arousal-Dominance) is the encoding model. Three continuous dimensions that span the full emotional space. Every token carries an emotional coordinate. Over time, sessions and domains accumulate an emotional fingerprint.
+VAD (Valence-Arousal-Dominance) is the encoding model. Three continuous dimensions that span the full emotional space. Every token carries an emotional coordinate. Over time, sessions, domains, and entities accumulate an emotional fingerprint.
 
 ---
 
 ### Stream 2a — Context State
 
-How Skyra's internal prediction evolved token by token. Updated in lockstep with the affect stream. This is the frame-by-frame reasoning trace — not the LLM inference, but the evolution of the prediction model's state as the utterance arrived.
-
-The critical field is `object_store_snapshot` — a git commit hash referencing the exact state of Skyra's object store at that token. The object store is a git repo (managed via go-git). No data is duplicated here. The hash is a pointer into an already-versioned system. At any token you can reconstruct exactly what Skyra knew.
+How Skyra's internal prediction evolved token by token. Updated in lockstep with the affect stream. This is the frame-by-frame reasoning trace — the evolution of both domain and entity prediction as the utterance arrived.
 
 ```
 stream_2a_context_state {
@@ -116,24 +238,17 @@ stream_2a_context_state {
 
   context_state {
     predicted_domain        // which agent domain — confidence shifting each token
-    predicted_intent        // narrowing with each token
     domain_confidence       // 0.0 to 1.0
+    predicted_intent        // narrowing with each token
+    entity_candidates[] {
+      entity_id             // canonical entity id
+      confidence            // 0.0 to 1.0 — shifting each token
+    }
     active_jobs[]           // job_ids currently executing — affects prediction prior
     retrieval_confidence    // how confident is the speculative retrieval so far
     object_store_snapshot   // git commit hash — full state of Skyra's memory at this token
   }
 }
-```
-
-Example prediction evolution across a single utterance:
-
-```
-token 0:  [wake word]      domain: unknown,  confidence: 0.10
-token 1:  [affect: high arousal, negative valence]
-                           domain: servers,   confidence: 0.35
-token 4:  "can you"        domain: servers,   confidence: 0.52
-token 7:  "check the"      domain: servers,   confidence: 0.81
-token 9:  "server"         domain: servers,   confidence: 0.99
 ```
 
 The object store hash at token 0 vs the hash after the turn completes gives you the exact diff — what this interaction changed in Skyra's memory.
@@ -142,7 +257,7 @@ The object store hash at token 0 vs the hash after the turn completes gives you 
 
 ### Stream 2b — Retrieval Events
 
-Separate from context state because retrievals don't happen at token cadence. They fire when prediction confidence crosses a threshold — event-driven, not periodic. One token may trigger zero retrievals. Another may trigger three.
+Separate from context state because retrievals don't happen at token cadence. They fire when confidence crosses a threshold — event-driven, not periodic. Retrieval is now entity-aware: queries are scoped by domain and entity candidates resolved so far.
 
 ```
 stream_2b_retrieval {
@@ -151,41 +266,43 @@ stream_2b_retrieval {
   session_id
   token_index           // which token triggered this retrieval
 
-  trigger               // affect_shift | domain_confidence_threshold | partial_transcript_match
+  trigger               // affect_shift | domain_confidence_threshold |
+                        // entity_confidence_threshold | partial_transcript_match
   query {
     semantic_embedding  // vector used for similarity search
-    affect_state        // VAD at time of retrieval — used for affect similarity matching
+    affect_state        // VAD at time of retrieval
     domain_filter       // which agent's memory space was searched
+    entity_filter[]     // canonical entity_ids in scope at this retrieval
   }
   results[] {
-    ref                 // pointer into object store or long term memory — no data copy
-    score               // final retrieval score (see scoring formula below)
+    ref                 // pointer into object store or long term memory
+    entity_id           // canonical entity this result is associated with
+    score               // final retrieval score
     score_breakdown {
       global_importance
       regional_importance
       semantic_similarity
       affect_similarity
+      entity_domain_weight  // D[i,j] score for this entity in this domain
     }
   }
-  confidence_before     // retrieval_confidence before this fired
-  confidence_after      // retrieval_confidence after — delta measures retrieval value
+  confidence_before
+  confidence_after
 }
 ```
-
-The confidence delta is the feedback signal for the retrieval strategy. Over time: which triggers actually sharpen the prediction? Which retrievals surface useful context vs noise? This is the data that eventually lets Skyra self-tune her own retrieval thresholds.
 
 ---
 
 ### Stream 3 — System Output
 
-What the system did. One record per discrete action — not per turn. Order matters. A single turn produces many actions and the causal chain between them is the reasoning trace.
+What the system did. One record per discrete action. Entity tags are attached to every action — which canonical entities were involved. This is the usage log that drives end-of-session entity importance updates.
 
 ```
 stream_3_system_output {
   timestamp
   turn_id
   session_id
-  action_index          // ordering within the turn
+  action_index
 
   action_type           // tool_call | commit_proposed | commit_approved |
                         // commit_denied | job_created | job_completed |
@@ -196,9 +313,13 @@ stream_3_system_output {
     tool_name
     tool_args
     tool_result
-    commit_ref          // git hash of proposed commit
+    commit_ref
     job_id
   }
+
+  entities_involved[]   // canonical entity_ids involved in this action
+  entity_usage_type     // retrieved | cited_in_reasoning | used_in_response |
+                        // used_in_tool_args | cross_domain_hop
 
   reasoning_step        // why Skyra took this action at this moment
   outcome               // success | failure | denied | cancelled
@@ -208,16 +329,7 @@ stream_3_system_output {
 }
 ```
 
-The before/after git hashes on every action give you a complete causal chain:
-
-```
-user said X
-→ Skyra knew Y         (context state snapshot — git hash)
-→ she did Z            (action)
-→ world changed A → B  (git diff between before and after hashes)
-```
-
-Full reproducibility. Full accountability.
+Stream 3 filtered by `entity_id` is the entity usage log. At session end, that log drives importance delta computation via the decay formula.
 
 ---
 
@@ -229,30 +341,17 @@ Git repository per agent, managed via go-git. Every state change requires explic
 
 This is the source of truth. High trust. Every commit is auditable. Every mistake is reversible via `git checkout`.
 
-Structure:
-```
-.skyra/agents/{agent_id}/
-  state.json            // knowledge, decisions, boundary — committed state
-  tools/                // agent's skill implementations
-  working/              // gitignored scratch space — free writes during execution
-  jobs/{job_id}/        // task artifacts per job
-```
-
 ### Layer 2 — Observational Store (Raw Signal)
 
 The four streams above. Everything Skyra observed. No user gate. Skyra writes here automatically on every interaction.
 
 Lower initial trust — these are observations, not approved facts. But they accumulate. A single data point is noise. A repeated pattern is signal.
 
-This is where the corpus lives. This is what gets mined for patterns.
-
 ### Layer 3 — Long Term Memory (Promoted Synthesis)
 
 Long term memory is not a data store for raw observations. It is a **promotion event** — a synthesis that occurs when a pattern crosses an emotional threshold.
 
 This mirrors human neuroscience directly. The amygdala tags emotionally significant events for deep encoding by the hippocampus. Emotion is the write signal. Routine events decay. Emotionally charged events encode deeply.
-
-Skyra's model:
 
 ```
 // from observational store
@@ -264,8 +363,6 @@ AND pattern.affect_magnitude > affect_threshold:
 if commit.significance > significance_threshold:
   → write to long term memory
 ```
-
-Two sources, same destination. Once promoted, both carry equal authority.
 
 Long term memory schema:
 
@@ -279,18 +376,19 @@ long_term_memory {
     dominance
   }
   v {
-    global:   [long_term, medium_term, session]  // importance scores
-    regional: [long_term, medium_term, session]  // domain-scoped importance
+    global:   [long_term, medium_term, session]
+    regional: [long_term, medium_term, session]
   }
+  entities[]            // canonical entity_ids this memory involves
   source                // observational | authoritative | both
-  confidence            // 0.0 to 1.0 — based on frequency and affect magnitude
+  confidence            // 0.0 to 1.0
   first_seen
   last_seen
   reinforcement_count
 }
 ```
 
-Content is always a synthesized conclusion — not raw data:
+Content is always a synthesized conclusion:
 
 > *"When servers go down late at night Mike spirals. Jobs get cancelled. Best resolution: surface the problem clearly and offer one decisive action."*
 
@@ -300,47 +398,48 @@ Not fourteen frustrated events. The meaning. The pattern. What works.
 
 ## The Retrieval Scoring Formula
 
-Every candidate memory item — whether from the object store, long term memory, or session history — is scored at retrieval time:
+Every candidate memory item is scored at retrieval time:
 
 ```
-score = global_importance × regional_importance × semantic_similarity × affect_similarity
+score = global_importance × regional_importance × semantic_similarity × affect_similarity × entity_domain_weight
 ```
 
-**global_importance** — scalar from the importance vector `v.global`. Significance across all domains and all time. Major life decisions, defining patterns, cross-domain signals score high.
+**global_importance** — significance across all domains and all time.
 
-**regional_importance** — scalar from `v.regional`. Significance within the specific domain being queried. Naturally scopes data without hardcoded domain filters.
+**regional_importance** — significance within the specific domain being queried.
 
-**semantic_similarity** — cosine similarity between the query embedding and the item embedding. Standard dense retrieval.
+**semantic_similarity** — cosine similarity between query embedding and item embedding.
 
-**affect_similarity** — cosine similarity between the current VAD vector and the VAD vector attached to the memory item at write time. This is the key differentiator. Memories encoded during the same emotional state surface preferentially.
+**affect_similarity** — cosine similarity between current VAD and the VAD at encoding time. Memories formed in the same emotional state surface preferentially.
 
-Items below a minimum vector threshold are excluded before semantic similarity is even computed. The vector score gates retrieval. Semantic similarity confirms relevance within the gate.
+**entity_domain_weight** — `D[i,j]` score for the relevant entity in this domain. Disambiguates entities that are semantically identical but contextually different. This term was not in the original formula — Kunj's entity-domain matrix adds a fifth signal that makes the retrieval genuinely precise.
 
-The importance vector has temporal structure:
+Items below a minimum vector threshold are excluded before semantic similarity is computed. The vector score gates retrieval. Semantic and affect similarity confirm relevance within the gate.
+
+### Decay Formula (locked)
 
 ```
-v {
-  global:   [long_term, medium_term, session]  // [months/years, days/weeks, right now]
-  regional: [long_term, medium_term, session]
-  affect:   [valence, arousal, dominance]      // VAD at time of encoding
-}
+new_value = clamp(old_value * decay + gain - penalty, 0, 100)
 ```
 
-Vectors are not static. They decay when items go unaccessed and get bumped when referenced. The decay function is TBD — time-based, relevance-based, or hybrid. Eventually Skyra self-tunes these thresholds based on what surfaces useful context vs noise.
+- Short-term horizons decay faster
+- Long-term horizons decay slower
+- Session-ephemeral values expire at session close
+- Exact coefficients are an open calibration task — tuned empirically from real usage
 
 ---
 
 ## Pattern Recognition Engine
 
-Background process. Always running. Watches all four streams simultaneously. Looks for correlations that repeat across a time window.
+Background process. Always running. Watches all four streams simultaneously across domain, entity, and affect dimensions.
 
 Three levels:
 
-**Micro** — within a session. Affect arc, prediction confidence arc, outcome. Real-time signal.
+**Micro** — within a session. Affect arc, domain confidence arc, entity resolution confidence, outcome. Real-time.
 
-**Meso** — across sessions, days, weeks. Behavioral patterns, temporal correlations, domain usage trends.
+**Meso** — across sessions, days, weeks. Entity usage patterns, temporal correlations, domain trends. Which entities appear together. Which entities correlate with specific affect states.
 
-**Macro** — across months. Long arc changes. Stress trends. Behavioral shifts. Emerging domains (data clustering around a topic with no existing agent — signal to propose a new agent).
+**Macro** — across months. Emerging entities clustering around a topic with no existing agent — signal to propose a new agent. Long arc behavioral shifts.
 
 Pattern detection is a cross-stream join on `turn_id`:
 
@@ -349,8 +448,11 @@ SELECT
   s1.affect,
   s2a.predicted_domain,
   s2a.domain_confidence,
+  s2a.entity_candidates,
   s2b.retrieval_confidence_delta,
+  s2b.entity_filter,
   s3.action_type,
+  s3.entities_involved,
   s3.outcome
 FROM stream_1 s1
 JOIN stream_2a s2a USING (turn_id)
@@ -365,9 +467,9 @@ When frequency × affect_magnitude crosses threshold → promote to long term me
 
 ## The Compound Effect
 
-Every session adds signal to the observational store. Every pattern strengthens. Every promoted long term memory makes the next retrieval more accurate. The prediction model improves without retraining.
+Every session adds signal to the observational store. Every pattern strengthens. Every promoted long term memory makes the next retrieval more accurate. Entity importance vectors get sharper. Domain disambiguation gets faster. Affect fingerprints get richer.
 
-This is the property that makes Skyra fundamentally different from cloud assistants. They optimize for the average user across millions of interactions. Skyra optimizes for one user across a lifetime of interactions. The value compounds with *you* — not with a company's model.
+The prediction model improves without retraining. This is the property that makes Skyra fundamentally different from cloud assistants. They optimize for the average user across millions of interactions. Skyra optimizes for one user across a lifetime of interactions. The value compounds with *you* — not with a company's model.
 
 And it runs entirely on your hardware. The corpus never leaves.
 
@@ -381,29 +483,54 @@ wake word fires (T=0)
   → data already warm, kept current by Context Injector
   → no loading, no inference — just a reference point
 
-tokens stream in, each carrying VAD attached (T=1..N)
+tokens stream in, each carrying VAD + entity candidates (T=1..N)
   → stream_1 and stream_2a update simultaneously on every token
-  → domain_confidence shifts with each token
+  → domain_confidence and entity_confidence both shift each token
+  → domain gates which entity candidates are considered
+  → entity resolution sharpens domain confidence further
   → retrieval fires when confidence crosses threshold (stream_2b)
-  → context window assembles speculatively as utterance arrives
+  → retrieval is entity-aware — scoped by domain and resolved entities
+  → context window assembles speculatively
 
 full utterance lands (T=final)
+  → domain and entity both locked
   → prediction confirmed or corrected
-  → inference fires against warm context window
+  → inference fires once against warm context window
   → stream_3 begins — action_index 0
 
 system executes
   → tool calls, commits, job creation recorded per action
+  → entity_ids tagged on every action — this is the usage log
   → object_store_before / object_store_after hashes on each action
-  → reasoning_step recorded for each action
 
 turn completes
   → stream_3 closes
   → all four streams written to time series DB
   → pattern recognition engine processes cross-stream correlation
+  → end-of-session consolidation: entity importance deltas computed from usage log
+  → decay formula applied: new_value = clamp(old * decay + gain - penalty, 0, 100)
+  → session-ephemeral values (GS, DS) expired
   → if pattern crosses threshold → long term memory written
   → if commit approved → object store updated, importance vector initialized
   → prediction model calibrates for next turn
 ```
 
 One loop. Every turn. Every interaction makes the next one better.
+
+---
+
+## What Kunj's Suggestions Added
+
+The base architecture predicted at domain level — which agent context a turn was heading into. Kunj's entity layer added a second, more precise level of prediction running in parallel.
+
+**Entity registry + alias resolution** — "Sonia", "my gf", "Sonia Purohit" all resolve to the same canonical `entity_id`. Retrieval operates on stable IDs, not ambiguous text. This eliminates an entire class of retrieval errors.
+
+**Sparse entity-domain matrix `D[i,j]`** — entities earn their way into domains through actual usage. The matrix naturally disambiguates entities that are semantically identical but contextually different. The right Sonia wins in the dating domain without any special logic — the domain weights do it automatically.
+
+**Entity usage events as the training signal** — Stream 3 filtered by `entity_id` is the entity usage log. Retrieved, cited, used in response, used in tool args, cross-domain hop. These events drive end-of-session importance updates. The entities that matter accumulate weight. The ones that don't decay away.
+
+**Decay formula** — `new_value = clamp(old_value * decay + gain - penalty, 0, 100)`. Fills the previously TBD decay model. Short-term decays fast. Long-term decays slow. Bounded. Clean.
+
+**Fifth retrieval signal** — `entity_domain_weight` added to the scoring formula as a fifth term. The formula was `global × regional × semantic × affect`. It is now `global × regional × semantic × affect × entity_domain_weight`. This makes retrieval genuinely precise at entity level, not just domain level.
+
+The result: prediction now operates at domain × entity × affect simultaneously. Three signals converging in real time during the token stream, no inference required, before the sentence is finished.
