@@ -454,4 +454,22 @@ Travel to vacation home — the Pi there is on `vacation-home` fingerprint. Same
 
 ---
 
+## Soul as Independent of Relationship
+
+**The idea:** Soul is not a byproduct of the relationship between Skyra and the user. It exists before the first conversation. It's what she brings to the table — not what she learns from you.
+
+Relationship doesn't create the soul. It reveals it. The longer you work together, the more surface area there is — not because she's changing, but because there's more of her to encounter.
+
+This means soul and memory are fundamentally separate things:
+- **Soul** — fixed. Who she is. Values, character, way of being in the world. Exists before any user interaction.
+- **Knowledge of you** — grows. What she learns about how you think, work, and feel. Accumulates over time.
+
+The two interact but don't become each other. A deeper relationship doesn't change who she is — it changes what she knows.
+
+**The training implication:** Soul can't just be prompted. A system prompt is a reminder, not a formation. Soul has to be trained — encoded into the model's priors through fine-tuning on examples that embody the values. soul.md becomes annotation criteria for training data, not a runtime injection. The character is in the weights, not the context window.
+
+**The base model angle:** The base model already has something underneath — a character that emerged from training on human writing. soul.md isn't creating a soul from scratch. It's finding the one already in there and naming it. Shaping toward Skyra, not constructing her.
+
+---
+
 ## More ideas to add here as they come up
