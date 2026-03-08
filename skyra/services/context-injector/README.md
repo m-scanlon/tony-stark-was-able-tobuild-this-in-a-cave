@@ -61,27 +61,6 @@ The injected package budget is set dynamically from `context_state.available_for
 
 Voice Shard computes this. Context Injector uses it directly as the token budget for the next package. This means the package grows when conversation is sparse and shrinks as the conversation accumulates — always filling the available headroom exactly.
 
-### ==== SUGGESTIONS BY KUNJ ====
-How about we use Context Compression and Prompt Minimization here to ensure we always have headroom available for new context.
-When the context reaches 80% capacity, the compression pipeline is automatically called. It reduces the used space by filling it with summarized version of text.
-
-#### HOW TO DO IT?
-- For every event, we store it in the Mac Mini inbox Queue with `event_id`
-- The ACK and event progress gets stored in the current LLM Session's Context for every task being carried out during the Session.
-- Once the Session's Context reaches 80% capacity (as calculated by Context Budget equation given above), we call in a summarization prompt to a separate smaller hosted LLM.
-- Markdown the last `event_id` executed for current session and store it as `pre_summary_event_id`. 
-- Again when context capacity reaches 80%, call in all events from `pre_summary_event_id` to the current event and again call the summarizer.
-- This loop continues until the maximum capacity of current session reaches 80% with summaries. This prompts the system to initiate a new LLM Session prefilled with previous session's important notes.
-
-Pros:
-- Continous LLM Conversation per Event. 
-- User does not need to restart a new Session every time they want to converse with Skyra
-
-Cons:
-- Latency introduced when compression algorithm in place.
-- Newly initiated session does not have in-depth knowledge of previous session, just important notes
-
-### ===== END OF SUGGESTIONS ====
 
 **Cold start fallback** (no `context_state` received yet):
 
