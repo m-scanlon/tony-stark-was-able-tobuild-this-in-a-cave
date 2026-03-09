@@ -61,6 +61,7 @@ The injected package budget is set dynamically from `context_state.available_for
 
 Voice Shard computes this. Context Injector uses it directly as the token budget for the next package. This means the package grows when conversation is sparse and shrinks as the conversation accumulates — always filling the available headroom exactly.
 
+
 **Cold start fallback** (no `context_state` received yet):
 
 For front-door model context window `T`:
