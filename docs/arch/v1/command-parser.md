@@ -3,46 +3,48 @@
 ## Syntax
 
 ```
-skyra <agent> <tool> [args]
+skyra <tool> [args]
 ```
 
-`me` is a reserved agent name — execute on the current shard, no heap re-entry.
+One prefix. One tool. Args. That's the entire protocol. Every shard, every direction.
 
 ```
-skyra me <tool> [args]
-```
-
-## Examples
-
-```
-skyra me play_audio --file alert.wav
-skyra samsung_qled_65 turn_on
-skyra music_agent play --query "chill playlist"
-skyra gym_agent log_workout --type run --duration 30
-skyra mac_mini run_job --input "reorganize filesystem"
+skyra reply "You hit 4 workouts this week"
+skyra fan_out -gym -home "cancel gym and turn off lights"
+skyra report "gym session cancelled"
+skyra check_nginx
+skyra log_workout --type=run --duration=30
+skyra stream --token="nginx" --valence=-0.5 --arousal=0.8
+skyra ack --turn=turn_8f4c --status=stored
 ```
 
 ## Resolution
 
-Skyra always resolves a skill call by walking:
+The API Gateway receives the command and resolves the tool against Redis:
 
 ```
-1. Where am I?                → location from ingress shard fingerprint
-2. What agents are here?      → query agent skill registry filtered by location
-3. What does the user mean?   → match intent to an agent skill
-4. Which agent holds it?      → dispatch
+1. command arrives at Ingress
+2. Redis check: does this skill exist? is this shard authorized?
+3. No  → rejected
+4. Yes → Redis returns full skill definition
+5. command args + full skill → heap as a job
+6. kernel router reads skill contract → routes to capable shard
 ```
 
-If the user names an agent directly, steps 1–3 still apply — the resolver confirms the agent is reachable and holds the requested skill before dispatching.
+The shard reasons about which skill to invoke. The API Gateway validates. The kernel executes.
 
 ## Routing
 
+All routing is driven by the skill's contract — compute requirements declared in the skill definition. The kernel router reads this and dispatches to the right shard. No hardcoded routing logic.
+
 ```
-skyra me <tool>       → local execution, no heap re-entry
-skyra <agent> <tool>  → heap re-entry → External Router → agent's shard
+skill contract: { compute: "deep_reasoning" }  → routes to GPU shard
+skill contract: { compute: "voice" }            → routes to Voice Shard
+skill contract: { compute: "control_plane" }    → routes to Brain Shard
 ```
 
 ## Related
 
-- `docs/arch/v1/capability-model.md` — agent/capability model, reasoning dispatch, commit flow
-- `docs/arch/v1/scheduler.md` — heap, inference types, routing
+- `docs/arch/v1/kernel.md` — kernel router, execution model
+- `docs/arch/v1/api-gateway.md` — Ingress validation, job envelope assembly
+- `docs/arch/v1/shard-communication.md` — unified protocol, shard primitives

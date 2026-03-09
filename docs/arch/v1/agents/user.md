@@ -1,8 +1,10 @@
-# User Agent (`skyra.user`)
+# User Memory (`skyra.user`)
+
+> **DEPRECATED** — `skyra.user` is no longer a "system agent." It is Skyra's memory namespace — a provisioned memory that holds cross-domain facts about the user and Skyra's terminology config. First-injected into every LLM session. The agent model is replaced by Memory/Skill/Entity primitives. See `docs/arch/v1/kernel.md`. This document is preserved for historical reference.
 
 ## What It Is
 
-`skyra.user` is a system agent that holds cross-domain facts about the user. It exists because some things are true about a person regardless of which domain they are working in — preferences, habits, communication style, recurring patterns, biographical context, life priorities.
+`skyra.user` is Skyra's memory namespace that holds cross-domain facts about the user. It exists because some things are true about a person regardless of which domain they are working in — preferences, habits, communication style, recurring patterns, biographical context, life priorities.
 
 Without it, every domain agent session starts with no knowledge of who the user is. With it, that context is always present before any domain-specific reasoning begins.
 

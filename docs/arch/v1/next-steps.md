@@ -1,5 +1,24 @@
 # Next Steps — Open Design Questions
 
+## Architecture Revision — Locked (2026-03-08)
+
+- **Router → Kernel** — the router is now the kernel. Same switch statement. Renamed throughout. Canonical doc: `docs/arch/v1/kernel.md`.
+- **Syntax** — `skyra <tool> [args]`. One prefix. No agent middle layer. API Gateway emits this. Kernel resolves `tool` against Redis.
+- **Agents removed** — replaced by primitives: Skill (class), Job (instance), Task (execution unit), Memory (provisioned namespace), Entity (named thing inside memory).
+- **Skill = class, Job = instance** — same relationship as programming. Skill is the registered roadmap. Job is what you get when the kernel invokes it. `job_envelope_v1` → job now holds `skill_id` reference.
+- **Skills live in memory** — the object store is memory. Skills are stored there. Redis is the trust boundary — skills in memory are inert until provisioned in cache.
+- **Skills are learned** — not manually defined. Kernel's pattern recognition function watches observational streams. When a pattern crosses threshold, a skill crystallizes.
+- **Memory is provisioned by the kernel** — on user approval. Not created manually. Emerges from entity observation crossing a threshold. Kernel emits provisioning event → user approves → namespace created.
+- **Entities live inside memory** — entities are named things (people, places, tools, concepts) accumulated through observation. They live in memory namespaces — they don't own them.
+- **Scheduler + Executor → kernel internals** — not standalone services. Internal methods of the kernel. Detail docs (`executor.md`, `scheduler.md`) preserved as kernel internals.
+- **Pattern recognition engine → kernel function** — not a separate engine. Triggered on schedule by the Cron Service.
+- **Cron Service = System Event Issuer** — the only time-aware component. Sits outside the kernel. Fires scheduled events onto the heap. Kernel has no clock.
+- **Kernel invocation paths** — two: (1) Skyra → domain skills via `skyra <tool> [args]`. (2) Cron Service → system skills via scheduled events. Kernel never self-initiates.
+- **Terminology layer** — user-configurable labels stored in `skyra.user`. Default: Skill/Job/Task/Memory. Programmer persona: Class/Instance/Task/Repo. Execution model unchanged.
+- **`skyra` and `delegate` are system primitives** — hardcoded switch cases in the kernel. Redis-independent. Three hardcoded skills: `reply`, `fan_out`, `report`.
+
+---
+
 ## What's Locked
 
 - **Unified max-heap** — all work ordered by importance score. Three inference types: estimation (very high), job (high), batch (very low).
@@ -24,7 +43,7 @@
 - **Agent state is distributed** — agent registry tracks location per component: `storage` (which shard holds the object store), `websocket` (which shard manages the connection). The registry is the location map.
 - **Two core system agents** — `skyra` (user interaction, the face) and `delegate` (multi-agent coordinator, the engine). Both hardcoded in router. Redis-independent. Always available.
 - **Three system skills** — `skyra delegate fan_out` (opens job, fans out), `skyra delegate report` (agent → delegate), `skyra skyra reply` (Skyra → user only). Nothing else talks to the user.
-- **Delegate is an active coordinator** — validates exit conditions, reprompts failing agents with context (up to N retries), escalates to Skyra only when retries exhausted. Has lightweight inference.
+- **Delegate is an active coordinator** — validates exit conditions, reprompts failing agents with context (up to N retries), escalates to Skyra only when retries exhausted. Delegate is a pure state machine — no inference of its own.
 - **ReAct loop per domain agent** — every agent runs Reason → Act → Observe → Repeat until task complete, then `skyra delegate report`. Multi-step skill calls within a single task. Delegate reprompt restarts the loop with failure context injected.
 - **Delegator is the progressive delivery mechanism** — as each task completes and reports back via `skyra delegate report`, the delegator notifies Skyra incrementally. Skyra decides whether to reply to the user immediately or wait for all tasks. Job pops when all tasks complete or TTL expires.
 - **Job/task data structure** — SQLite is source of truth (jobs table + tasks table). Redis pub/sub is the real-time signal. Router writes to both on task completion. Dispatcher subscribes to Redis, reads SQLite to confirm state, pops job when all tasks complete.
@@ -49,29 +68,6 @@ Open questions remaining:
 - Does Skyra always reply incrementally or does she decide per job?
 
 ---
-
-### 1. Quick Reply + Progressive Delivery Model
-
-Every user request generates two things:
-
-1. **Quick reply job** — high priority, hits the heap immediately. LLM's only job is to respond to the user right now. Direct answer, acknowledgment, or "working on it" — never keeps the user waiting. Response committed to context engine, CIX pushes it, ingress shard renders it.
-2. **Deeper work job** — if the quick reply determines more work is needed, it re-queues a new job onto the heap. Tool calls, deep reasoning, multi-step execution. Updates flow to context engine → CIX → ingress shard as they arrive.
-
-Questions:
-- Is the quick reply a separate inference type on the heap, or does the estimation call double as the quick reply?
-- What's the schema for a quick reply commitment to the context engine?
-- How does the ingress shard know a new response is ready — does it watch the context cache for new completed turns, or does CIX signal it explicitly?
-- How does the quick reply LLM decide whether to answer directly vs acknowledge and defer?
-
-### 2. Decoupled Response Delivery
-
-Responses don't come back through a direct reply channel. They get committed to the context engine. CIX pushes an updated context package to the ingress shard. The ingress shard renders new completed turns as they arrive.
-
-Questions:
-- What does the context package look like when it carries a pending response — is it a completed turn, a partial turn, or a separate field?
-- How does the ingress shard distinguish a "render this now" update from a background context refresh?
-- What happens if the ingress shard changes between request and response (user moved rooms)?
-- Does the response target a specific ingress shard or broadcast to all active shards?
 
 ### 3. Mic Auto-Switching + Duplicate Tiebreaker
 
@@ -106,6 +102,24 @@ Questions:
 - One heap item per agent or per turn-agent pair?
 - What model runs batch inference — lightweight or full?
 - How does batch handle an archived agent?
+
+---
+
+## Implementation Tasks
+
+### Skyrad Registration
+
+Design is complete in `docs/arch/v1/shard-registration.md`. This needs to be implemented.
+
+The algorithm to build:
+1. `device_fingerprint` event → heap
+2. Brain picks up fingerprint, installs skyrad service package on device
+3. Skyrad boots, self-tests each capability, emits `capabilities_installed`
+4. External Router picks up `capabilities_installed`, generates one `capability_test` event per capability → heap → skyrad
+5. Skyrad executes each test, responds with `capability_test_complete`
+6. External Router collects results, writes confirmed capabilities to agent registry → shard active
+
+Reconnection re-runs the same capability test round. Partial registration (some capabilities fail) is a valid state.
 
 ---
 

@@ -190,7 +190,7 @@ Both sessions and turns carry a decay value (arbitrary scale 20–100). Anything
 Relevance-based data pulled from beyond the current session. The Context Retriever scores every candidate item using importance vectors — every piece of data in the system carries a `v: { global, regional }` vector where each dimension has a time horizon profile `[long_term, medium_term, session]`. Items must meet a minimum vector score before semantic similarity is computed.
 
 ```
-score = global * regional * semantic_similarity
+score = global * regional * semantic_similarity * affect_similarity
 ```
 
 Full vector design, scoring formula, decay model, long term memory store, and versioned rollout: see `docs/arch/v1/importance-vectors.md`.

@@ -1,4 +1,6 @@
-# 6. Executor (Draft)
+# Executor (Kernel Internal)
+
+> **Architecture note**: The Executor is not a standalone service. It is an internal method of the Kernel. This document describes the execution loop in detail, but the Executor has no external interface — the Kernel owns it. See `docs/arch/v1/kernel.md`.
 
 > Draft status: this design is based on conceptual notes and **requires product owner validation** before implementation lock-in.
 
@@ -32,7 +34,7 @@ Event → Internal Router → Domain Agent (estimation call) → [Max-Heap] → 
 
 Authority boundary:
 
-- Voice Shard can provide provisional responses but does not execute authoritative task pipelines.
+- Voice Shard emits non-semantic ACKs only (earcon/LED/wait phrase) and does not execute authoritative task pipelines. Provisional responses are cut for v1.
 - Brain Shard control plane owns orchestration authority and coordinates LLM Session runs.
 - Shards with appropriate capabilities are execution targets selected by the Estimator based on capability profiles and current load.
 
@@ -46,7 +48,7 @@ The Executor must:
 2. Detect and classify assumption drift severity.
 3. Attempt local fixes before replanning.
 4. Trigger bounded, incremental replanning via Domain Expert.
-5. Send progress snapshots to Estimator.
+5. Send progress snapshots for time estimation updates.
 6. Consult Resource Manager before constrained steps.
 7. Persist checkpoints for crash/restart recovery.
 8. Emit user-facing lifecycle notifications through Notifier.
@@ -115,11 +117,11 @@ Persist after each step:
 - replan count
 - next step pointer
 
-## 6.7 Estimator Feedback Interface
+## 6.7 Progress Snapshots
 
-The Estimator made the original placement decision — it read the estimation call output (`{is_job, complexity, domain}`), matched the complexity score against shard capability profiles and current load, then selected the target shard. It wrote that placement to the Job Registry.
+The placement decision was made by an estimation inference call — a prompt that read the estimation call output (`{is_job, complexity, domain}`), matched the complexity score against shard capability profiles and current load, then selected the target shard. That placement was written to the Job Registry.
 
-During execution, the LLM Session sends progress snapshots back to the Estimator:
+During execution, the LLM Session emits progress snapshots that are written to the Job Registry to keep lifecycle state current and to inform user-facing time estimates:
 
 - `task_id`
 - `elapsed_seconds`
@@ -129,8 +131,6 @@ During execution, the LLM Session sends progress snapshots back to the Estimator
 - `partial_results` (optional)
 - `resource_usage`
 - `errors` (optional)
-
-Estimator returns updated remaining-time estimate and confidence for user communication. These updates are also written to the Job Registry to keep lifecycle state current.
 
 ## 6.8 Resource Manager Interaction
 
@@ -145,7 +145,7 @@ If constrained:
 
 - wait/retry (temporary contention)
 - fallback to lighter execution mode
-- pause and surface the constraint — Estimator or Job Registry can flag for rescheduling if no viable path
+- pause and surface the constraint — Job Registry can flag for rescheduling if no viable path
 
 Placement note:
 
@@ -203,11 +203,9 @@ Notifier owns channel fanout (Voice Shard, mobile, etc.).
 
 ## 6.11 Abstract Interfaces (TBD Contracts)
 
-### Executor <-> Estimator
+### Executor <-> Job Registry (Progress)
 
-- `UpdateProgress(snapshot) -> UpdatedEstimate`
-
-Note: the Estimator also owns the upstream placement decision (`PlaceJob(estimation_output) -> PlacementDecision`). That contract belongs to the Estimator's own interface spec, not here. The Executor only interacts with the Estimator via progress updates during execution.
+- `WriteProgressSnapshot(snapshot)` — executor writes progress updates to the Job Registry; these drive user-facing time estimates and lifecycle tracking.
 
 ### Executor <-> Resource Manager
 
@@ -238,8 +236,8 @@ Note: the Estimator also owns the upstream placement decision (`PlaceJob(estimat
    - parent-child lifecycle and rollback model.
 5. Resource Manager API mode:
    - polling vs push/subscription.
-6. Estimator update mode:
-   - push vs poll vs hybrid.
+6. Progress snapshot delivery mode:
+   - push vs poll vs hybrid (relative to Job Registry).
 7. Replan failure fallback:
    - timeout policy, degraded execution, escalation path.
 8. Local fix policy granularity:
@@ -250,7 +248,7 @@ Note: the Estimator also owns the upstream placement decision (`PlaceJob(estimat
 - sequential execution by default
 - optional parallelism only when step graph explicitly declares independence
 - replan budget default: 3
-- estimator updates:
+- progress snapshot writes (to Job Registry):
   - every step completion
   - plus periodic heartbeat for long steps (e.g., 30s)
 - checkpoint:

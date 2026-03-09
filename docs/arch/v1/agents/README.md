@@ -1,5 +1,7 @@
 # Agent Model
 
+> **DEPRECATED** — The agent model has been replaced. Agents are no longer a first-class concept. The new primitives are: **Skill** (learned class), **Job** (skill instance), **Task** (execution unit), **Memory** (provisioned namespace), **Entity** (named thing inside memory). The kernel provisions memory. Redis is the skill registry and trust boundary. See `docs/arch/v1/kernel.md` for the canonical model. This document is preserved for historical reference only.
+
 ## Two Types of Agents
 
 Skyra has two distinct categories of agent. Both use the same infrastructure — same object store, same commit model, same state.json structure, same global tools. The distinction is in initialization, injection behavior, and lifecycle rules.

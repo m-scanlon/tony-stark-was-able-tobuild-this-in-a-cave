@@ -1,5 +1,7 @@
 # Task Lifecycle — End to End
 
+> **Architecture revision in progress.** The ontology has changed: Router → Kernel. Agents → Skills/Memory/Entities. Scheduler and Executor → kernel internals. References to "Domain Agent," "Estimator," "Executor," and "Router" in this document reflect the previous design. Canonical execution model: `docs/arch/v1/kernel.md`. This document will be updated.
+
 Every request that enters Skyra moves through the same pipeline, regardless of complexity. The plan artifact determines the weight of execution — not the route.
 
 ---
@@ -185,6 +187,6 @@ voice_event_v1
 - `docs/arch/v1/domain-expert/README.md` — planning phase
 - `skyra/internal/agent/README.md` — agent service, object store, boundary enforcement
 - `docs/arch/v1/scheduler.md` — unified heap, inference types, complexity scoring, preemption
-- `skyra/internal/delegation/README.md` — Estimator, placement decisions
+- `docs/arch/v1/scheduler.md` — Estimator as inference call, placement decisions, heap design
 - `skyra/schemas/ingress/voice/` — voice_event schema
 - `docs/arch/v1/next-steps.md` — open design questions after architecture revision

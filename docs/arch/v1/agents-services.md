@@ -1,5 +1,7 @@
 # Skyra Agents and Services Catalog (v1)
 
+> **DEPRECATED** — The agent model has been replaced. Agents are no longer a first-class concept. New primitives: **Skill** (learned class), **Job** (skill instance), **Task** (execution unit), **Memory** (provisioned namespace), **Entity** (named thing inside memory). The kernel owns the heap and router. Redis is the trust boundary and skill registry. See `docs/arch/v1/kernel.md` for the canonical architecture. This document is preserved for historical reference only.
+
 This document defines what counts as a `shard`, an `agent`, and a `service` in Skyra and lists the components used in v1.
 
 ## 1. Definitions
