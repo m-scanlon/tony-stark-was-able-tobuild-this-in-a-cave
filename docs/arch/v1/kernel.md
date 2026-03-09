@@ -14,6 +14,13 @@ The kernel is Skyra's central execution boundary. Every event passes through it.
 
 Shards reason. The kernel executes. There is no other mode.
 
+**Two axioms:**
+
+> Everything is a Shard. (hardware layer)
+> Everything is a Skill. (execution layer)
+
+Every operation the system performs — including its own internal operations — is expressed as a skill. The three hardcoded primitives (`reply`, `fan_out`, `report`) are skills. Pattern recognition crystallizes into skills. Memory provisioning is triggered by a skill. Cron executes skills. There is no operation that is not a skill.
+
 ---
 
 ## Syntax
@@ -536,4 +543,5 @@ Execution model is unchanged. Only the labels differ.
 - `docs/arch/v1/scheduler.md` — heap design (kernel internal)
 - `docs/arch/v1/predictive-memory.md` — observational streams, pattern recognition (kernel function)
 - `docs/arch/v1/capability-model.md` — shard capability registration
+- `docs/arch/v1/skill-lifecycle.md` — full skill lifecycle: observation → intent namespace → validation → skill building → provisioned
 - `docs/arch/v1/gaps.md` — open gaps: Cron Service design, memory provisioning flow, skill learning thresholds, terminology layer implementation
