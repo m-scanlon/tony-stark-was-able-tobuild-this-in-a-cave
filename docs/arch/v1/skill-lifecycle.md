@@ -1,140 +1,172 @@
 # Skill Lifecycle
 
-Skills are not defined. They are learned. This document describes the full lifecycle of a skill — from the first observed signal to a provisioned, executable skill with its own memory.
+Skills are not defined. They are learned. This document describes the full lifecycle — from the first signal in a fresh system to a provisioned, executable skill with its own partition in domain memory.
 
 ---
 
-## Overview
+## The Memory Hierarchy
+
+Every domain is architecturally identical:
 
 ```
-Observation → Intent Namespace (silent scratchpad)
-    ↓
-Intent validated → proposed to user
-    ↓
-User confirms → Skill Building
-    ↓
-Skill crystallized → Memory committed → Redis provisioned
+domain/
+  shared data        ← all data for this domain, accessible to all skills inside it
+  scratchpad/        ← system's reasoning workspace, not user-visible
+  skill partitions/  ← crystallized from the scratchpad, proposed to user when ready
+    log_workout/
+    cancel_session/
+    ...
 ```
 
-Three phases. The user is never asked about a skill they don't understand. They are asked about their own intent — something they already know. The skill is built from a confirmed truth, not a system guess.
-
----
-
-## Phase 1 — Observation (Silent)
-
-The LLM is in a session. Context it needs is not present. It fires a manual RAG lookup — standard retrieval against memory.
-
-**The lookup is signal.** Retrieval is not just retrieval. The act of needing to look something up feeds back into the learning model — vectors strengthen, the pattern is recorded. Repeated lookups for similar context accumulate weight.
-
-If no skill exists to satisfy the intent:
+The **life namespace** is a domain like any other — shared data, scratchpad, skill partitions, commits. It is not architecturally special. It exists from day zero and is the fallback for anything that doesn't belong to a more specific domain yet.
 
 ```
-skill not found
-  → kernel emits intent_signal event → heap
-  → kernel provisions intent namespace
-  → named after the observed intent
-  → not a skill
-  → not proposed to the user
-  → system begins writing to the namespace
-```
-
-The intent namespace is the system's private scratchpad. It reasons over the user's actual intent — accumulating observations, hypotheses, and patterns across sessions. The user sees nothing.
-
----
-
-## Phase 2 — Intent Proposal
-
-The system keeps watching. Each session that triggers the same intent pattern adds to the namespace. At some point the picture becomes clear — the intent is unambiguous.
-
-The system proposes the **intent** to the user. Not a skill. Not a feature. The intent itself.
-
-```
-"I've noticed you're doing X. Is that what you're trying to do?"
-```
-
-The user confirms or corrects. If confirmed, the intent is locked. If corrected, the namespace is updated and observation continues.
-
-The proposal is of the intent, not the implementation. The user is being asked about their own behavior — something they already know. This is the only moment the user is involved until skill building is complete.
-
----
-
-## Phase 3 — Skill Building
-
-Intent confirmed. Now the system builds the skill.
-
-The intent namespace becomes the foundation. The system reasons over the accumulated observations and crystallizes a roadmap — 1-to-many tasks, a skill contract, validation criteria.
-
-```
-intent confirmed
-  → skill crystallizes from intent namespace
-  → roadmap defined (1-to-many tasks)
-  → skill contract written
-  → first memory commit → skill's memory namespace provisioned
-  → skill proposed to user for approval
-  → user approves → skill provisioned in Redis
-  → skill is now executable
+life/               ← always present, first domain
+gym/                ← provisioned when system identifies fitness cluster
+work/               ← provisioned when system identifies work cluster
+servers/            ← etc.
 ```
 
 ---
 
-## Skill Memory — 1:1
+## Cold Start
 
-Every skill has its own memory namespace. Skills and memory are one-to-one.
+A fresh system has no domains except life. No skills. No history.
 
-When a skill is provisioned, its memory namespace is provisioned alongside it. Every job that runs the skill reads from and writes to that skill's memory. The skill accumulates its own context over time — execution history, observed patterns, user preferences specific to that skill domain.
+Day zero Skyra ships with:
 
-The skill's memory is its domain. It owns exactly what it needs to know.
+- `skyra.user` — committed facts about the person. Always present, first-injected every session.
+- **Life namespace** — the first and always-present domain. Fallback for all unclassified signals and tools.
+- **System primitive skills** — pre-provisioned in Redis: `commit`, `propose_commit`, `search`, `provision_memory`, `provision_skill`
+- **Hardcoded kernel primitives** — `reply`, `fan_out`, `report`
+
+That is a complete, functional system. Everything else grows from observation.
+
+---
+
+## The Life Namespace
+
+The life namespace is a domain. It follows the same rules as every other domain — shared data, scratchpad, skill partitions, commits.
+
+It serves two roles by virtue of being the fallback:
+
+**1. Home for tools without a domain.**
+When a tool doesn't belong to any provisioned domain yet, it lives in the life namespace. This is not special treatment — life namespace is just the catch-all domain. As domains get provisioned, tools migrate to where they belong.
+
+**2. Birthplace of new domains.**
+The life namespace scratchpad is where the system reasons freely over the user's intent before specific domains exist. Signal clusters in life → domain identified → proposed to user → new domain provisioned.
+
+---
+
+## Signal Flow
+
+Every signal is assigned to the most specific domain it belongs to. If no domain matches, it falls to life.
 
 ```
-skill: log_workout
-  memory: log_workout/
-    → past workout logs
-    → personal records
-    → patterns (frequency, intensity, time of day)
-    → user preferences for this domain
-
-skill: check_nginx
-  memory: check_nginx/
-    → server configs
-    → past incidents
-    → known failure patterns
-    → remediation history
+signal arrives
+  → does a domain exist for this?
+      yes → routes to that domain
+      no  → falls to life namespace
 ```
 
-Skills do not share memory namespaces. Cross-skill context travels through `skyra.user` (user-level facts) or via `skyra fan_out` (multi-domain coordination).
+Over time, the life namespace scratchpad accumulates clusters. The system reasons over them and identifies candidate domains. When a cluster is ready, a new domain is proposed.
+
+**RAG lookup is signal.** When the LLM needs context that isn't present, it fires a manual lookup. The act of needing to search is itself an observational data point — vectors strengthen, the pattern is recorded.
 
 ---
 
-## RAG Lookup as Signal
+## Domain Proposal
 
-The manual RAG lookup does two things:
+When the system identifies a domain cluster in the life namespace scratchpad:
 
-1. **Retrieves** — surfaces relevant context for the current session.
-2. **Signals** — the act of needing to look something up is an observational data point. Repeated lookups for similar intent increase vector weight on those patterns.
-
-Retrieval is not passive. Every lookup is feedback to the learning model.
-
----
-
-## Intent Namespace
-
-The intent namespace is a provisional, silent container. It is not a skill. It has no roadmap. It is not provisioned in Redis. It cannot be invoked.
-
-It is the system's working space — where it reasons about what the user is actually trying to do before proposing anything.
-
-Properties:
-- Provisioned silently by the kernel on first intent signal
-- Named after the observed intent
-- Writable by the system only — the user cannot see or modify it during this phase
-- Lives until intent is confirmed (becomes skill foundation) or abandoned (threshold not crossed, namespace expires)
+```
+cluster crosses threshold
+  → system proposes domain to user
+  → "I've noticed a lot of activity around your fitness routine. Want me to track that as its own domain?"
+  → user approves → domain memory provisioned
+  → user declines → threshold resets, signals continue accumulating in life
+```
 
 ---
 
-## Threshold
+## Domain Scratchpad → Skill Partitions
 
-The threshold for moving from Phase 1 to Phase 2 is not yet defined. Open gap: `docs/arch/v1/gaps.md` G29.
+Every domain has a scratchpad. It is the system's private reasoning workspace — not user-visible, not committable by the user.
 
-The threshold for skill building (Phase 2 → Phase 3) is user confirmation. No algorithmic gate — the user decides when the proposed intent is correct.
+The system reasons over the scratchpad continuously, working toward **partitions**. For each candidate partition, it identifies the intent and defines requirements — what data, what pattern confidence, what execution criteria need to be fulfilled before this partition is ready to propose.
+
+```
+gym scratchpad:
+  → system identifies: log_workout
+      requirements: workout type pattern, frequency signal, duration data
+  → system identifies: cancel_session
+      requirements: session lookup pattern, cancellation signal
+```
+
+When a partition's requirements are fulfilled, the system proposes it to the user as a skill — already formed.
+
+```
+"I've noticed you log your workouts fairly consistently. Want me to set that up as a skill?"
+
+user approves
+  → skill partition crystallizes in domain memory
+  → first memory commit
+  → skill provisioned in Redis
+  → executable
+```
+
+---
+
+## Summary
+
+```
+Day 0:
+  skyra.user + life namespace + system primitives
+      ↓
+  signals accumulate in life namespace
+  system reasons freely over life scratchpad
+      ↓
+  domain cluster identified → proposed → approved
+      ↓
+  domain provisioned → domain scratchpad opens
+  system reasons over domain scratchpad → partitions form
+      ↓
+  partition requirements fulfilled → skill proposed → approved
+      ↓
+  skill crystallizes → Redis provisioned → executable
+```
+
+---
+
+## Bounding
+
+Namespace creation is bounded by the domain hierarchy:
+
+- No domain for a signal → falls to life namespace
+- Domain exists, no skill covers the intent → accumulates in domain scratchpad
+- Skill exists → routes to skill partition
+
+The system cannot create unbounded namespaces. Every signal has a home. Every intent partition belongs to a domain. Domains are approved by the user.
+
+---
+
+## Deprovisioning
+
+Does not exist. Once a skill is provisioned, it stays provisioned.
+
+---
+
+## System Primitive Skills
+
+Pre-provisioned in Redis at boot. The system cannot function without these.
+
+| Skill | Purpose |
+|---|---|
+| `commit` | Write to memory (user-gated) |
+| `propose_commit` | Surface a commit proposal to the user |
+| `search` | Semantic search in memory — retrieval and signal |
+| `provision_memory` | Create a new memory namespace |
+| `provision_skill` | Add a skill to Redis |
 
 ---
 
