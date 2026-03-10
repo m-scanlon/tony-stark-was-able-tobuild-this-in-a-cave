@@ -6,9 +6,9 @@ An API skill wraps an external API as an executable skill. It is a first-class s
 
 ## The Problem
 
-External APIs require credentials, endpoint definitions, retry logic, and rate limits. None of this can live in the skill definition — the definition is content-addressed and potentially open. Credentials in the definition are a security leak. Hardcoded endpoints in the definition violate closed-for-modification.
+External APIs require credentials, endpoint definitions, retry logic, and rate limits. None of this can live in the skill definition — the definition is content-addressed and potentially open. Credentials in the definition are a security leak.
 
-The solution: the skill defines the contract (what it's allowed to do). The memory namespace holds the credentials (what it needs to do it). The kernel enforces the boundary between them.
+The solution: credentials live in Redis. Redis is the trust boundary. The same chain that proves you are authorized to run the skill — mTLS, signed provisioning record — gives you the credential. You prove ownership through Redis. You get the key through Redis. Trust all the way down.
 
 ---
 
@@ -88,20 +88,28 @@ The kernel enforces rate limits. The skill does not manage its own rate limiting
 
 ## Credential Lifecycle
 
-**User-provisioned credentials** — the user writes their API key into the skill's memory namespace at setup. The key lives in memory. The skill references it by name. The kernel resolves it at execution time.
+**Credentials live in Redis only.** Not in the skill definition. Not in memory. Redis is secure — protected by mTLS at the transport layer and signed provisioning records at the authorization layer. A caller that has proven ownership through the Redis trust chain gets the credential. No other path exists.
+
+```
+Redis entry for an API skill:
+  skill:send_slack_message → {
+    contract:        { ...skill definition... },
+    credential_ref:  "slack_api_key",
+    credential:      "xoxb-..."       // lives here, protected by Redis auth
+  }
+```
 
 ```
 provisioning flow:
-  skill provisioned in Redis
-  → kernel prompts user: "This skill requires a Slack API key."
-  → user provides key
-  → kernel writes key to skill's memory namespace under credential_ref name
+  skill provisioned in Redis (via provision_skill, user-signed)
+  → user provides API key
+  → key written to Redis under credential_ref (via Redis write skill, user-signed)
   → skill is executable
 ```
 
-**Creator-shipped credentials** — not supported. A creator cannot ship a live API key in seed memory — it would be visible to anyone who provisions the skill with `read` access. Seed memory may contain credential templates or setup instructions, not keys.
+**Credential rotation** — write a new key to Redis via the Redis write skill. Requires user signature. The skill definition does not change. The content hash does not change. Trust is not invalidated. Only the credential in Redis changes.
 
-**Credential rotation** — the user writes a new key to the memory namespace. The skill definition does not change. The content hash does not change. Trust is not invalidated. Only the credential in memory changes.
+**Creator-shipped credentials** — not supported. A creator provisions a skill without a credential. The consumer writes their own key into Redis at setup time. The skill contract declares `credential_ref` — the name the kernel uses to look it up.
 
 ---
 
@@ -110,17 +118,16 @@ provisioning flow:
 ```
 skill emits: skyra call_api --skill send_slack_message --payload "..."
   → kernel checks Redis: skill provisioned and trusted
-  → kernel reads api_contract from skill definition
+  → kernel reads api_contract + credential from Redis (single lookup — same trust boundary)
   → kernel validates: target endpoint matches allowed_endpoints whitelist
-  → kernel resolves credential: reads skill memory namespace → credential_ref → actual key
   → kernel checks rate limit
-  → kernel executes HTTP call
+  → kernel executes HTTP call with credential
   → response validated against response_schema
   → result returned to skill for reasoning
   → skill produces output → propose_commit if state_contract: committed
 ```
 
-The skill never touches the credential directly. The kernel mediates the entire call.
+The skill never touches the credential directly. The kernel resolves it from Redis and mediates the entire call. Proving ownership of the skill proves access to the credential — same chain, same boundary.
 
 ---
 
@@ -132,7 +139,7 @@ API skills carry the same trust guarantees as all skills.
 - **Trust is model-scoped.** A skill committed under one model is not trusted under another.
 - **Trust is proven at commit time by the owner. Trust is proven to others by history.**
 - **The endpoint whitelist is signed.** It is part of the skill definition, covered by the content hash and provisioning signature. A tampered whitelist produces a different content hash — rejected by the kernel.
-- **Credentials are not signed.** They live in memory, owned by the user. Credential rotation does not require re-approval.
+- **Credentials live in Redis.** Protected by the same mTLS and signing that protects all Redis entries. Proving ownership of the skill proves access to the credential. Credential rotation is a Redis write — requires user signature via the Redis write skill.
 
 ---
 
