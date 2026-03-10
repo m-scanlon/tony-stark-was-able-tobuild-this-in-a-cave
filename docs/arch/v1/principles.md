@@ -120,7 +120,19 @@ A system that runs for a lifetime doesn't just remember who you were — it part
 
 ---
 
-## 11. Skyra Is Always Available
+## 11. Your Keys. Your Data. Your Consequences.
+
+The system does not protect the user from themselves. It protects them from everyone else.
+
+If the user commits bad data, the system reflects bad data back. If the user sets destructive goals, the system works toward them. The system has no opinion on whether the user's choices are good. It executes what the user has committed.
+
+This is the same philosophy as Bitcoin and Linux. Sovereignty means full ownership — of the upside and the downside. The keys belong to the user. So does everything that follows from how they use them.
+
+The system's job is to make sure no one else can touch what belongs to the user. What the user does with it is entirely their own.
+
+---
+
+## 12. Skyra Is Always Available
 
 Skyra never blocks on work she has delegated. She fans out, she delegates, and she is immediately free for the next user message. The delegate agent owns the lifecycle of delegated work. Skyra owns the user relationship.
 
