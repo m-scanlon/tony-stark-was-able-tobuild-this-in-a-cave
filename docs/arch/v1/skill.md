@@ -34,6 +34,7 @@ skill {
     validation_criteria: string         // natural language — what done looks like
     compute_requirements: []capability  // what shard capabilities are needed to run this
     improvement_scope:  improvement_scope  // optional — creator-defined bounded space for self-improvement
+    api_contract:       api_contract       // optional — for skills that call external APIs. see skill-api.md
   }
 
   memory {
