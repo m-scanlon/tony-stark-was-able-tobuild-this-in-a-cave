@@ -88,7 +88,43 @@ The Cron Service is a standalone service running on a shard — provisioned by s
 
 ---
 
+## Decomposability
+
+**The gateway is decomposable. The user data is not.**
+
+The gateway holds no state. All state lives in Redis and in the committed graph — both independent of the gateway. The gateway can be taken down, replaced, and published as a new version at any time. The user data is untouched. The graph doesn't care. Redis doesn't care. Everything reconnects.
+
+This is what makes extension possible. A new capability — API compatibility, a new auth method, a new protocol — is a plugin published as a new gateway version. The system brings down the old gateway and publishes the new one. Zero impact to user data.
+
+```
+user data (committed graph)   ← sacred, durable, independent
+Redis                         ← skill registry, trust boundary, independent
+API Gateway                   ← decomposable, stateless, replaceable
+```
+
+---
+
+## Plugins
+
+The gateway is extended through plugins — not modified. A plugin is an ingress or egress adapter that translates between an external protocol and the internal `skyra <tool> [args]` command syntax.
+
+**API compatibility** is a plugin. An external REST call, a webhook, a CLI invocation — the plugin translates it into a `skyra <tool> [args]` command. The gateway resolves it against Redis. The kernel executes it. The plugin knows nothing about what happens after ingress.
+
+```
+external REST call
+  → API compatibility plugin (ingress adapter)
+  → translated to: skyra <tool> [args]
+  → skill resolution ← Redis
+  → trust validation ← Redis
+  → kernel executes
+  → response → egress adapter → translated back to REST response
+```
+
+Publishing a new plugin means publishing a new gateway version. The old gateway comes down. The new gateway comes up. The user data is never involved.
+
+---
+
 ## Related
 
 - `docs/arch/v1/kernel.md` — execution boundary, receives job_envelope_v1
-- `docs/arch/v1/gaps.md` — G32: API Gateway domain resolution not designed
+- `docs/arch/v1/shard-communication.md` — internal command protocol
