@@ -37,9 +37,14 @@ proposed skill change arrives
   → update_skill validates the change against the skill contract
   → proposes change to user via propose_commit
   → user approves
-  → skill node updated in committed layer
-  → Redis entry updated to reflect new contract
+  → new skill node created in committed layer (new content hash, new model_id)
+  → old skill node persists — append-only, full history preserved
+  → Redis entry updated to reflect new contract and model_id
 ```
+
+**Every update produces a new version.** The old skill node is never mutated. Both exist in the committed layer. The history of how a skill has evolved is preserved completely.
+
+**Trust is model-scoped.** The new version carries the `model_id` of the model under which the update was approved. If the model changes after the update, the skill is flagged again — not executable until re-approved under the new model.
 
 ---
 

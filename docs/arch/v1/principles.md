@@ -27,7 +27,7 @@ This is why:
 - External skills are never registered without user approval, no exceptions
 - The committed layer is append-only — every commit is auditable, every mistake is reversible
 
-**The commit boundary is the trust boundary.** What is committed is trusted. What is not committed is not trusted. Skyra reasons across all layers — committed and observational — but trust is conferred only by the commit. When Skyra derives an output from unverified data, she notifies the user. That notification is a UX concern, not a protocol constraint. The commit is the signal.
+**Trust has two axes. Owner trust is proven at commit time by signature — binary, cryptographic, not earned over time. External trust is proven by history — the skill's execution record, commit rate, and user count. The signature proves authenticity. The history proves quality. Both are required.** What is committed is trusted. What is not committed is not trusted. Binary. An observational node that has existed for two years is no more trusted than one created yesterday. Data accumulates. Trust does not. The user's signature at commit time is the only thing that confers trust. When Skyra derives an output from unverified data, she notifies the user. That notification is a UX concern, not a protocol constraint. The commit is the signal.
 
 ---
 
@@ -107,15 +107,15 @@ This is why deletion does not exist in the committed layer. Deleting an edge des
 
 ---
 
-## 10. The User Makes the System. The System Makes the User.
+## 10. The User Makes the Model. The Model Makes the User.
 
-The system reflects who the user is trying to become — but only what the user has explicitly declared.
+The user commits skills — those commits define how the model behaves. The improvement scopes, the retrieval algorithms, the reasoning constraints — all proven by user signature. The user shapes the model through what they commit. Without commits, the model is raw inference. Untrusted. The user's signatures give it its trusted shape.
+
+The model, operating inside those committed boundaries, reflects the user's reality back to them. That reflection shapes who the user becomes. Their behavior generates new signal, new intent, new proposals — which the user commits — which shapes the model further. A loop, tightened by the commit gate at every turn.
 
 **Goals are not inferred. They are not proposed by the system.** They are hand-written committed entities, created by the user, confirmed through an explicit approval process, and removed through an explicit removal process. The system cannot suggest a goal. It cannot promote an observation into a goal. It can only read goals the user deliberately committed.
 
 This is maximum security on the most important data in the system. The definition of who you are trying to become belongs entirely to you. The system has no opinion on it.
-
-Over time the system shapes its responses to the goals the user has committed. And by responding to that reflection, the user becomes more of that person. The system and the user co-evolve — but only in the direction the user chose.
 
 A system that runs for a lifetime doesn't just remember who you were — it participates in who you become. On your terms.
 
@@ -140,5 +140,7 @@ The system does not own the model. The user chooses which model runs underneath 
 The committed layer protects the output. It does not protect the reasoning that produced it. A biased model shapes which questions get asked, how session data gets interpreted, which entities get extracted, how edges get weighted — all before anything reaches the committed layer. That influence is real and cannot be fully guarded against by the system.
 
 The best defense is the user's own choice: open source models, auditable weights, local inference. The architecture is built for exactly that. But the responsibility for what runs underneath belongs to the user.
+
+**Trust is model-scoped.** A skill committed under one model is not trusted under a different model. The user approved that skill in the context of what that specific model produced. Changing the model changes the trust context. Skills committed under a different model are flagged — visible in memory, not executable — until the user re-approves them under the new model. Upgrading the model is not free. The user must re-verify.
 
 This is consistent with the rest of the design. Sovereignty means owning the full stack — including its weakest link.

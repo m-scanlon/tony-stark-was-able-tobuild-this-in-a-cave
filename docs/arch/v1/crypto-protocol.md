@@ -64,14 +64,37 @@ When a skill is approved and provisioned into Redis, it carries a signed provisi
 ```
 provisioning_record {
   skill_id:               string         // SHA-256 hash of the skill definition
+  model_id:               string         // model under which the skill was committed — trust is model-scoped
   provisioned_at:         timestamp
   access:                 read | write   // consumer-set at provisioning time — memory access
   definition_visibility:  open | closed  // creator-set at distribution time — definition readability
   creator_public_key:     bytes          // creator's public key (may differ from consumer)
   signed_by:              user_public_key
-  signature:              bytes          // Ed25519 signature over (skill_id + access + definition_visibility + provisioned_at)
+  signature:              bytes          // Ed25519 signature over (skill_id + model_id + access + definition_visibility + provisioned_at)
 }
 ```
+
+## Two Axes of Trust
+
+**Owner trust** — cryptographic. Proven at commit time by the owner's signature. Binary. A skill is trusted by its owner because they signed it. This does not change.
+
+**External trust** — historical. Proven by the skill's execution record. When a consumer evaluates a skill before provisioning, the signature proves authenticity — the skill is what the creator claims, unmodified. The history proves quality — the skill produces outputs that users actually commit.
+
+```
+skill execution record {
+  executions:     int        // total times run across all users
+  commit_rate:    float      // percentage of outputs committed vs rejected
+  user_count:     int        // distinct users who have run it
+}
+```
+
+A skill with 10,000 executions and a 95% commit rate tells a consumer something a signature alone cannot. The signature is necessary. The history is the reputation. Both together are trust.
+
+This is the same model as open source software. The GPG signature proves the release is authentic. The years of commits and community use prove it is worth trusting.
+
+---
+
+**Trust is model-scoped.** A skill committed under one model is not trusted under a different model. The user approved the skill in the context of what that specific model produced. A different model reasons differently — the user has not seen its output. When the active model changes, skills carrying a different `model_id` are flagged: still visible in memory, not executable in Redis. The user must re-approve each skill under the new model before it is trusted again.
 
 **Two independent permission axes:**
 

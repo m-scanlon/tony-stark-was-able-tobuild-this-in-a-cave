@@ -30,15 +30,17 @@ intent namespace  ← provisional scratchpad, lowest trust, may never crystalliz
 
 Skyra reasons in the observational layer. Truth lives in the committed layer. The user only ever touches the committed layer.
 
-## Trust Is a Spectrum
+## Trust Is Proven at Commit Time
 
-The commit boundary is the trust boundary. What is committed is trusted. What is not committed is not trusted. That is the full definition.
+The commit boundary is the trust boundary. Trust is not earned over time — it is proven at commit time by user signature. What is committed is trusted. What is not committed is not trusted. Binary. No gradient.
 
 ```
-committed         → trusted
+committed         → trusted    (proven by user signature)
 observational     → not trusted
 intent namespace  → not trusted
 ```
+
+Data accumulates in the observational layer. That accumulation makes Skyra's reasoning better. It does not make anything more trusted. An observational node that has existed for two years is no more trusted than one created yesterday. Trust is conferred only by the commit.
 
 **Retrieval depth is user-configured.** The user holds the keys.
 

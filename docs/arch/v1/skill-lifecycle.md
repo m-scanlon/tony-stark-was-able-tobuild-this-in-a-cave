@@ -68,6 +68,14 @@ intent node: log_workout
   → Skyra proposes crystallization
 ```
 
+The recurrence threshold is relative to total session count — not an absolute number:
+
+```
+recurrence_ratio = intent_session_count / total_session_count
+```
+
+New user: 3/5 = 0.6 → strong signal, propose early. Veteran: 3/200 = 0.015 → weak signal, keep accumulating. The system calibrates to where the user is in their lifecycle.
+
 When the pattern is clear, Skyra proposes the skill — already formed as a natural language definition.
 
 ```
@@ -75,10 +83,12 @@ When the pattern is clear, Skyra proposes the skill — already formed as a natu
 
 user approves
   → skill node promoted to committed layer
-  → memory namespace provisioned alongside it
-  → skill provisioned in Redis
+  → memory namespace provisioned alongside it (atomic — inseparable)
+  → skill provisioned in Redis with model_id
   → executable
 ```
+
+**Trust is proven at commit time.** The skill carries the `model_id` of the model under which it was committed. A skill committed under 7B is not trusted under 32B — flagged in Redis, not executable — until the user re-approves under the new model.
 
 ---
 
@@ -99,6 +109,16 @@ Day 0:
   patterns cross threshold → skill proposed → approved
   → skill node promoted → Redis provisioned → executable
 ```
+
+---
+
+## Skills Are Bounded by Models
+
+A skill's capability ceiling is the model executing it — not the skill definition, not the system. The definition is natural language. The model interprets and executes it. A skill that runs poorly on a 7B model runs better on 32B. Same definition. Better model. No redesign needed.
+
+This means skills improve automatically as models improve. The system inherits model capability gains without being changed. See Principle 7.
+
+It also means skill execution is implicitly model-scoped. The skill contract declares compute requirements. The kernel routes to the shard whose model can handle it. A complex reasoning skill goes to the GPU shard. A simple reply skill runs on the front-door model. The model is the bound — the shard is how that bound is selected at runtime.
 
 ---
 
@@ -145,10 +165,13 @@ Pre-provisioned in Redis at boot. The system cannot function without these.
 
 | Skill | Purpose |
 |---|---|
+| `reply` | Send a reply to the user's device. Only Skyra calls this. |
+| `fan_out` | Open a job, fan out to N target domains. |
+| `report` | Report task result back to delegate. Any task can call this. |
 | `chat` | A conversation with the user. Every session is a job. Opens on first turn, closes on session end. |
-| `update_skill` | The only path to modifying a skill node. Requires user approval. |
 | `reasoning` | Background job triggered by cron. Decomposes session history + VAD into observational nodes, then writes edges to the graph. |
 | `integrate` | Connects the mini graph from reasoning to the existing graph. Finds aliases, updates weights, adds missing edges. |
+| `update_skill` | The only path to modifying a skill node. Requires user approval. |
 | `commit` | Write to memory (user-gated) |
 | `propose_commit` | Surface a commit proposal to the user |
 | `search` | Semantic search in memory — retrieval and signal |

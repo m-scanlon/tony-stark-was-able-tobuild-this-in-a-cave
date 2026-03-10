@@ -75,6 +75,7 @@ The skill definition is the execution contract. It carries:
 - **Severity policy** — how assumption failures are handled: trivial (log and continue), minor (adjust locally), moderate (attempt fix then replan), major (replan remaining steps), critical (halt and notify user).
 - **Replan budget** — max replan attempts before escalating. Default: 3.
 - **Preemption** — implicit. The kernel re-queues the job after each tool call. Higher priority work gets picked up first. The job waits. Resume is seamless — the context blob is the job state.
+- **Improvement scope** — optional. Creator-defined. A bounded observational namespace where Skyra can reason freely about improving the algorithm. Scope defines what aspects she is allowed to reason about. Inside the scope: unconstrained reasoning. Outside it: nothing. Improvement proposals surface via `propose_commit`. See `docs/arch/v1/skill-improvement.md`.
 
 The kernel runs the skill. The skill defines how.
 
