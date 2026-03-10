@@ -223,14 +223,25 @@ Tools are not retrieved by the context engine. They live in the object store und
 
 ## 6. Token Budget
 
-The context engine enforces a token budget before handing off to the LLM session. Budget sections:
+**Context size is derived from hardware — not hardcoded.** The token budget is a shard capability. Each shard registers its context window size at boot alongside its other capabilities (voice, deep_reasoning, etc.). The context engine reads the executing shard's registered context window to set the token budget. There is no system-wide constant.
 
-- `system` — reserved for system agent (`skyra.user`) and domain agent snapshot. Never trimmed.
+This is Principle 3 applied to context: constrain the data (what fits in the window, derived from hardware), not the model (reason freely over what's there). A shard with a larger context window gives the model more to reason over. The system shows the hardware. The model reasons over it.
+
+```
+shard capability registration {
+  ...
+  context_window: int    // tokens — derived from the model running on this shard
+}
+```
+
+Budget sections:
+
+- `system` — reserved for `skyra.user` and graph context. Never trimmed.
 - `live` — recent turns and active job context. Trimmed by age if needed, but prioritized over retrieved content.
 - `reserve` — buffer for LLM response tokens.
-- `available` — remainder for retrieved content (agent state, tools, commit history).
+- `available` — remainder for retrieved content from the graph.
 
-If available budget is exhausted, retrieved content is dropped from least-relevant first. `system` and `live` sections are never dropped.
+If available budget is exhausted, retrieved content is dropped least-relevant first. `system` and `live` are never dropped.
 
 ---
 
