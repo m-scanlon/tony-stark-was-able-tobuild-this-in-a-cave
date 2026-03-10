@@ -130,3 +130,14 @@ This is the same philosophy as Bitcoin and Linux. Sovereignty means full ownersh
 
 The system's job is to make sure no one else can touch what belongs to the user. What the user does with it is entirely their own.
 
+---
+
+## 12. The Model Is a Dependency, Not a Component.
+
+The system does not own the model. The user chooses which model runs underneath — and they own that choice, including its limitations and biases.
+
+The committed layer protects the output. It does not protect the reasoning that produced it. A biased model shapes which questions get asked, how session data gets interpreted, which entities get extracted, how edges get weighted — all before anything reaches the committed layer. That influence is real and cannot be fully guarded against by the system.
+
+The best defense is the user's own choice: open source models, auditable weights, local inference. The architecture is built for exactly that. But the responsibility for what runs underneath belongs to the user.
+
+This is consistent with the rest of the design. Sovereignty means owning the full stack — including its weakest link.
