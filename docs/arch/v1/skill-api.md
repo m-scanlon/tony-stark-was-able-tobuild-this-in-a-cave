@@ -6,9 +6,13 @@ An API skill wraps an external API as an executable skill. It is a first-class s
 
 ## The Problem
 
-External APIs require credentials, endpoint definitions, retry logic, and rate limits. None of this can live in the skill definition — the definition is content-addressed and potentially open. Credentials in the definition are a security leak.
+External APIs require credentials, endpoint definitions, retry logic, and rate limits. None of this can live in the skill definition. Credentials in the definition are a security leak.
 
-The solution: credentials live in Redis. Redis is the trust boundary. The same chain that proves you are authorized to run the skill — mTLS, signed provisioning record — gives you the credential. You prove ownership through Redis. You get the key through Redis. Trust all the way down.
+The harder problem is auth. API key is the simple case. Most companies do not use simple API keys. OAuth2, CLI-based auth (AWS, gcloud), service accounts, OIDC, mTLS — each is different. The system cannot be modified every time a new auth pattern appears.
+
+**The solution is extension, not modification.** Credentials live in Redis — the trust boundary. Auth method support is a shard capability. The kernel handles base cases. Complex or exotic auth is handled by a shard that registers the capability. The skill declares what auth it needs. The kernel routes to the right shard. The core system never changes.
+
+Closed for modification. Open for extension.
 
 ---
 
@@ -37,6 +41,31 @@ skill {
   }
 }
 ```
+
+### Auth Method
+
+```
+auth_method: api_key | bearer | oauth2 | shard:<capability_name>
+```
+
+**Kernel-native** (handled directly):
+- `api_key` — key passed as header or query param
+- `bearer` — Bearer token in Authorization header
+- `oauth2` — standard OAuth2 flow, token managed in Redis
+
+**Shard-extended** — for everything else. The skill declares `shard:<capability>`. The kernel routes the auth step to a shard registered with that capability. That shard handles the auth, returns a resolved credential to the kernel, and the kernel proceeds.
+
+```
+// AWS CLI-based auth
+auth_method: shard:aws_auth
+
+// A shard registers:
+capability: aws_auth   // knows how to invoke AWS CLI, assume roles, resolve temp credentials
+```
+
+Adding support for a new auth method means registering a new shard with a new capability. The core system is unchanged.
+
+---
 
 ### Endpoint Rule
 
