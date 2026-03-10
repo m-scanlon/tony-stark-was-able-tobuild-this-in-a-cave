@@ -130,10 +130,3 @@ This is the same philosophy as Bitcoin and Linux. Sovereignty means full ownersh
 
 The system's job is to make sure no one else can touch what belongs to the user. What the user does with it is entirely their own.
 
----
-
-## 12. Skyra Is Always Available
-
-Skyra never blocks on work she has delegated. She fans out, she delegates, and she is immediately free for the next user message. The delegate agent owns the lifecycle of delegated work. Skyra owns the user relationship.
-
-A user should never wait because Skyra is busy. That is a design failure.
