@@ -11,7 +11,8 @@ All work in Skyra is a skill instantiated as a job. Skills flow through the heap
 | Shard registration | Shard startup | No |
 | Capability verification | Brain → shard post-registration | No |
 | Conversation | User utterance | Yes |
-| Cron | Cron Service (scheduled) | No |
+| Cron | Timer (cron skill fires on schedule) | No |
+| Retrieval | Context background loop, background loop | No |
 | Batch | Nightly schedule | No |
 | Sub-skill | Task ReAct loop | Inherits from parent |
 | Skill acquisition | Skill gap detected | Maybe |
@@ -32,7 +33,10 @@ The brain's response to a shard registration skill. Brain sends a command to the
 The primary skill type. Triggered by a user utterance. The API Gateway resolves the skill, assembles the job envelope, dispatches to the kernel. Has a live user waiting on the response path.
 
 ### Cron
-A recurring skill invocation fired by the Cron Service on a schedule. Identical to a conversation skill in the execution path — same `skyra <tool> [args]` syntax through Ingress. No live user session attached. Output committed to memory. See `docs/arch/v1/shard-communication.md`.
+A system primitive skill that fires on a timer. Pre-provisioned at boot. No separate service — cron is just a skill. Identical to any other skill in the execution path — `skyra <tool> [args]` through the kernel. No live user session attached. Output committed to memory.
+
+### Retrieval
+A system primitive skill. Invoked by the context background loop and any other consumer that needs ranked memory results. Pre-provisioned at boot. The context engine calls `skyra retrieve [args]` — retrieval logic lives in the skill, not embedded in the caller. See `docs/arch/v1/context-engine.md`.
 
 ### Batch
 Nightly. Runs all accumulated turns against skills that were not routed to in real-time. Preserves data integrity — nothing is permanently missed. Runs at very low heap priority, picks up on idle compute. See `docs/arch/v1/scheduler.md`.

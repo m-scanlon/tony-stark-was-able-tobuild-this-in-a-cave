@@ -208,7 +208,9 @@ context_package {
 
 ## 5. Retrieval Strategy
 
-The context engine follows a fixed retrieval order. Each step gates the next.
+Retrieval is a system primitive skill. The context engine does not contain hardcoded retrieval logic — it invokes `skyra retrieve [args]`. Pre-provisioned at boot alongside the other primitives.
+
+The initial `retrieve` skill implementation follows this order:
 
 1. **Agent registry (SQLite)** — all registered agents, with relevance scores. No active/inactive filter — all agents are present in the context blob. Fast, no vector search.
 2. **Domain routing** — select the most relevant domain agents from the full agent list. Uses event text, session hints, relevance scores, and vector similarity over agent state. All agents are candidates — relevance scores determine weighting.
@@ -308,6 +310,8 @@ No tools. No hydration. Just context.
 ### Retrieval Algorithm (revised role)
 
 The retrieval steps in section 5 remain relevant but their role changes. They are no longer a request-time assembly pipeline — they describe the logic the **background loop** runs continuously to decide what to commit. Domain routing, vector search over agent state, recent commit retrieval, reranking — all of that happens in the background, not at request time.
+
+The background loop invokes `skyra retrieve [args]` — a system primitive. The loop doesn't know or care what the retrieval algorithm does internally. It calls the skill, gets back a ranked result set, and commits what's relevant.
 
 ### Open Questions
 
