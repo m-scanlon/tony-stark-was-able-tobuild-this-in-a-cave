@@ -69,6 +69,8 @@ skill {
 
 **Trust is model-scoped.** A skill committed under one model is not trusted under a different model. Changing the model flags the skill — visible in memory, not executable in Redis — until the user re-approves under the new model.
 
+**Closed for modification. Open for extension.** A skill is immutable — content-addressed, cannot be changed. The system grows by adding new skills and new versions, never by modifying what's committed. Re-approval under a new model produces a new version. The old version persists. You only ever add.
+
 **Trust is proven at commit time by the owner. Trust is proven to others by history.** The signature proves authenticity. The execution record proves quality. Both are required.
 
 **Deprovisioning does not exist.** Once a skill is provisioned, it stays provisioned. Old versions persist. The version chain is append-only.
