@@ -181,15 +181,24 @@ kernel: case "reply"
 
 ## System Primitives
 
-Three hardcoded skills. Nothing else is hardcoded.
+Every command resolves against Redis. No skill bypasses the registry — not even system primitives. If a skill is not in Redis, it does not run.
 
-| Skill | Caller | Description |
-|---|---|---|
-| `skyra reply` | Skyra only | Sends reply to user's device |
-| `skyra fan_out` | Skyra | Opens job, fans out to N targets |
-| `skyra report` | Any task | Reports task result back to delegate |
+All system primitive skills are pre-provisioned in Redis at boot.
 
-Only Skyra calls `reply`. Only Skyra calls `fan_out`. Any task can call `report`.
+| Skill | Purpose |
+|---|---|
+| `reply` | Sends reply to user's device. Only Skyra calls this. |
+| `fan_out` | Opens a job, fans out to N target domains. |
+| `report` | Reports task result back to delegate. Any task can call this. |
+| `chat` | A conversation with the user. Every session is a job. Opens on first turn, closes on session end. |
+| `reasoning` | Background job triggered by cron. Decomposes session history + VAD into observational nodes, then writes edges to the graph. |
+| `integrate` | Connects the mini graph from reasoning to the existing graph. Finds aliases, updates weights, adds missing edges. |
+| `update_skill` | The only path to modifying a skill node. Requires user approval. |
+| `commit` | Write to memory (user-gated) |
+| `propose_commit` | Surface a commit proposal to the user |
+| `search` | Semantic search in memory — retrieval and signal |
+| `provision_memory` | Create a new memory namespace |
+| `provision_skill` | Add a skill to Redis |
 
 ---
 
@@ -518,7 +527,7 @@ A standalone service running on a shard — provisioned by skyrad like any other
 
 The Cron Service executes skills on a schedule. It fires `skyra <tool> [args]` through Ingress at configured intervals. The kernel receives them as ordinary events — has no idea they came from a cron. The Cron Service is the invoker for system skills. Skyra is the invoker for domain skills.
 
-Design is an open gap — see `docs/arch/v1/gaps.md` G27.
+The primary scheduled skill is `reasoning` — fires when the user is offline, reads unprocessed session history + VAD, and produces observational nodes and edges. Exact schedule TBD. See `docs/arch/v1/skill-reasoning.md`.
 
 ---
 

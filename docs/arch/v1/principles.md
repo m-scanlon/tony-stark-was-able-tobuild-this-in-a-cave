@@ -92,7 +92,21 @@ When evaluating new additions: if an existing component can do the job, use it. 
 
 ---
 
-## 9. Skyra Is Always Available
+## 9. Nodes Are Identity. Edges Are History.
+
+Nodes represent things that exist — entities, facts, skills, domains. They are identity.
+
+Edges represent relationships between things — and relationships change over time. They are history.
+
+The committed layer is append-only. A new edge does not replace an old one. Both exist forever. If Mike married Liz in 2022 and divorced in 2026, both edges are committed facts. The graph holds the complete truth across time.
+
+This is why deletion does not exist in the committed layer. Deleting an edge destroys history. The graph grows in one direction — forward. Query complexity is the tradeoff we accept for a complete, trustworthy record.
+
+**Truth is derived, not stored.** There is no "current state" field. Skyra reasons over edge types, weights, `last_seen_at`, and the full history to derive what is true right now. Truth is a conclusion she reaches — not a value she reads.
+
+---
+
+## 10. Skyra Is Always Available
 
 Skyra never blocks on work she has delegated. She fans out, she delegates, and she is immediately free for the next user message. The delegate agent owns the lifecycle of delegated work. Skyra owns the user relationship.
 

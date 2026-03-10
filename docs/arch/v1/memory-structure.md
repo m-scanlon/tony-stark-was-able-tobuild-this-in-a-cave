@@ -2,6 +2,12 @@
 
 Skyra's memory is a property graph. Nodes are things that exist. Edges are relationships between them. Both carry vector embeddings. Edges carry Skyra-owned weights that evolve over time.
 
+**The mental model:**
+
+> Nodes are identity. Edges are history. Truth is derived, not stored.
+
+There is no "current state" field. Skyra reasons over edge types, weights, `last_seen_at`, and the full history to derive what is true right now. Truth is a conclusion she reaches — not a value she reads. The committed layer is append-only. The graph grows in one direction — forward.
+
 ---
 
 ## Two-Tier Graph
@@ -9,22 +15,22 @@ Skyra's memory is a property graph. Nodes are things that exist. Edges are relat
 The graph has two trust levels. This is the foundation of data integrity.
 
 ```
-committed layer       ← user-approved, high trust, authoritative, stable
+committed layer       ← user-approved, high trust, authoritative, stable — FIRST CLASS
         ↑
     promotion
         ↑
-observational layer   ← Skyra writes freely, working model, low trust
+observational layer   ← Skyra writes freely, working model, not trusted, not first class
 ```
 
-**Observational layer** — Skyra's working model. She writes here freely. Fragments, signals, partial facts, inferred entities. Can be incomplete. Can be wrong. No user gate.
+**Observational layer** — Skyra's working model. She writes here freely. Fragments, signals, partial facts, inferred entities. Can be incomplete. Can be wrong. No user gate. Not first class.
 
-**Committed layer** — the source of truth. Nothing lands here without user approval. Stable, auditable, trusted. This is where data integrity lives.
+**Committed layer** — the source of truth. Nothing lands here without user approval. Stable, auditable, trusted. First class. Skyra cannot mutate a committed node or committed edge without user approval.
 
 Skyra reasons in the observational layer. Truth lives in the committed layer. The user only ever touches the committed layer.
 
 ---
 
-## Node Promotion
+## Promotion — Nodes and Edges
 
 When observational nodes cohere into something real — a cluster of fragments that together represent a fact, an entity, a pattern — Skyra proposes promotion.
 
@@ -40,7 +46,26 @@ Skyra accumulates observational nodes around an entity
 
 A group of nodes representing the same entity can be promoted together. Promotion is atomic — the cluster lands as a unit.
 
-Committed nodes are not re-evaluated. Once promoted and approved, they are stable. Corrections require an explicit new commit.
+**Edges can be promoted too.** An edge between two committed nodes observed consistently over time is not a hypothesis — it's a fact about the relationship. Skyra proposes edge promotion the same way she proposes node promotion. A committed edge carries the same authority as a committed node.
+
+```
+edge observed consistently over time with stable weight
+  → last_seen_at recent, history shows no significant decay
+  → Skyra proposes edge for promotion
+  → user approves
+  → edge layer: committed
+```
+
+Committed nodes and edges are not re-evaluated. Once promoted and approved, they are stable. Corrections require an explicit new commit.
+
+**The committed layer is append-only.** Committed nodes and edges are never deleted, never mutated. If a relationship changes, a new edge is added — it does not replace the old one. Both exist forever.
+
+```
+mike → married → liz    committed_at: 2022
+mike → divorced → liz   committed_at: 2026
+```
+
+The graph holds the full truth across time. Deletion would destroy it.
 
 ---
 
@@ -71,7 +96,7 @@ node {
 
 **skill** — a learned class. Roadmap, contract, validation criteria. Discoverable via semantic search. Execution gated by Redis. Starts observational (intent namespace). Promoted when proposed and approved.
 
-**domain** — a scoped area of the user's life. A node like any other. Proposed by Skyra, approved by user. Domains are nodes — containment is expressed through edges, not structural hierarchy.
+**domain** — a scoped area of the user's life. A node like any other. Proposed by Skyra, approved by user. Domains are nodes — containment is expressed through edges, not structural hierarchy. Domain is retrieval scaffolding, not structural requirement. A node without a domain is still a valid node.
 
 **artifact** — a pointer to real digital data. A file, a git repo, a database. The node is the semantic representation. The `ref` field points to where the actual data lives. Multiple nodes can share the same ref. Artifact nodes can belong to multiple domains via edges.
 
@@ -83,11 +108,14 @@ node {
 
 ```
 edge {
-  from:    node_id
-  to:      node_id
-  type:    string
-  vector:  float[]     // semantic embedding of the relationship itself
-  weight:  float       // Skyra's importance assessment — not user-controlled
+  from:         node_id
+  to:           node_id
+  type:         string
+  layer:        observational | committed
+  vector:       float[]     // semantic embedding of the relationship itself
+  weight:       float       // Skyra's importance assessment — not user-controlled
+  last_seen_at: timestamp   // when this relationship was last observed as active
+  committed_at: timestamp   // optional — set when edge is promoted to committed layer
   history: [
     { weight: float, at: timestamp },
     ...
@@ -149,12 +177,31 @@ Images, files, and other data live on the hard drive. Nodes point to them. The g
 ## Write Ownership
 
 ```
-System provisions:   life domain, primitive skills
-User approves:       new domains, new skills, node promotion (committed layer)
-Skyra writes freely: observational nodes, edges, weights, scratchpad
+System provisions:   primitive skills
+User approves:       new domains, new skills, node promotion, edge promotion (committed layer)
+Skyra writes freely: observational nodes, observational edges, weights
 ```
 
+Skyra cannot mutate a committed node or committed edge without user approval.
+
 Data integrity lives in the committed layer. Skyra's working model lives in the observational layer. The user owns the truth.
+
+---
+
+## Cron Pass — Graph Mutation
+
+When the user is offline, the Cron Service fires a background reasoning skill. This is a graph mutation event — Skyra appends new observational nodes and edges to the graph.
+
+```
+Cron fires
+  → session history + VAD time series married on turn_id
+  → Skyra reasons over the combined signal
+  → produces observational nodes + edges
+  → no domain assignment yet — nodes are first class regardless
+  → domain edges added later as retrieval structure emerges
+```
+
+The cron pass is how Skyra builds her working model of the user's life. Nodes produced here are observational — not first class, not trusted. They become first class only through promotion.
 
 ---
 
@@ -180,15 +227,7 @@ Entities earn their way into domains through usage. A missing pair means the edg
 
 ## Domain Structure
 
-Every domain is a subgraph — a cluster of nodes and edges. Domains are nodes themselves. Containment is expressed through `belongs_to` edges, not structural hierarchy.
-
-Every domain has a **scratchpad** — Skyra's private reasoning workspace. Not user-visible. Not committed. Skyra writes freely. Where intent patterns accumulate before crystallizing into skill proposals.
-
----
-
-## The Life Domain
-
-A domain like any other. Always provisioned from day zero. The fallback for nodes that have no other domain yet. Tools without a domain live here. Entity clusters that haven't resolved into a domain yet live here. New domains are born from the life domain scratchpad.
+Domains are nodes. Containment is expressed through `belongs_to` edges, not structural hierarchy. Domain is retrieval scaffolding — it makes it easier for Skyra to find related nodes. It is not a structural requirement. Nodes without a domain are valid.
 
 ---
 

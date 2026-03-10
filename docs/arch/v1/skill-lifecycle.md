@@ -1,115 +1,78 @@
 # Skill Lifecycle
 
-Skills are not defined. They are learned. This document describes the full lifecycle — from the first signal in a fresh system to a provisioned, executable skill with its own partition in domain memory.
-
----
-
-## The Memory Hierarchy
-
-Every domain is architecturally identical:
-
-```
-domain/
-  shared data        ← all data for this domain, accessible to all skills inside it
-  scratchpad/        ← system's reasoning workspace, not user-visible
-  skill partitions/  ← crystallized from the scratchpad, proposed to user when ready
-    log_workout/
-    cancel_session/
-    ...
-```
-
-The **life namespace** is a domain like any other — shared data, scratchpad, skill partitions, commits. It is not architecturally special. It exists from day zero and is the fallback for anything that doesn't belong to a more specific domain yet.
-
-```
-life/               ← always present, first domain
-gym/                ← provisioned when system identifies fitness cluster
-work/               ← provisioned when system identifies work cluster
-servers/            ← etc.
-```
+Skills are not defined. They are learned. This document describes the full lifecycle — from the first signal in a fresh system to a provisioned, executable skill.
 
 ---
 
 ## Cold Start
 
-A fresh system has no domains except life. No skills. No history.
+A fresh system has no domains. No skills. No history.
 
 Day zero Skyra ships with:
 
 - `skyra.user` — committed facts about the person. Always present, first-injected every session.
-- **Life namespace** — the first and always-present domain. Fallback for all unclassified signals and tools.
-- **System primitive skills** — pre-provisioned in Redis: `commit`, `propose_commit`, `search`, `provision_memory`, `provision_skill`
-- **Hardcoded kernel primitives** — `reply`, `fan_out`, `report`
+- **System primitive skills** — pre-provisioned in Redis at boot: `reply`, `fan_out`, `report`, `chat`, `reasoning`, `integrate`, `update_skill`, `commit`, `propose_commit`, `search`, `provision_memory`, `provision_skill`
 
 That is a complete, functional system. Everything else grows from observation.
 
 ---
 
-## The Life Namespace
-
-The life namespace is a domain. It follows the same rules as every other domain — shared data, scratchpad, skill partitions, commits.
-
-It serves two roles by virtue of being the fallback:
-
-**1. Home for tools without a domain.**
-When a tool doesn't belong to any provisioned domain yet, it lives in the life namespace. This is not special treatment — life namespace is just the catch-all domain. As domains get provisioned, tools migrate to where they belong.
-
-**2. Birthplace of new domains.**
-The life namespace scratchpad is where the system reasons freely over the user's intent before specific domains exist. Signal clusters in life → domain identified → proposed to user → new domain provisioned.
-
----
-
 ## Signal Flow
 
-Every signal is assigned to the most specific domain it belongs to. If no domain matches, it falls to life.
+Signals accumulate in the observational layer. When a domain exists that matches the signal, a `belongs_to` edge is added. If no domain matches, the node exists without one — domain is retrieval scaffolding, not a structural requirement.
 
 ```
 signal arrives
+  → observational node created
   → does a domain exist for this?
-      yes → routes to that domain
-      no  → falls to life namespace
+      yes → belongs_to edge added
+      no  → node exists without a domain — valid state
 ```
-
-Over time, the life namespace scratchpad accumulates clusters. The system reasons over them and identifies candidate domains. When a cluster is ready, a new domain is proposed.
 
 **RAG lookup is signal.** When the LLM needs context that isn't present, it fires a manual lookup. The act of needing to search is itself an observational data point — vectors strengthen, the pattern is recorded.
 
 ---
 
+## The Cron Pass
+
+When the user is offline, the Cron Service fires a background reasoning skill. Skyra reads unprocessed session history and VAD time series, married on `turn_id`, and reasons them into observational nodes and edges. This is a graph mutation event — Skyra is appending to the graph.
+
+Nodes produced here have no domain yet. Domain edges are added as retrieval structure emerges from clustering.
+
+---
+
 ## Domain Proposal
 
-When the system identifies a domain cluster in the life namespace scratchpad:
+When observational nodes cluster into a coherent pattern around a recognizable area of the user's life:
 
 ```
 cluster crosses threshold
   → system proposes domain to user
   → "I've noticed a lot of activity around your fitness routine. Want me to track that as its own domain?"
-  → user approves → domain memory provisioned
-  → user declines → threshold resets, signals continue accumulating in life
+  → user approves → domain node created, belongs_to edges added to cluster
+  → user declines → threshold resets, nodes continue accumulating
 ```
 
 ---
 
-## Domain Scratchpad → Skill Partitions
+## Skill Crystallization
 
-Every domain has a scratchpad. It is the system's private reasoning workspace — not user-visible, not committable by the user.
-
-The system reasons over the scratchpad continuously, working toward **partitions**. For each candidate partition, it identifies the intent and defines requirements — what data, what pattern confidence, what execution criteria need to be fulfilled before this partition is ready to propose.
+Observational nodes and patterns accumulate. The system reasons over them, working toward candidate skills. For each candidate, it identifies the intent and tracks requirements — what data, what pattern confidence, what execution criteria need to be met.
 
 ```
-gym scratchpad:
-  → system identifies: log_workout
-      requirements: workout type pattern, frequency signal, duration data
-  → system identifies: cancel_session
-      requirements: session lookup pattern, cancellation signal
+system identifies: log_workout
+    requirements: workout type pattern, frequency signal, duration data
+system identifies: cancel_session
+    requirements: session lookup pattern, cancellation signal
 ```
 
-When a partition's requirements are fulfilled, the system proposes it to the user as a skill — already formed.
+When a candidate's requirements are fulfilled, the system proposes it to the user as a skill — already formed.
 
 ```
 "I've noticed you log your workouts fairly consistently. Want me to set that up as a skill?"
 
 user approves
-  → skill partition crystallizes in domain memory
+  → skill node promoted to committed layer
   → first memory commit
   → skill provisioned in Redis
   → executable
@@ -121,32 +84,29 @@ user approves
 
 ```
 Day 0:
-  skyra.user + life namespace + system primitives
+  skyra.user + system primitives
       ↓
-  signals accumulate in life namespace
-  system reasons freely over life scratchpad
+  user interacts → session history + VAD accumulate
       ↓
-  domain cluster identified → proposed → approved
+  cron fires → session history + VAD married on turn_id
+  → observational nodes + edges appended to graph
       ↓
-  domain provisioned → domain scratchpad opens
-  system reasons over domain scratchpad → partitions form
+  nodes cluster → domain identified → proposed → approved
+  → domain node created, belongs_to edges added
       ↓
-  partition requirements fulfilled → skill proposed → approved
-      ↓
-  skill crystallizes → Redis provisioned → executable
+  patterns cross threshold → skill proposed → approved
+  → skill node promoted → Redis provisioned → executable
 ```
 
 ---
 
 ## Bounding
 
-Namespace creation is bounded by the domain hierarchy:
+- No domain for a node → node exists without one, valid state
+- Domain exists, no skill covers the intent → accumulates as observational nodes
+- Skill exists → routes to skill
 
-- No domain for a signal → falls to life namespace
-- Domain exists, no skill covers the intent → accumulates in domain scratchpad
-- Skill exists → routes to skill partition
-
-The system cannot create unbounded namespaces. Every signal has a home. Every intent partition belongs to a domain. Domains are approved by the user.
+The system cannot create unbounded namespaces. Domains are approved by the user. Skills are proposed by the system and approved by the user.
 
 ---
 
@@ -162,6 +122,10 @@ Pre-provisioned in Redis at boot. The system cannot function without these.
 
 | Skill | Purpose |
 |---|---|
+| `chat` | A conversation with the user. Every session is a job. Opens on first turn, closes on session end. |
+| `update_skill` | The only path to modifying a skill node. Requires user approval. |
+| `reasoning` | Background job triggered by cron. Decomposes session history + VAD into observational nodes, then writes edges to the graph. |
+| `integrate` | Connects the mini graph from reasoning to the existing graph. Finds aliases, updates weights, adds missing edges. |
 | `commit` | Write to memory (user-gated) |
 | `propose_commit` | Surface a commit proposal to the user |
 | `search` | Semantic search in memory — retrieval and signal |
