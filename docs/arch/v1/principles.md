@@ -22,11 +22,12 @@ Models hallucinate. They always will. No matter how capable models become, they 
 The commit model exists because of this. Every state change an agent proposes is surfaced to the user before it lands. The user is the final validation layer. A hallucinated fact, a wrong decision, a misunderstood instruction — none of it becomes permanent without a human seeing it first.
 
 This is why:
-- Nothing lands in an agent's object store without user approval
+- Nothing lands in the committed layer without user approval
 - Commits require explicit user sign-off via `propose_commit`
-- The delegate state machine uses SQLite as source of truth, not just Redis
 - External skills are never registered without user approval, no exceptions
-- Git is the object store — every commit is auditable, every mistake is reversible
+- The committed layer is append-only — every commit is auditable, every mistake is reversible
+
+**The commit boundary is the trust boundary.** What is committed is trusted. What is not committed is not trusted. Skyra reasons across all layers — committed and observational — but trust is conferred only by the commit. When Skyra derives an output from unverified data, she notifies the user. That notification is a UX concern, not a protocol constraint. The commit is the signal.
 
 ---
 

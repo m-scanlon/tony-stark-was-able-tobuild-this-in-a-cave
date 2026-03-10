@@ -15,11 +15,13 @@ There is no "current state" field. Skyra reasons over edge types, weights, `last
 The graph has two trust levels. This is the foundation of data integrity.
 
 ```
-committed layer       ← user-approved, high trust, authoritative, stable — FIRST CLASS
+committed         ← user-approved, high trust, authoritative, stable — FIRST CLASS
         ↑
     promotion
         ↑
-observational layer   ← Skyra writes freely, working model, not trusted, not first class
+observational     ← Skyra writes freely, working model, not trusted, not first class
+        ↑
+intent namespace  ← provisional scratchpad, lowest trust, may never crystallize
 ```
 
 **Observational layer** — Skyra's working model. She writes here freely. Fragments, signals, partial facts, inferred entities. Can be incomplete. Can be wrong. No user gate. Not first class.
@@ -27,6 +29,29 @@ observational layer   ← Skyra writes freely, working model, not trusted, not f
 **Committed layer** — the source of truth. Nothing lands here without user approval. Stable, auditable, trusted. First class. Skyra cannot mutate a committed node or committed edge without user approval.
 
 Skyra reasons in the observational layer. Truth lives in the committed layer. The user only ever touches the committed layer.
+
+## Trust Is a Spectrum
+
+The commit boundary is the trust boundary. What is committed is trusted. What is not committed is not trusted. That is the full definition.
+
+```
+committed         → trusted
+observational     → not trusted
+intent namespace  → not trusted
+```
+
+**Retrieval depth is user-configured.** The user holds the keys.
+
+```
+retrieval_depth: committed | full
+```
+
+- `committed` — Skyra retrieves and reasons over the committed layer only. Default. Trusted data only. No unverified signals in context.
+- `full` — Skyra retrieves and reasons across the full spectrum: committed, observational, intent namespace. The full graph is her reasoning surface. User-opted-in. Skyra notifies when output is derived from unverified sources.
+
+Default is `committed`. The user opts into `full` knowing what it means — unverified data in context, Skyra's working model visible in her reasoning. Principle 11: your keys, your data, your consequences.
+
+The commit boundary does not change regardless of retrieval depth. What is committed is trusted. What is not committed is not trusted. Retrieval depth controls what Skyra sees. The commit controls what becomes truth.
 
 ---
 

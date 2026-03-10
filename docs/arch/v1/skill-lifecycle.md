@@ -57,23 +57,25 @@ cluster crosses threshold
 
 ## Skill Crystallization
 
-Observational nodes and patterns accumulate. The system reasons over them, working toward candidate skills. For each candidate, it identifies the intent and tracks requirements — what data, what pattern confidence, what execution criteria need to be met.
+**The boundary is intent.** Skills do not emerge from arbitrary graph patterns — recurring facts, recurring behaviors, recurring entities. None of those are skills. A skill candidate is a recurring intent — something the user has expressed a desire to do, repeatedly, that the system has not yet crystallized.
+
+The signal is already in the graph: **the intent namespace**. When the user expresses an intent and no skill exists to handle it, an intent namespace is provisioned as an observational node. That node accumulates across sessions. When Skyra observes that the same intent namespace has been provisioned repeatedly and never crystallized, that is the signal.
 
 ```
-system identifies: log_workout
-    requirements: workout type pattern, frequency signal, duration data
-system identifies: cancel_session
-    requirements: session lookup pattern, cancellation signal
+intent node: log_workout
+  → appears in session 1, session 3, session 4, session 7
+  → no skill node covers this intent
+  → Skyra proposes crystallization
 ```
 
-When a candidate's requirements are fulfilled, the system proposes it to the user as a skill — already formed.
+When the pattern is clear, Skyra proposes the skill — already formed as a natural language definition.
 
 ```
 "I've noticed you log your workouts fairly consistently. Want me to set that up as a skill?"
 
 user approves
   → skill node promoted to committed layer
-  → first memory commit
+  → memory namespace provisioned alongside it
   → skill provisioned in Redis
   → executable
 ```
@@ -100,10 +102,31 @@ Day 0:
 
 ---
 
+## The Full Model
+
+```
+intent (input)
+  → skill crystallizes from recurring intent node
+  → skill is observational — not trusted
+  → Skyra reasons freely inside the skill boundary
+  → output produced
+  → propose_commit → user approves → committed
+```
+
+**Intent is the input.** It bounds the problem. The skill is shaped by it.
+
+**The skill is not trusted.** It lives in the observational layer. Skyra can reason and revise freely inside it — no guardrails on the reasoning, unconstrained intelligence inside the intent boundary. This is Principle 3: constrain the data, not the model.
+
+**The output is the finished product.** The user's intent realized. Not the reasoning that produced it — the output. That is what gets proposed. That is what lands in the committed layer on approval. The committed layer holds finished products, not working state.
+
+The user never sees Skyra's working model. They see the output.
+
+---
+
 ## Bounding
 
 - No domain for a node → node exists without one, valid state
-- Domain exists, no skill covers the intent → accumulates as observational nodes
+- Domain exists, no skill covers the intent → accumulates as observational nodes, intent namespace provisioned
 - Skill exists → routes to skill
 
 The system cannot create unbounded namespaces. Domains are approved by the user. Skills are proposed by the system and approved by the user.
