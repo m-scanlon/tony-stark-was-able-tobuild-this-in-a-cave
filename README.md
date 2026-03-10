@@ -82,6 +82,16 @@ The current focus is the shard model — how Skyra's execution layer runs across
 
 ---
 
+## The User Makes the System. The System Makes the User.
+
+Goals are not inferred. They are not proposed by the system. They are hand-written committed entities — created by the user, confirmed explicitly, removed explicitly. The system cannot suggest a goal. It can only reflect goals the user deliberately committed.
+
+The system shapes its responses to those goals. And by responding to that reflection, the user becomes more of the person they chose to become. The system and the user co-evolve — but only in the direction the user chose.
+
+A system that runs for a lifetime doesn't just remember who you were — it participates in who you become. On your terms.
+
+---
+
 ## In One Sentence
 
 Skyra is a cognitive OS that reasons over the history of your life to derive what's true right now, gets smarter the longer it runs, and belongs entirely to you.

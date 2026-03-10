@@ -29,20 +29,34 @@ cron fires
 
 **Output**: observational nodes written to the graph
 
+**User turns are first class. System turns are context only.**
+
+Entities are extracted from user signal. System turns are never mined for entities directly — they are used only to interpret the meaning of adjacent user turns.
+
+```
+system: "Is Mike your boyfriend?"
+user:   "yes"
+→ node: Mike (entity) — anchored to user signal, system turn provided context
+
+system: "Mike seems important to your work"
+→ no node — system assertion, no user signal to anchor it
+```
+
 ```
 skyra write_node -type entity -layer observational \
   -content "late night" \
-  -reasoning "skyra write_node ... -m \"repeated across 6 sessions, user active after 11pm\""
+  -reasoning "skyra write_node ... -m \"user turn: repeated across 6 sessions, user active after 11pm\""
 
 skyra write_node -type entity -layer observational \
   -content "Skyra project" \
-  -reasoning "skyra write_node ... -m \"primary topic of session, referenced 14 times\""
+  -reasoning "skyra write_node ... -m \"user turn: primary topic of session, referenced 14 times\""
 ```
 
 **Rules**:
+- Entities are extracted from user turns only. System turns provide context to interpret user turns — they do not contribute entities on their own.
 - One node per entity. Do not merge entities — keep them atomic. When in doubt, create separate nodes. Integrate will resolve duplicates via `alias_of` edges. False positives are better than merging distinct entities.
 - `content` is the label for the thing. Not a sentence. Not a relationship.
-- Every node gets a `reasoning` field. Skyra explains why she created it.
+- Every node gets a `reasoning` field. Skyra explains why she created it, and whether a system turn was used as context.
 - Confidence score derived from frequency + affect signal in the session.
 
 ---
@@ -73,9 +87,10 @@ skyra write_edge \
 ```
 
 **Rules**:
+- Edges are anchored to user signal. A system turn alone cannot produce an edge. System turns can provide context to interpret what the user meant, but the user turn must be the anchor.
 - Check for existing nodes before creating relationships to duplicates. Use `alias_of` if an existing node represents the same entity.
 - Skyra can add edges to committed nodes freely.
-- Every edge gets a `reasoning` field.
+- Every edge gets a `reasoning` field. If a system turn was used as context, note it.
 - Weight derived from frequency, affect magnitude, and co-occurrence signal.
 - Edge types are not exhaustive — new types can emerge.
 
@@ -89,7 +104,8 @@ Writes to the observational layer only. No user gate. No committed writes.
 
 ## Validation Criteria
 
-- Every entity mentioned in session history has a corresponding node
+- Every entity mentioned in user turns has a corresponding node
+- No node is derived solely from a system turn
 - Every node has a `reasoning` field
 - Every edge has a `reasoning` field
 - No node `content` is a sentence — atomic labels only

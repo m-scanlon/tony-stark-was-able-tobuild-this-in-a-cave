@@ -106,7 +106,21 @@ This is why deletion does not exist in the committed layer. Deleting an edge des
 
 ---
 
-## 10. Skyra Is Always Available
+## 10. The User Makes the System. The System Makes the User.
+
+The system reflects who the user is trying to become — but only what the user has explicitly declared.
+
+**Goals are not inferred. They are not proposed by the system.** They are hand-written committed entities, created by the user, confirmed through an explicit approval process, and removed through an explicit removal process. The system cannot suggest a goal. It cannot promote an observation into a goal. It can only read goals the user deliberately committed.
+
+This is maximum security on the most important data in the system. The definition of who you are trying to become belongs entirely to you. The system has no opinion on it.
+
+Over time the system shapes its responses to the goals the user has committed. And by responding to that reflection, the user becomes more of that person. The system and the user co-evolve — but only in the direction the user chose.
+
+A system that runs for a lifetime doesn't just remember who you were — it participates in who you become. On your terms.
+
+---
+
+## 11. Skyra Is Always Available
 
 Skyra never blocks on work she has delegated. She fans out, she delegates, and she is immediately free for the next user message. The delegate agent owns the lifecycle of delegated work. Skyra owns the user relationship.
 
