@@ -108,7 +108,7 @@ boundary_rules:
   search:                       allow_always
   write_edge:                   allow_always (observational layer + edges to committed nodes)
   write_node:                   deny (integrate does not create nodes)
-  write_node (skill type):      deny — use update_skill
+  write_node (skill type):      deny
 state_contract: working (observational only, no approval required)
 severity_policy:
   low confidence candidate: do nothing — skip
@@ -128,4 +128,5 @@ This skill is designed around the output of the reasoning skill. The quality of 
 
 - `docs/arch/v1/skill-reasoning.md` — produces the mini graph integrate consumes
 - `docs/arch/v1/memory-structure.md` — node + edge schema, two-tier graph
+- `docs/arch/v1/skill.md` — skill schema, closed for modification
 - `docs/arch/v1/kernel.md` — job execution, primitive skills

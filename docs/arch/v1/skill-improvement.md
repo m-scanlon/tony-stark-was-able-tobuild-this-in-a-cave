@@ -47,8 +47,7 @@ Skyra executes the committed algorithm
   → reasons in bounded improvement namespace
   → improvement coheres into a proposal
   → propose_commit → creator approves
-  → update_skill → new committed version
-  → new content hash, new model_id
+  → provision_skill → new skill created (new content hash, new model_id)
   → old version persists (append-only)
 ```
 
@@ -87,7 +86,7 @@ Better models produce better improvement proposals from the same observational d
 ## Related
 
 - `docs/arch/v1/kernel.md` — skill contract schema, improvement_scope field
-- `docs/arch/v1/skill-lifecycle.md` — update_skill, skill versioning
+- `docs/arch/v1/skill-lifecycle.md` — skill versioning, provision_skill
 - `docs/arch/v1/crypto-protocol.md` — trust is model-scoped, update_skill commit flow
 - `docs/arch/v1/memory-structure.md` — observational namespace, committed layer
 - `docs/arch/v1/principles.md` — Principle 3 (constrain the data), Principle 7 (system grows with models)

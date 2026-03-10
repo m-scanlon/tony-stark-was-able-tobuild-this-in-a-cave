@@ -122,7 +122,7 @@ tasks:
   2. relate     — nodes + existing graph → observational edges
 boundary_rules:
   write_node (non-skill types): allow_always (observational layer)
-  write_node (skill type):      deny — use update_skill
+  write_node (skill type):      deny
   write_edge:                   allow_always (observational layer + edges to committed nodes)
   read_graph:                   allow_always
 state_contract: working (observational only, no approval required)

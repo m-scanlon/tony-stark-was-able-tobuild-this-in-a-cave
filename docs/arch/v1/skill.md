@@ -157,7 +157,7 @@ See `docs/arch/v1/skill-lifecycle.md` for the full lifecycle.
 
 ## Versioning
 
-Skills are immutable. Modification means a new skill — new content hash, new model_id. The old version persists. `update_skill` is the only path to producing a new version.
+Skills are immutable. A new version is a new skill — new content hash, new model_id, provisioned fresh. The old version persists. There is no update operation. You only create.
 
 ```
 skill_v1  →  skill_v2  →  skill_v3
@@ -178,7 +178,6 @@ Pre-provisioned in Redis at boot. The system cannot function without these. They
 | `chat` | A conversation with the user. Every session is a job. |
 | `reasoning` | Background cron job. Session history + VAD → observational nodes + edges. |
 | `integrate` | Connect reasoning output to the existing graph. Alias resolution, weight updates, new edges. |
-| `update_skill` | The only path to modifying a skill node. Requires user approval. |
 | `commit` | Write to memory (user-gated). |
 | `propose_commit` | Surface a commit proposal to the user. |
 | `search` | Semantic search in memory — retrieval and signal. |

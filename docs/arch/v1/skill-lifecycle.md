@@ -171,7 +171,6 @@ Pre-provisioned in Redis at boot. The system cannot function without these.
 | `chat` | A conversation with the user. Every session is a job. Opens on first turn, closes on session end. |
 | `reasoning` | Background job triggered by cron. Decomposes session history + VAD into observational nodes, then writes edges to the graph. |
 | `integrate` | Connects the mini graph from reasoning to the existing graph. Finds aliases, updates weights, adds missing edges. |
-| `update_skill` | The only path to modifying a skill node. Requires user approval. |
 | `commit` | Write to memory (user-gated) |
 | `propose_commit` | Surface a commit proposal to the user |
 | `search` | Semantic search in memory — retrieval and signal |
