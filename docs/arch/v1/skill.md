@@ -73,6 +73,8 @@ skill {
 
 **Trust is proven at commit time by the owner. Trust is proven to others by history.** The signature proves authenticity. The execution record proves quality. Both are required.
 
+**The user decides.** A user can commit a skill with no execution history, a low commit rate, or a mismatched model_id. That is their right. The system surfaces all available information — history, model_id, definition visibility, commit rate — so the user can make an informed decision. The system has no opinion on whether they should proceed. It executes what the user commits.
+
 **Deprovisioning does not exist.** Once a skill is provisioned, it stays provisioned. Old versions persist. The version chain is append-only.
 
 ---
