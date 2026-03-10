@@ -9,11 +9,48 @@ Skyra's trust model is cryptographic, not positional. Nothing is trusted because
 The user holds one keypair. Ed25519.
 
 ```
-user_private_key  — signs commits, approvals, skill provisioning
+user_private_key  — signs commits, approvals, skill provisioning, access profiles
 user_public_key   — stored on-device, used by kernel for verification
 ```
 
 The private key never leaves the device. The kernel holds the public key. No cloud. No escrow. No recovery. This is consistent with Principle 11: your keys, your data, your consequences.
+
+---
+
+## Access Profiles — The Foundation of Multi-Party Trust
+
+An access profile is how one party grants another party access to their system. It lives in Redis. It is signed by the user. Either party can revoke it.
+
+```
+access_profile {
+  profile_id:     string
+  granted_to:     bytes            // grantee's public key — their identity
+  scope:          []permission     // exactly what they can access — no more
+  provisioned_at: timestamp
+  signed_by:      user_public_key  // user grants it
+  signature:      bytes            // Ed25519 over (profile_id + granted_to + scope + provisioned_at)
+  revocable_by:   [user, grantee]  // either party can terminate
+}
+```
+
+**The user provisions it.** They define the scope — which skills, which data, which operations the grantee can access. The signature locks it. The kernel enforces it.
+
+**Either party can deprovision it.** The user can revoke access at any time. The grantee can remove themselves at any time. The moment either side pulls it, the profile is gone from Redis. The relationship terminates.
+
+**Deprovisioning is not deletion.** The committed layer records that the profile existed. The history is preserved. Only the live access is terminated.
+
+**This is two-way sovereignty.** The user controls who enters their system. The grantee controls whether they participate. Neither is locked in by the other.
+
+```
+use cases:
+  skill creator ships a skill → user provisions access profile → creator can revoke support
+  developer given read access → developer can remove themselves
+  third-party service → user can terminate at any time, no permission needed from the service
+```
+
+Authentication proves identity — mTLS certificate, public key. Authorization is resolved from the access profile in Redis. These are separate steps. The auth layer never sees the user profile. It proves the certificate is valid and passes the verified identity to the kernel. The kernel resolves permissions from the access profile. The user profile is never in the auth layer's hands.
+
+Compromise of auth means a stolen certificate. Real but bounded. It does not mean the attacker has the user's committed graph, skill permissions, or access profiles. Those are gated by the kernel after auth.
 
 ---
 
