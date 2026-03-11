@@ -88,7 +88,7 @@ skill_id = SHA-256(skill_definition_bytes || seed_memory_bytes)
 
 The skill artifact — definition + seed memory — is hashed together as a unit. The definition is the roadmap, contract, validation criteria, and boundary rules. The seed memory is the pre-populated namespace the creator ships with it. Both are locked together at the moment of approval. Either changing produces a different ID.
 
-**There is no edit operation for skills.** Modification means a new skill with a new ID. The old skill continues to exist at its original hash. `update_skill` is the only path — it produces a new node with a new ID, not a mutation of the old one.
+**There is no edit operation for skills.** Modification means a new skill with a new ID. The old skill continues to exist at its original hash. `provision_skill` of a new version is the only path (legacy term: `update_skill`) — it produces a new node with a new ID, not a mutation of the old one.
 
 This is enforced structurally: the kernel stores skills by content hash. A write to an existing hash is rejected.
 
@@ -146,6 +146,8 @@ The consumer sets memory access when they provision the skill. A creator who pro
 
 - `open` — the skill definition is readable. The consumer can inspect the roadmap, contract, boundary rules, and validation criteria. Source-visible.
 - `closed` — the skill definition is an encrypted blob. The consumer cannot read what is inside. The kernel can execute it. The user cannot inspect it.
+
+`closed` protects definition readability. It does not imply runtime action secrecy. Shell/API side effects can still be visible through local audit logs and external platforms the skill calls.
 
 A closed skill is encrypted by the creator with a symmetric key. The creator distributes the encrypted blob + the `skill_id` (the hash of the plaintext definition). The consumer provisions and executes it without ever seeing the definition. This is skill IP protection — the creator ships a black box.
 
@@ -236,6 +238,7 @@ This means: even if Redis is compromised, an attacker cannot inject skills witho
 ## What This Does Not Prevent
 
 - **Biased model output** — the model that produces skill output is a dependency, not a component. The crypto layer protects the committed layer from unauthorized writes. It does not audit the reasoning that produced what gets proposed. See Principle 12.
+- **External platform observability** — if a skill calls a third-party API, that platform can observe the request/result on its own service boundary. Definition privacy and reasoning privacy do not hide API usage from the API owner.
 - **User self-sabotage** — if the user signs a bad commit, it lands. Sovereignty means owning the downside. The system does not protect the user from themselves.
 - **Compromised private key** — if the private key is stolen, the attacker becomes the user. No escrow, no recovery. Hardware key storage (TPM, YubiKey) is the mitigation.
 
@@ -247,3 +250,4 @@ This means: even if Redis is compromised, an attacker cannot inject skills witho
 - `docs/arch/v1/skill-lifecycle.md` — skill crystallization, provisioning flow
 - `docs/arch/v1/memory-structure.md` — committed layer, append-only model
 - `docs/arch/v1/principles.md` — Principle 2 (data integrity), Principle 11 (sovereignty), Principle 12 (model as dependency)
+- `docs/arch/v1/proof-of-executable-reasoning.md` — market verification receipts, model cohorts, strike policy

@@ -50,15 +50,21 @@ The model reasons freely — so the data it reasons over must be trustworthy. Co
 
 ---
 
-## 4. Everything Is an Agent
+## 4. Root Design Decisions in Reality.
 
-Shards are infrastructure. Agents are the system. Every capability, every skill, every piece of work belongs to an agent. Shards provide the compute. Agents provide the intelligence.
-
-This unifies the mental model — whether you are talking to a TV, a GPU cluster, or a domain expert about your gym life, you are always addressing an agent. The routing layer handles the rest.
+If design is rooted in reality, that is the north star for the model.
 
 ---
 
-## 5. Shards Have Capabilities. Agents Have Skills.
+## 5. Everything Is a Skill
+
+Shards are infrastructure. Skills are the execution layer. Every capability, every piece of work, every system operation is expressed as a skill. Shards provide the compute. Skills provide the contract.
+
+This unifies the mental model — whether the system is replying to a user, running background reasoning, integrating memory, or executing a domain action, it is always instantiating and executing a skill. The routing layer handles placement.
+
+---
+
+## 6. Shards Have Capabilities. Agents Have Skills.
 
 Two distinct registries. Two distinct concerns.
 
@@ -69,7 +75,7 @@ Skills execute on shards whose capabilities support them. The reasoning layer ne
 
 ---
 
-## 6. No Special Cases in Routing
+## 7. No Special Cases in Routing
 
 The same routing model that dispatches `turn_on` to a TV dispatches a distributed inference job across two GPUs. The same `skyra delegate` command Skyra issues at the top of the tree can be issued by any agent anywhere in the tree.
 
@@ -77,7 +83,7 @@ When a design requires a special case, that is a signal the model is wrong. The 
 
 ---
 
-## 7. The System Grows With the Models
+## 8. The System Grows With the Models
 
 Pre-registering every possible skill would be missing the point. Skyra can discover and build new skills using her base skills — Google Search finds the how, Code Execution builds the what, the registry makes it permanent.
 
@@ -85,7 +91,7 @@ As models get better, Skyra builds better skills. The job tree becomes more effi
 
 ---
 
-## 8. Surface Area Has a Purpose
+## 9. Surface Area Has a Purpose
 
 Every component in this system was pulled in by necessity, not ambition. Every piece of complexity earns its place by solving a problem nothing else could solve.
 
@@ -93,7 +99,7 @@ When evaluating new additions: if an existing component can do the job, use it. 
 
 ---
 
-## 9. Nodes Are Identity. Edges Are History.
+## 10. Nodes Are Identity. Edges Are History.
 
 Nodes represent things that exist — entities, facts, skills, domains. They are identity.
 
@@ -107,7 +113,7 @@ This is why deletion does not exist in the committed layer. Deleting an edge des
 
 ---
 
-## 10. The User Makes the Model. The Model Makes the User.
+## 11. The User Makes the Model. The Model Makes the User.
 
 The user commits skills — those commits define how the model behaves. The improvement scopes, the retrieval algorithms, the reasoning constraints — all proven by user signature. The user shapes the model through what they commit. Without commits, the model is raw inference. Untrusted. The user's signatures give it its trusted shape.
 
@@ -121,7 +127,7 @@ A system that runs for a lifetime doesn't just remember who you were — it part
 
 ---
 
-## 11. Your Keys. Your Data. Your Consequences.
+## 12. Your Keys. Your Data. Your Consequences.
 
 The system does not protect the user from themselves. It protects them from everyone else.
 
@@ -133,7 +139,7 @@ The system's job is to make sure no one else can touch what belongs to the user.
 
 ---
 
-## 12. The Model Is a Dependency, Not a Component.
+## 13. The Model Is a Dependency, Not a Component.
 
 The system does not own the model. The user chooses which model runs underneath — and they own that choice, including its limitations and biases.
 

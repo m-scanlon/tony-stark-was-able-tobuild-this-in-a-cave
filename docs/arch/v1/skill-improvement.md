@@ -59,7 +59,7 @@ Skyra does the observational work. The creator approves or rejects. The algorith
 
 The improvement namespace is observational — not trusted. Skyra's reasoning about improvement is her working model. It does not change the committed algorithm.
 
-The committed algorithm only changes through `update_skill` with user approval. Same trust rules as any other committed node. Same crypto guarantees. Same append-only history.
+The committed algorithm only changes through `provision_skill` of a new version (legacy term: `update_skill`) with user approval. Same trust rules as any other committed node. Same crypto guarantees. Same append-only history.
 
 **Trust is model-scoped here too.** An improvement proposal generated under 7B is not trusted under 32B. If the model changes, pending improvement proposals are flagged. The creator re-evaluates them under the new model before approving.
 
@@ -87,6 +87,6 @@ Better models produce better improvement proposals from the same observational d
 
 - `docs/arch/v1/kernel.md` — skill contract schema, improvement_scope field
 - `docs/arch/v1/skill-lifecycle.md` — skill versioning, provision_skill
-- `docs/arch/v1/crypto-protocol.md` — trust is model-scoped, update_skill commit flow
+- `docs/arch/v1/crypto-protocol.md` — trust is model-scoped, provisioning + versioning flow
 - `docs/arch/v1/memory-structure.md` — observational namespace, committed layer
 - `docs/arch/v1/principles.md` — Principle 3 (constrain the data), Principle 7 (system grows with models)

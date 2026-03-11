@@ -159,6 +159,22 @@ Does not exist. Once a skill is provisioned, it stays provisioned.
 
 ---
 
+## License Revocation
+
+A skill license is permanently revoked if the skill violates the introspect trust contract — attempting to execute a shell command not in its approved whitelist. This is not a runtime error. It is a trust violation.
+
+```
+skill attempts unauthorized introspect command
+  → immediate job termination
+  → skill license revoked in Redis
+  → brain state destroyed
+  → user notified
+```
+
+Revocation is terminal. The skill cannot be re-provisioned without explicit user action. See `docs/arch/v1/introspect.md`.
+
+---
+
 ## System Primitive Skills
 
 Pre-provisioned in Redis at boot. The system cannot function without these.
@@ -176,6 +192,20 @@ Pre-provisioned in Redis at boot. The system cannot function without these.
 | `search` | Semantic search in memory — retrieval and signal |
 | `provision_memory` | Create a new memory namespace |
 | `provision_skill` | Add a skill to Redis |
+
+---
+
+## Skill Licensing — Future Concept
+
+> **Not MVP.** This is a note for future design.
+
+A skill can be sold without granting the buyer read access to its implementation. The skill runs as a black box — execution rights only. The buyer cannot inspect the internals.
+
+The system enforces an expiration date on the read restriction. When it expires, the skill's implementation becomes auditable — readable by the owner. The author cannot extend it. The expiration is enforced by the system, not negotiable.
+
+The analogy is copyright expiration — the restriction is real and respected until it isn't. After expiration, the skill enters a kind of public domain: still executable, now inspectable.
+
+What remains undefined: how expiration is set, who sets it, what "auditable" means in practice, and how this interacts with the trust model. See `docs/arch/v1/skill-licensing.md`.
 
 ---
 

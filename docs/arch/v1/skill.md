@@ -1,4 +1,4 @@
-# Skill
+hell# Skill
 
 A skill is the extendable unit of Skyra. Everything the system does is a skill. Every capability the user gains is a skill. The system grows by gaining skills. The system improves by improving skills.
 
