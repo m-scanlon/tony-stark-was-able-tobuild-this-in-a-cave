@@ -24,6 +24,58 @@ When a user publishes a skill for sale, buyers should be able to verify:
 
 The system proves execution behavior, not just static bytes.
 
+It does **not** promise deterministic outcomes for every user/context. It proves verifiable execution and exposes historical performance.
+
+---
+
+## Law of Verifiable Execution
+
+The protocol is bound to human reality:
+
+- trust is reputation over time
+- execution proof is historical evidence, not one-shot claims
+- buyers purchase a probability profile, not guaranteed outcomes
+
+Canonical law:
+
+```text
+proof_of_execution = signed_history_of_conformance
+```
+
+Interpretation:
+
+- A skill is trusted because repeated verified runs show it executes its contract within policy bounds.
+- A skill is not trusted because it claims a perfect future result.
+
+---
+
+## Conformance vs Outcome
+
+The verifier layer guarantees **conformance**, not universal output quality.
+
+- **Guaranteed**: the tested artifact executed, policy checks were enforced, receipts are authentic.
+- **Not guaranteed**: that every future run on every private context yields the same quality.
+
+Market metric shape:
+
+```text
+cohort_metric {
+  model_cohort
+  data_profile
+  pass_rate
+  sample_size
+  confidence_interval
+}
+```
+
+Example statement buyers see:
+
+```text
+"87% pass rate in model cohort M on data profile D at threshold T, n=2,140 verified runs."
+```
+
+This is the reality-bound contract: statistically informed trust, not certainty.
+
 ---
 
 ## Visibility Contract (Terminology Fix)
@@ -242,6 +294,7 @@ A skill is approved for listing only if all are true:
 - policy profile passes for all required test cases
 - intent conformance meets threshold in each required model cohort
 - quorum thresholds are met per cohort
+- minimum evidence floor is met (`sample_size >= n_min`) per required cohort/profile
 
 Any critical violation is an automatic reject.
 
@@ -293,11 +346,30 @@ A buyer sees:
 
 - listing metadata
 - model cohorts that passed
+- cohort metrics by data profile (`pass_rate`, `sample_size`, `confidence_interval`)
 - verification bundle hash
 - skill strike status
 - publisher strike status
 
 A buyer can independently verify signatures and receipt integrity before provisioning.
+
+---
+
+## Buyer Verification Options
+
+Beyond marketplace defaults, buyers can verify in additional ways:
+
+1. **Receipt verification**
+   - independently verify signatures, merkle inclusion, and artifact hash linkage.
+
+2. **Fresh witness run**
+   - request a new verifier run for the current artifact against a declared test profile.
+
+3. **Local challenge run**
+   - execute a constrained local verification subset and compare produced receipt hashes to cohort behavior.
+
+4. **Cohort slicing**
+   - inspect performance by model cohort and data profile instead of relying on one aggregate score.
 
 ---
 

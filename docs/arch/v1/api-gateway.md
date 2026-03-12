@@ -4,7 +4,7 @@
 
 The API Gateway has exactly two static handlers. Everything else is dynamic.
 
-**Ingress** — static. One entry point. Receives `skyra <tool> [args]` commands from shards. Not JSON. Not envelopes. Commands. The gateway parses the command and assembles the job envelope from Redis.
+**Ingress** — static. One entry point. Receives `octos <tool> [args]` commands from shards. Not JSON. Not envelopes. Commands. The gateway parses the command and assembles the job envelope from Redis.
 
 **Egress** — static. One exit point. All responses leave here as commands — same syntax, other direction.
 
@@ -106,14 +106,14 @@ API Gateway                   ← decomposable, stateless, replaceable
 
 ## Plugins
 
-The gateway is extended through plugins — not modified. A plugin is an ingress or egress adapter that translates between an external protocol and the internal `skyra <tool> [args]` command syntax.
+The gateway is extended through plugins — not modified. A plugin is an ingress or egress adapter that translates between an external protocol and the internal `octos <tool> [args]` command syntax.
 
-**API compatibility** is a plugin. An external REST call, a webhook, a CLI invocation — the plugin translates it into a `skyra <tool> [args]` command. The gateway resolves it against Redis. The kernel executes it. The plugin knows nothing about what happens after ingress.
+**API compatibility** is a plugin. An external REST call, a webhook, a CLI invocation — the plugin translates it into a `octos <tool> [args]` command. The gateway resolves it against Redis. The kernel executes it. The plugin knows nothing about what happens after ingress.
 
 ```
 external REST call
   → API compatibility plugin (ingress adapter)
-  → translated to: skyra <tool> [args]
+  → translated to: octos <tool> [args]
   → skill resolution ← Redis
   → trust validation ← Redis
   → kernel executes

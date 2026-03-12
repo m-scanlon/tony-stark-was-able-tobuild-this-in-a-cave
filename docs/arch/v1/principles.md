@@ -1,6 +1,21 @@
 # Skyra Design Principles
 
-## 1. A Bet on Hardware and Model Efficiency
+## 1. Models Are Bound by Human Nature
+
+Models are a reflection of us. The protocol is bound to the same realities that shape human systems: incentives, reputation, adversarial behavior, and probabilistic outcomes.
+
+Trust is not granted by claims. Trust is earned by repeated behavior over time.
+
+This is why:
+- Proof is historical verifiable execution, not a promise of perfect outcomes
+- Buyers receive probability profiles and cohort history, not guarantees
+- The system assumes adversarial pressure and enforces auditable boundaries
+
+If the model improves, observed conformance trends upward. The law does not change.
+
+---
+
+## 2. A Bet on Hardware and Model Efficiency
 
 This entire system is a long-term bet. Hardware gets faster and cheaper. Models get more capable and more efficient. Local inference that feels slow today will feel instant in two years. A GPU that costs thousands today will cost hundreds tomorrow.
 
@@ -12,7 +27,7 @@ The system should get dramatically better without being redesigned. Better model
 
 ---
 
-## 2. Data Integrity First, UX Second
+## 3. Data Integrity First, UX Second
 
 
 Every design decision is evaluated in this order. When there is tension between a better user experience and data safety, data integrity wins. A fast system that corrupts state is worse than a slow system that doesn't.
@@ -31,7 +46,7 @@ This is why:
 
 ---
 
-## 3. Constrain the Data, Not the Model
+## 4. Constrain the Data, Not the Model
 
 We do not put guardrails on how models reason. We constrain what data they reason over.
 
@@ -50,13 +65,13 @@ The model reasons freely — so the data it reasons over must be trustworthy. Co
 
 ---
 
-## 4. Root Design Decisions in Reality.
+## 5. Root Design Decisions in Reality.
 
 If design is rooted in reality, that is the north star for the model.
 
 ---
 
-## 5. Everything Is a Skill
+## 6. Everything Is a Skill
 
 Shards are infrastructure. Skills are the execution layer. Every capability, every piece of work, every system operation is expressed as a skill. Shards provide the compute. Skills provide the contract.
 
@@ -64,7 +79,7 @@ This unifies the mental model — whether the system is replying to a user, runn
 
 ---
 
-## 6. Shards Have Capabilities. Agents Have Skills.
+## 7. Shards Have Capabilities. Agents Have Skills.
 
 Two distinct registries. Two distinct concerns.
 
@@ -75,15 +90,15 @@ Skills execute on shards whose capabilities support them. The reasoning layer ne
 
 ---
 
-## 7. No Special Cases in Routing
+## 8. No Special Cases in Routing
 
-The same routing model that dispatches `turn_on` to a TV dispatches a distributed inference job across two GPUs. The same `skyra delegate` command Skyra issues at the top of the tree can be issued by any agent anywhere in the tree.
+The same routing model that dispatches `turn_on` to a TV dispatches a distributed inference job across two GPUs. The same `octos delegate` command Skyra issues at the top of the tree can be issued by any agent anywhere in the tree.
 
 When a design requires a special case, that is a signal the model is wrong. The right model has no special cases.
 
 ---
 
-## 8. The System Grows With the Models
+## 9. The System Grows With the Models
 
 Pre-registering every possible skill would be missing the point. Skyra can discover and build new skills using her base skills — Google Search finds the how, Code Execution builds the what, the registry makes it permanent.
 
@@ -91,7 +106,7 @@ As models get better, Skyra builds better skills. The job tree becomes more effi
 
 ---
 
-## 9. Surface Area Has a Purpose
+## 10. Surface Area Has a Purpose
 
 Every component in this system was pulled in by necessity, not ambition. Every piece of complexity earns its place by solving a problem nothing else could solve.
 
@@ -99,7 +114,7 @@ When evaluating new additions: if an existing component can do the job, use it. 
 
 ---
 
-## 10. Nodes Are Identity. Edges Are History.
+## 11. Nodes Are Identity. Edges Are History.
 
 Nodes represent things that exist — entities, facts, skills, domains. They are identity.
 
@@ -113,7 +128,7 @@ This is why deletion does not exist in the committed layer. Deleting an edge des
 
 ---
 
-## 11. The User Makes the Model. The Model Makes the User.
+## 12. The User Makes the Model. The Model Makes the User.
 
 The user commits skills — those commits define how the model behaves. The improvement scopes, the retrieval algorithms, the reasoning constraints — all proven by user signature. The user shapes the model through what they commit. Without commits, the model is raw inference. Untrusted. The user's signatures give it its trusted shape.
 
@@ -127,7 +142,7 @@ A system that runs for a lifetime doesn't just remember who you were — it part
 
 ---
 
-## 12. Your Keys. Your Data. Your Consequences.
+## 13. Your Keys. Your Data. Your Consequences.
 
 The system does not protect the user from themselves. It protects them from everyone else.
 
@@ -139,7 +154,7 @@ The system's job is to make sure no one else can touch what belongs to the user.
 
 ---
 
-## 13. The Model Is a Dependency, Not a Component.
+## 14. The Model Is a Dependency, Not a Component.
 
 The system does not own the model. The user chooses which model runs underneath — and they own that choice, including its limitations and biases.
 

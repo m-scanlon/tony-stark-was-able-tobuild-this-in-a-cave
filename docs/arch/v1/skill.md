@@ -133,7 +133,7 @@ Inside the declared aspects: unconstrained reasoning. Outside: nothing. Improvem
 
 **Discovery** — skills live in memory as vector data. The model searches memory semantically to find relevant skills. No hardcoded tool list. No context injection.
 
-**Execution** — gated by Redis. Even if the model finds a skill in memory and emits `skyra <tool> [args]`, the kernel checks Redis. If the skill is not provisioned, it does not run.
+**Execution** — gated by Redis. Even if the model finds a skill in memory and emits `octos <tool> [args]`, the kernel checks Redis. If the skill is not provisioned, it does not run.
 
 A skill can be visible in memory — discoverable, reasoned about — without being executable. Redis is the gate, not memory.
 

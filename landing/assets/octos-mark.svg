@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-labelledby="title desc">
+  <title id="title">OctOS Octopus Mark</title>
+  <desc id="desc">A bright octopus symbol on a deep-sea background.</desc>
+  <defs>
+    <linearGradient id="octo" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff9452" />
+      <stop offset="100%" stop-color="#ff4f9c" />
+    </linearGradient>
+    <radialGradient id="ocean" cx="35%" cy="12%" r="95%">
+      <stop offset="0%" stop-color="#0c2f62" />
+      <stop offset="50%" stop-color="#051a3d" />
+      <stop offset="100%" stop-color="#020b1d" />
+    </radialGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="#ff5fa8" flood-opacity="0.45" />
+      <feDropShadow dx="0" dy="0" stdDeviation="12" flood-color="#5ce7ff" flood-opacity="0.22" />
+    </filter>
+  </defs>
+
+  <rect width="640" height="420" fill="url(#ocean)" rx="28" />
+
+  <g opacity="0.5">
+    <circle cx="78" cy="80" r="9" fill="#4be6ff" />
+    <circle cx="118" cy="110" r="5" fill="#7ef5ff" />
+    <circle cx="560" cy="70" r="8" fill="#54dcff" />
+    <circle cx="525" cy="108" r="5" fill="#6ee8ff" />
+    <circle cx="92" cy="330" r="7" fill="#52dfff" />
+    <circle cx="547" cy="338" r="6" fill="#6bf0e1" />
+  </g>
+
+  <g filter="url(#glow)">
+    <circle cx="320" cy="142" r="88" fill="url(#octo)" />
+    <ellipse cx="320" cy="206" rx="60" ry="36" fill="url(#octo)" />
+    <g fill="none" stroke="url(#octo)" stroke-linecap="round" stroke-width="24">
+      <path d="M 268 218 C 230 246, 217 282, 176 286" />
+      <path d="M 290 224 C 252 268, 238 318, 196 336" />
+      <path d="M 312 228 C 286 278, 282 334, 265 368" />
+      <path d="M 328 228 C 354 278, 358 334, 375 368" />
+      <path d="M 350 224 C 388 268, 402 318, 444 336" />
+      <path d="M 372 218 C 410 246, 423 282, 464 286" />
+      <path d="M 258 174 C 214 148, 188 168, 176 192" />
+      <path d="M 382 174 C 426 148, 452 168, 464 192" />
+    </g>
+  </g>
+</svg>

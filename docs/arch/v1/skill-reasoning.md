@@ -43,13 +43,13 @@ system: "Mike seems important to your work"
 ```
 
 ```
-skyra write_node -type entity -layer observational \
+octos write_node -type entity -layer observational \
   -content "late night" \
-  -reasoning "skyra write_node ... -m \"user turn: repeated across 6 sessions, user active after 11pm\""
+  -reasoning "octos write_node ... -m \"user turn: repeated across 6 sessions, user active after 11pm\""
 
-skyra write_node -type entity -layer observational \
+octos write_node -type entity -layer observational \
   -content "Skyra project" \
-  -reasoning "skyra write_node ... -m \"user turn: primary topic of session, referenced 14 times\""
+  -reasoning "octos write_node ... -m \"user turn: primary topic of session, referenced 14 times\""
 ```
 
 **Rules**:
@@ -70,20 +70,20 @@ skyra write_node -type entity -layer observational \
 **Output**: observational edges written to the graph
 
 ```
-skyra write_edge \
+octos write_edge \
   -from "entity:mike" -to "entity:skyra_project" \
   -type works_on -weight 0.9 \
-  -reasoning "skyra write_edge ... -m \"14 references to skyra project across session, high arousal, positive valence\""
+  -reasoning "octos write_edge ... -m \"14 references to skyra project across session, high arousal, positive valence\""
 
-skyra write_edge \
+octos write_edge \
   -from "entity:mike" -to "entity:late_night" \
   -type works_at -weight 0.7 \
-  -reasoning "skyra write_edge ... -m \"session timestamps consistently 11pm-2am, VAD arousal elevated\""
+  -reasoning "octos write_edge ... -m \"session timestamps consistently 11pm-2am, VAD arousal elevated\""
 
-skyra write_edge \
+octos write_edge \
   -from "entity:skyra_project" -to "entity:late_night" \
   -type associated_with -weight 0.6 \
-  -reasoning "skyra write_edge ... -m \"co-occurrence — skyra project work clusters with late night sessions\""
+  -reasoning "octos write_edge ... -m \"co-occurrence — skyra project work clusters with late night sessions\""
 ```
 
 **Rules**:

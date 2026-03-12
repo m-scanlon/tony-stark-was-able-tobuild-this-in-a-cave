@@ -10,7 +10,7 @@ The kernel is Skyra's central execution boundary. Every event passes through it.
 
 **The two-sentence mental model:**
 
-> The kernel owns all execution. Every API call goes through the kernel. If it's not a kernel-executable command, it's reasoning happening inside a shard — until that shard produces `skyra <tool> [args]`.
+> The kernel owns all execution. Every API call goes through the kernel. If it's not a kernel-executable command, it's reasoning happening inside a shard — until that shard produces `octos <tool> [args]`.
 
 Shards reason. The kernel executes. There is no other mode.
 
@@ -26,17 +26,17 @@ Every operation the system performs — including its own internal operations �
 ## Syntax
 
 ```
-skyra <tool> [args]
+octos <tool> [args]
 ```
 
 This is the standard tool call the API Gateway emits. One prefix. All tools. The kernel resolves `tool` against Redis and dispatches.
 
 ```
-skyra reply "You hit 4 workouts this week"
-skyra fan_out -gym -home "cancel gym and turn off lights"
-skyra report "gym session cancelled"
-skyra check_nginx
-skyra log_workout "chest day"
+octos reply "You hit 4 workouts this week"
+octos fan_out -gym -home "cancel gym and turn off lights"
+octos report "gym session cancelled"
+octos check_nginx
+octos log_workout "chest day"
 ```
 
 ---
@@ -155,7 +155,7 @@ function kernel(event):
 user: "cancel my gym session and turn off the lights"
 
 API Gateway resolves: two domains in play
-  → skyra fan_out -gym -home "cancel gym, turn off lights"
+  → octos fan_out -gym -home "cancel gym, turn off lights"
 
 kernel: case "fan_out"
   → creates job with two tasks
@@ -164,15 +164,15 @@ kernel: case "fan_out"
   → Skyra is free immediately
 
 gym task completes
-  → skyra report "gym session cancelled"
+  → octos report "gym session cancelled"
   → delegate marks task complete
   → notifies Skyra incrementally
-  → Skyra: skyra reply "Gym cancelled, still working on lights..."
+  → Skyra: octos reply "Gym cancelled, still working on lights..."
 
 home task completes
-  → skyra report "lights off"
+  → octos report "lights off"
   → delegate marks task complete → all tasks done → job pops
-  → Skyra: skyra reply "All done."
+  → Skyra: octos reply "All done."
 
 kernel: case "reply"
   → sends to user's device
@@ -224,7 +224,7 @@ all tasks complete    → job pops → Skyra notified
 ### Reprompt Flow
 
 ```
-task fails → skyra report "failed: couldn't find lights API"
+task fails → octos report "failed: couldn't find lights API"
 
 delegate:
   → validates exit condition → not met
@@ -246,7 +246,7 @@ Reason  → what do I need to do next?
 Act     → call a skill → heap
 Observe → result comes back
 Repeat  → reason about result, decide next step
-Exit    → skyra report "result"
+Exit    → octos report "result"
 ```
 
 Example:
@@ -256,12 +256,12 @@ fan_out: "cancel the gym session"
 
 gym task ReAct loop:
   Reason:  need to check if a session exists first
-  Act:     skyra check_schedule → result: "session at 6pm"
+  Act:     octos check_schedule → result: "session at 6pm"
   Observe: session exists
   Reason:  now cancel it
-  Act:     skyra cancel_session → result: "cancelled"
+  Act:     octos cancel_session → result: "cancelled"
   Observe: success
-  Exit:    skyra report "gym session cancelled"
+  Exit:    octos report "gym session cancelled"
 ```
 
 If the loop exits with failure, delegate reprompts with failure context. The task restarts its loop with adjusted reasoning.
@@ -278,19 +278,19 @@ Tasks can spawn sub-jobs and replicas during their ReAct loops. The result is a 
 ```
 fan_out → gym task
   gym ReAct: "I need calendar data"
-    → skyra fan_out -calendar "get schedule"
+    → octos fan_out -calendar "get schedule"
     → gym task pauses, waiting on child job
     → calendar completes → reports to delegate
     → delegate propagates up → gym resumes
 ```
 
 **Width — arbitrary fan-out at any level**
-Any task can call `skyra fan_out`. Not just Skyra.
+Any task can call `octos fan_out`. Not just Skyra.
 
 **Replicas — task spawns copies of itself**
 ```
 gym task: "10 workout logs to process"
-  → skyra fan_out -log_workout -log_workout -log_workout "process batch"
+  → octos fan_out -log_workout -log_workout -log_workout "process batch"
   → 3 replicas run in parallel
   → all complete → parent task unblocks
 ```
@@ -358,7 +358,7 @@ Propagation up the tree is a chain of O(1) Redis operations. No recursive querie
 
 **Discovery** — Skills live in memory as vector data. Indistinguishable from any other piece of data. The LLM searches memory semantically to find relevant skills. No hardcoded tool list. No context injection. The model reasons about what tools exist the same way it reasons about any other fact — by searching.
 
-**Execution** — gated by Redis. Even if the model finds a skill in memory and emits `skyra <tool> [args]`, that command hits the kernel. The kernel checks Redis. If the skill is not provisioned, it doesn't run. End of story.
+**Execution** — gated by Redis. Even if the model finds a skill in memory and emits `octos <tool> [args]`, that command hits the kernel. The kernel checks Redis. If the skill is not provisioned, it doesn't run. End of story.
 
 ```
 Memory (discovery)          Redis (execution gate)
@@ -368,12 +368,12 @@ skill: check_nginx          skill:check_nginx → null (deprovisioned)
 skill: deep_analysis        skill:deep_analysis → { status: active, ... }
 
 LLM finds log_workout in memory via semantic search
-  → emits: skyra log_workout --type=run --duration=30
+  → emits: octos log_workout --type=run --duration=30
   → kernel checks Redis: skill:log_workout → present, trusted
   → executes
 
 LLM finds check_nginx in memory via semantic search
-  → emits: skyra check_nginx
+  → emits: octos check_nginx
   → kernel checks Redis: skill:check_nginx → null
   → rejected (visible in memory, not executable)
 ```
@@ -392,7 +392,7 @@ Each task discovers its own relevant tools by searching memory — skills matchi
 
 ```
 Skyra:  memory search → semantically relevant skills → domain selection → fan_out
-Task:   memory search → tools matching current step → select → emit skyra <tool> [args]
+Task:   memory search → tools matching current step → select → emit octos <tool> [args]
 ```
 
 Execution is always gated by Redis. Discovery is always via memory.
@@ -445,7 +445,7 @@ pattern crosses threshold
 ### From Command to Heap
 
 ```
-skyra <tool> [args] + credentials arrive at API Gateway
+octos <tool> [args] + credentials arrive at API Gateway
     ↓
 Redis check: skill exists AND shard is authorized
     ↓
@@ -498,14 +498,14 @@ job re-queues on heap
     ↓
 repeat until self-validation passes
     ↓
-skyra reply "work done"
+octos reply "work done"
     ↓
 routed to Skyra's memory namespace
 ```
 
 **Self-validation.** The skill defines what "done" means. The job validates against its own contract. No external validator.
 
-**`skyra reply` routes to Skyra's memory.** Completed work is committed to Skyra's memory namespace. Skyra decides what to surface to the user.
+**`octos reply` routes to Skyra's memory.** Completed work is committed to Skyra's memory namespace. Skyra decides what to surface to the user.
 
 ---
 
@@ -525,7 +525,7 @@ Detail on heap and scheduling: `docs/arch/v1/scheduler.md` (kernel internal).
 
 A standalone service running on a shard — provisioned by skyrad like any other shard service. The only component that knows about time.
 
-The Cron Service executes skills on a schedule. It fires `skyra <tool> [args]` through Ingress at configured intervals. The kernel receives them as ordinary events — has no idea they came from a cron. The Cron Service is the invoker for system skills. Skyra is the invoker for domain skills.
+The Cron Service executes skills on a schedule. It fires `octos <tool> [args]` through Ingress at configured intervals. The kernel receives them as ordinary events — has no idea they came from a cron. The Cron Service is the invoker for system skills. Skyra is the invoker for domain skills.
 
 The primary scheduled skill is `reasoning` — fires when the user is offline, reads unprocessed session history + VAD, and produces observational nodes and edges. Exact schedule TBD. See `docs/arch/v1/skill-reasoning.md`.
 

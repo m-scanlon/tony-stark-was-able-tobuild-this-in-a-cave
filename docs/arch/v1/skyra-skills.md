@@ -147,17 +147,17 @@ Skyra: I need to send a message
   → I don't have this capability yet
   → but I have Google Search and Code Execution
 
-Skyra: skyra skyra search "how to send iMessage programmatically on macOS"
+Skyra: octos search "how to send iMessage programmatically on macOS"
   → returns: osascript / AppleScript can send iMessages natively
 
-Skyra: skyra skyra run_shell "osascript -e 'send message...'"
+Skyra: octos run_shell "osascript -e 'send message...'"
   → works
 
 Skyra: I just built a messaging capability
   → writes iMessage skill to Redis under agent:skyra
   → registered permanently for future use
   → sends the message
-  → skyra skyra reply "Message sent to Coney"
+  → octos reply "Message sent to Coney"
 ```
 
 Next time a user asks to send a message, `iMessage.send_message` is already registered. Skyra never has to rediscover it.

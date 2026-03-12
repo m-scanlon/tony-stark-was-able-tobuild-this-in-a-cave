@@ -13,7 +13,7 @@ user_private_key  — signs commits, approvals, skill provisioning, access profi
 user_public_key   — stored on-device, used by kernel for verification
 ```
 
-The private key never leaves the device. The kernel holds the public key. No cloud. No escrow. No recovery. This is consistent with Principle 11: your keys, your data, your consequences.
+The private key never leaves the device. The kernel holds the public key. No cloud. No escrow. No recovery. This is consistent with Principle 13: your keys, your data, your consequences.
 
 ---
 
@@ -237,7 +237,7 @@ This means: even if Redis is compromised, an attacker cannot inject skills witho
 
 ## What This Does Not Prevent
 
-- **Biased model output** — the model that produces skill output is a dependency, not a component. The crypto layer protects the committed layer from unauthorized writes. It does not audit the reasoning that produced what gets proposed. See Principle 12.
+- **Biased model output** — the model that produces skill output is a dependency, not a component. The crypto layer protects the committed layer from unauthorized writes. It does not audit the reasoning that produced what gets proposed. See Principle 14.
 - **External platform observability** — if a skill calls a third-party API, that platform can observe the request/result on its own service boundary. Definition privacy and reasoning privacy do not hide API usage from the API owner.
 - **User self-sabotage** — if the user signs a bad commit, it lands. Sovereignty means owning the downside. The system does not protect the user from themselves.
 - **Compromised private key** — if the private key is stolen, the attacker becomes the user. No escrow, no recovery. Hardware key storage (TPM, YubiKey) is the mitigation.
@@ -249,5 +249,5 @@ This means: even if Redis is compromised, an attacker cannot inject skills witho
 - `docs/arch/v1/kernel.md` — Redis trust boundary, dispatch flow
 - `docs/arch/v1/skill-lifecycle.md` — skill crystallization, provisioning flow
 - `docs/arch/v1/memory-structure.md` — committed layer, append-only model
-- `docs/arch/v1/principles.md` — Principle 2 (data integrity), Principle 11 (sovereignty), Principle 12 (model as dependency)
+- `docs/arch/v1/principles.md` — Principle 3 (data integrity), Principle 13 (sovereignty), Principle 14 (model as dependency)
 - `docs/arch/v1/proof-of-executable-reasoning.md` — market verification receipts, model cohorts, strike policy

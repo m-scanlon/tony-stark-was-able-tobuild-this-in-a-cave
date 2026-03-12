@@ -2,7 +2,7 @@
 
 ## The Protocol
 
-`skyra <tool> [args]` is the protocol. No JSON. No custom message formats. No envelopes. One unified command language across every shard in the network.
+`octos <tool> [args]` is the protocol. No JSON. No custom message formats. No envelopes. One unified command language across every shard in the network.
 
 Every shard speaks this syntax. Voice Shard, Cron Service, GPU Shard, Brain Shard — all emit the same commands. There is no special wire format per shard type.
 
@@ -55,9 +55,9 @@ Sessions are a brain primitive. Shards are command emitters. The session has no 
 The Voice Shard issues commands. It does not track session or turn IDs:
 
 ```
-skyra stream --token="what" --valence=-0.4 --arousal=0.7 --dominance=0.5
-skyra stream --token="did" --valence=-0.4 --arousal=0.7 --dominance=0.5
-skyra stream --token="nginx" --valence=-0.5 --arousal=0.8 --dominance=0.4
+octos stream --token="what" --valence=-0.4 --arousal=0.7 --dominance=0.5
+octos stream --token="did" --valence=-0.4 --arousal=0.7 --dominance=0.5
+octos stream --token="nginx" --valence=-0.5 --arousal=0.8 --dominance=0.4
 ```
 
 That is its entire vocabulary. Raw data. Raw vectors. No session. No turn. No context. The brain receives the stream, assigns identity, tracks the session.
@@ -71,8 +71,8 @@ Everything else is rejected at Ingress.
 The Cron Service emits whatever skills it is scheduled to execute:
 
 ```
-skyra pattern_scan
-skyra memory_snapshot
+octos pattern_scan
+octos memory_snapshot
 ```
 
 Registered at boot. Fired on schedule. Nothing else.
@@ -84,7 +84,7 @@ Registered at boot. Fired on schedule. Nothing else.
 ACK flows back as a command, not a JSON response:
 
 ```
-skyra ack --turn=turn_8f4c --status=stored
+octos ack --turn=turn_8f4c --status=stored
 ```
 
 One language. Both directions.
@@ -93,7 +93,7 @@ One language. Both directions.
 
 ## What This Means for the API Gateway
 
-The API Gateway's Ingress receives commands — not JSON blobs. It does not parse message envelopes. It parses `skyra <tool> [args]`.
+The API Gateway's Ingress receives commands — not JSON blobs. It does not parse message envelopes. It parses `octos <tool> [args]`.
 
 The provisions, security metadata, and job envelope are assembled BY the gateway after parsing the command. The shard is responsible for forming a valid command. The gateway is responsible for what happens next.
 
@@ -101,9 +101,9 @@ The provisions, security metadata, and job envelope are assembled BY the gateway
 
 ## Why This Works
 
-- **LLMs can't reliably emit JSON contracts** — JSON is rigid, schema-dependent, and error-prone for LLMs to produce correctly at scale. A CLI command is natural. LLMs already think in terms of tool calls. `skyra <tool> [args]` maps directly to how an LLM reasons about what to do next. The protocol is designed around what LLMs can reliably emit.
+- **LLMs can't reliably emit JSON contracts** — JSON is rigid, schema-dependent, and error-prone for LLMs to produce correctly at scale. A CLI command is natural. LLMs already think in terms of tool calls. `octos <tool> [args]` maps directly to how an LLM reasons about what to do next. The protocol is designed around what LLMs can reliably emit.
 - **Dynamic by nature** — JSON schemas break when you add fields. CLI commands are additive. New args, new tools — the protocol absorbs change without a schema migration.
-- **The LLM's output IS the protocol** — the LLM inside Skyra issues `skyra <tool> [args]`. The same syntax the shards use. No translation layer. No serialization step. The reasoning and the wire format are the same thing.
+- **The LLM's output IS the protocol** — the LLM inside Skyra issues `octos <tool> [args]`. The same syntax the shards use. No translation layer. No serialization step. The reasoning and the wire format are the same thing.
 - **Security** — non-brain shards have a fixed, auditable vocabulary. No shard can issue commands it wasn't provisioned for.
 - **Simplicity** — one protocol everywhere. No per-shard message schemas to maintain.
 - **Trust** — the command language IS the trust boundary. If it's not a registered primitive, it doesn't execute.

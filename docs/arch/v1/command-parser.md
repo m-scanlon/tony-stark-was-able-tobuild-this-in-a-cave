@@ -3,19 +3,19 @@
 ## Syntax
 
 ```
-skyra <tool> [args]
+octos <tool> [args]
 ```
 
 One prefix. One tool. Args. That's the entire protocol. Every shard, every direction.
 
 ```
-skyra reply "You hit 4 workouts this week"
-skyra fan_out -gym -home "cancel gym and turn off lights"
-skyra report "gym session cancelled"
-skyra check_nginx
-skyra log_workout --type=run --duration=30
-skyra stream --token="nginx" --valence=-0.5 --arousal=0.8
-skyra ack --turn=turn_8f4c --status=stored
+octos reply "You hit 4 workouts this week"
+octos fan_out -gym -home "cancel gym and turn off lights"
+octos report "gym session cancelled"
+octos check_nginx
+octos log_workout --type=run --duration=30
+octos stream --token="nginx" --valence=-0.5 --arousal=0.8
+octos ack --turn=turn_8f4c --status=stored
 ```
 
 ## Resolution

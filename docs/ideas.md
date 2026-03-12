@@ -481,7 +481,7 @@ The two interact but don't become each other. A deeper relationship doesn't chan
 **The idea:** Skills can declare what data they need to operate on as part of their definition. Before a job starts, the kernel reads the skill's requirements, pulls the relevant entities from memory, and hands them to the skill as typed context. The skill operates on a known structure, not a raw blob.
 
 ```
-skyra log_workout --requires=entity:gym_session
+octos log_workout --requires=entity:gym_session
 ```
 
 **Why it's interesting:** It's a typed function signature for skills. The skill declares its contract. The kernel fulfills it. Clean separation between what a skill needs and how the kernel resolves it. Resolved entities could travel with the job in `job_envelope_v1`.

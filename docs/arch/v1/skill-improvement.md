@@ -69,7 +69,7 @@ The committed algorithm only changes through `provision_skill` of a new version 
 
 The creator knows what the algorithm is trying to do. They know which parameters are safe for Skyra to reason about and which would break the system if changed naively. The scope is not arbitrary — it is the creator's judgment about where Skyra's reasoning adds value without introducing risk.
 
-This is Principle 3 applied to the algorithm itself: constrain the data (the improvement scope), not the model (Skyra's reasoning inside it). Inside the declared aspects, Skyra reasons with full intelligence. The scope is the only guardrail.
+This is Principle 4 applied to the algorithm itself: constrain the data (the improvement scope), not the model (Skyra's reasoning inside it). Inside the declared aspects, Skyra reasons with full intelligence. The scope is the only guardrail.
 
 ---
 
@@ -89,4 +89,4 @@ Better models produce better improvement proposals from the same observational d
 - `docs/arch/v1/skill-lifecycle.md` — skill versioning, provision_skill
 - `docs/arch/v1/crypto-protocol.md` — trust is model-scoped, provisioning + versioning flow
 - `docs/arch/v1/memory-structure.md` — observational namespace, committed layer
-- `docs/arch/v1/principles.md` — Principle 3 (constrain the data), Principle 7 (system grows with models)
+- `docs/arch/v1/principles.md` — Principle 4 (constrain the data), Principle 9 (system grows with models)

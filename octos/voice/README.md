@@ -4,6 +4,52 @@ The `voice_event` is the only event type the Voice Shard sends to the Brain Shar
 
 The envelope is assembled by the shard's transport layer before sending. The intent model only produces `triage_hints` — all other fields are hydrated by the shard at send time.
 
+Implementation dependency set for the Voice Shard runtime: `dependencies.md`.
+
+## Runtime Pathway (Lean)
+
+Wake word to text stream is implemented as one method:
+
+```python
+from octos.voice import WakeToTextConfig, wake_word_to_text_stream
+
+config = WakeToTextConfig()
+for text in wake_word_to_text_stream(config):
+    print(text)
+```
+
+Method location: `wake_to_text_stream.py`.
+
+Wake word directly to hydrated `voice_event_v1` stream (with audit logs):
+
+```python
+from octos.voice import (
+    WakeToTextConfig,
+    VoiceEventStreamConfig,
+    wake_word_to_voice_event_stream,
+)
+
+wake_cfg = WakeToTextConfig()
+event_cfg = VoiceEventStreamConfig(
+    device_id="pi-livingroom-01",
+    location_tag="home-main",
+    audit_log_path="octos/voice/audit.log.jsonl",
+)
+
+for event in wake_word_to_voice_event_stream(
+    wake_config=wake_cfg,
+    event_config=event_cfg,
+):
+    print(event["turn_id"], event["transcript"])
+```
+
+Method location: `voice_event_stream.py`.
+
+Audit logging:
+- append-only JSONL file
+- one line per lifecycle action (`stream_started`, `voice_event_built`, `voice_event_emitted`, `voice_event_yielded`, `stream_error`)
+- includes `record_hash` and `prev_record_hash` for run-local hash chaining
+
 ---
 
 ## Envelope Hydration

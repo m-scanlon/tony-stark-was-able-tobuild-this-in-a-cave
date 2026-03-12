@@ -116,7 +116,7 @@ Day 0:
 
 A skill's capability ceiling is the model executing it — not the skill definition, not the system. The definition is natural language. The model interprets and executes it. A skill that runs poorly on a 7B model runs better on 32B. Same definition. Better model. No redesign needed.
 
-This means skills improve automatically as models improve. The system inherits model capability gains without being changed. See Principle 7.
+This means skills improve automatically as models improve. The system inherits model capability gains without being changed. See Principle 9.
 
 It also means skill execution is implicitly model-scoped. The skill contract declares compute requirements. The kernel routes to the shard whose model can handle it. A complex reasoning skill goes to the GPU shard. A simple reply skill runs on the front-door model. The model is the bound — the shard is how that bound is selected at runtime.
 
@@ -135,7 +135,7 @@ intent (input)
 
 **Intent is the input.** It bounds the problem. The skill is shaped by it.
 
-**The skill is not trusted.** It lives in the observational layer. Skyra can reason and revise freely inside it — no guardrails on the reasoning, unconstrained intelligence inside the intent boundary. This is Principle 3: constrain the data, not the model.
+**The skill is not trusted.** It lives in the observational layer. Skyra can reason and revise freely inside it — no guardrails on the reasoning, unconstrained intelligence inside the intent boundary. This is Principle 4: constrain the data, not the model.
 
 **The output is the finished product.** The user's intent realized. Not the reasoning that produced it — the output. That is what gets proposed. That is what lands in the committed layer on approval. The committed layer holds finished products, not working state.
 

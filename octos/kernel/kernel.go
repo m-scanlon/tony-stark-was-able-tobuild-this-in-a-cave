@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 )
 
 var ErrSkillNotFound = errors.New("skill not found or not provisioned")
@@ -27,6 +28,11 @@ func New(registry SkillRegistry, heap Heap) *Kernel {
 // Run starts the execution loop. Blocks until ctx is cancelled.
 // Must be called in its own goroutine.
 func (k *Kernel) Run(ctx context.Context) {
+	if k.heap == nil {
+		log.Println("kernel: heap is not configured")
+		return
+	}
+
 	log.Println("kernel: execution loop started")
 	for {
 		job, err := k.heap.Pop(ctx)
@@ -53,6 +59,13 @@ func (k *Kernel) execute(ctx context.Context, job *Job) {
 
 // Dispatch parses a command, checks the registry, and pushes a job to the heap.
 func (k *Kernel) Dispatch(ctx context.Context, raw string) error {
+	if k.registry == nil {
+		return fmt.Errorf("kernel: skill registry is not configured")
+	}
+	if k.heap == nil {
+		return fmt.Errorf("kernel: heap is not configured")
+	}
+
 	cmd, err := ParseCommand(raw)
 	if err != nil {
 		return fmt.Errorf("dispatch: %w", err)
@@ -77,17 +90,22 @@ func (k *Kernel) Dispatch(ctx context.Context, raw string) error {
 }
 
 func (k *Kernel) instantiateJob(skill *Skill, cmd Command) *Job {
+	now := time.Now().UTC()
+
 	job := &Job{
-		ID:      newID(),
-		SkillID: skill.ID,
-		Status:  JobStatusPending,
+		ID:        newID(),
+		SkillID:   skill.ID,
+		Status:    JobStatusPending,
+		CreatedAt: now,
 	}
 	for _, st := range skill.Tasks {
+		taskCreatedAt := now
 		job.Tasks = append(job.Tasks, &Task{
-			ID:     newID(),
-			JobID:  job.ID,
-			Skill:  st.Name,
-			Status: TaskStatusPending,
+			ID:        newID(),
+			JobID:     job.ID,
+			Skill:     st.Name,
+			Status:    TaskStatusPending,
+			CreatedAt: taskCreatedAt,
 		})
 	}
 	return job

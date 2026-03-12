@@ -208,7 +208,7 @@ context_package {
 
 ## 5. Retrieval Strategy
 
-Retrieval is a system primitive skill. The context engine does not contain hardcoded retrieval logic — it invokes `skyra retrieve [args]`. Pre-provisioned at boot alongside the other primitives.
+Retrieval is a system primitive skill. The context engine does not contain hardcoded retrieval logic — it invokes `octos retrieve [args]`. Pre-provisioned at boot alongside the other primitives.
 
 The initial `retrieve` skill implementation follows this order:
 
@@ -227,7 +227,7 @@ Tools are not retrieved by the context engine. They live in the object store und
 
 **Context size is derived from hardware — not hardcoded.** The token budget is a shard capability. Each shard registers its context window size at boot alongside its other capabilities (voice, deep_reasoning, etc.). The context engine reads the executing shard's registered context window to set the token budget. There is no system-wide constant.
 
-This is Principle 3 applied to context: constrain the data (what fits in the window, derived from hardware), not the model (reason freely over what's there). A shard with a larger context window gives the model more to reason over. The system shows the hardware. The model reasons over it.
+This is Principle 4 applied to context: constrain the data (what fits in the window, derived from hardware), not the model (reason freely over what's there). A shard with a larger context window gives the model more to reason over. The system shows the hardware. The model reasons over it.
 
 ```
 shard capability registration {
@@ -311,7 +311,7 @@ No tools. No hydration. Just context.
 
 The retrieval steps in section 5 remain relevant but their role changes. They are no longer a request-time assembly pipeline — they describe the logic the **background loop** runs continuously to decide what to commit. Domain routing, vector search over agent state, recent commit retrieval, reranking — all of that happens in the background, not at request time.
 
-The background loop invokes `skyra retrieve [args]` — a system primitive. The loop doesn't know or care what the retrieval algorithm does internally. It calls the skill, gets back a ranked result set, and commits what's relevant.
+The background loop invokes `octos retrieve [args]` — a system primitive. The loop doesn't know or care what the retrieval algorithm does internally. It calls the skill, gets back a ranked result set, and commits what's relevant.
 
 ### Open Questions
 

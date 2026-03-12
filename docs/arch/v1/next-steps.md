@@ -3,7 +3,7 @@
 ## Architecture — Locked (2026-03-08)
 
 - **Router → Kernel** — the router is now the kernel. Canonical doc: `docs/arch/v1/kernel.md`.
-- **Syntax** — `skyra <tool> [args]`. One prefix. All tools. API Gateway emits this. Kernel resolves `tool` against Redis.
+- **Syntax** — `octos <tool> [args]`. One prefix. All tools. API Gateway emits this. Kernel resolves `tool` against Redis.
 - **Agents removed** — replaced by: Skill (class), Job (instance), Task (execution unit), Memory (provisioned namespace), Entity (named thing inside memory).
 - **Skills live in memory** — Redis is the trust boundary. Skills in memory are inert until provisioned in Redis.
 - **Skills are learned** — not manually defined. Kernel pattern recognition watches observational streams. Pattern crosses threshold → skill crystallizes.
@@ -11,7 +11,7 @@
 - **Scheduler + Executor → kernel internals** — not standalone services.
 - **Pattern recognition → kernel function** — triggered on schedule by the Cron Service.
 - **Cron Service** — the only time-aware component. Fires scheduled events. Kernel has no clock. Primary scheduled skill: `reasoning`.
-- **Kernel invocation paths** — two: (1) Skyra → domain skills via `skyra <tool> [args]`. (2) Cron Service → system skills via scheduled events.
+- **Kernel invocation paths** — two: (1) Skyra → domain skills via `octos <tool> [args]`. (2) Cron Service → system skills via scheduled events.
 - **Terminology layer** — user-configurable labels in `skyra.user`. Default: Skill/Job/Task/Memory.
 
 ---

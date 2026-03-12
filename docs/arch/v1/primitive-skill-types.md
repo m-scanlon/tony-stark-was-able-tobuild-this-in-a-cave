@@ -24,7 +24,7 @@ All work in Skyra is a skill instantiated as a job. Skills flow through the heap
 ## Descriptions
 
 ### Shard Registration
-Fired when a shard starts up. The shard fingerprints its hardware and registers its capabilities with the brain via `skyra <registration_tool> [args]`. Flows through the heap as a system skill. See `docs/arch/v1/shard-registration.md`.
+Fired when a shard starts up. The shard fingerprints its hardware and registers its capabilities with the brain via `octos <registration_tool> [args]`. Flows through the heap as a system skill. See `docs/arch/v1/shard-registration.md`.
 
 ### Capability Verification
 The brain's response to a shard registration skill. Brain sends a command to the newly registered shard to probe and verify its advertised capabilities. Same mechanism used on reconnection.
@@ -33,10 +33,10 @@ The brain's response to a shard registration skill. Brain sends a command to the
 The primary skill type. Triggered by a user utterance. The API Gateway resolves the skill, assembles the job envelope, dispatches to the kernel. Has a live user waiting on the response path.
 
 ### Cron
-A system primitive skill that fires on a timer. Pre-provisioned at boot. No separate service — cron is just a skill. Identical to any other skill in the execution path — `skyra <tool> [args]` through the kernel. No live user session attached. Output committed to memory.
+A system primitive skill that fires on a timer. Pre-provisioned at boot. No separate service — cron is just a skill. Identical to any other skill in the execution path — `octos <tool> [args]` through the kernel. No live user session attached. Output committed to memory.
 
 ### Retrieval
-A system primitive skill. Invoked by the context background loop and any other consumer that needs ranked memory results. Pre-provisioned at boot. The context engine calls `skyra retrieve [args]` — retrieval logic lives in the skill, not embedded in the caller. See `docs/arch/v1/context-engine.md`.
+A system primitive skill. Invoked by the context background loop and any other consumer that needs ranked memory results. Pre-provisioned at boot. The context engine calls `octos retrieve [args]` — retrieval logic lives in the skill, not embedded in the caller. See `docs/arch/v1/context-engine.md`.
 
 ### Batch
 Nightly. Runs all accumulated turns against skills that were not routed to in real-time. Preserves data integrity — nothing is permanently missed. Runs at very low heap priority, picks up on idle compute. See `docs/arch/v1/scheduler.md`.

@@ -51,7 +51,7 @@ retrieval_depth: committed | full
 - `committed` — Skyra retrieves and reasons over the committed layer only. Default. Trusted data only. No unverified signals in context.
 - `full` — Skyra retrieves and reasons across the full spectrum: committed, observational, intent namespace. The full graph is her reasoning surface. User-opted-in. Skyra notifies when output is derived from unverified sources.
 
-Default is `committed`. The user opts into `full` knowing what it means — unverified data in context, Skyra's working model visible in her reasoning. Principle 11: your keys, your data, your consequences.
+Default is `committed`. The user opts into `full` knowing what it means — unverified data in context, Skyra's working model visible in her reasoning. Principle 13: your keys, your data, your consequences.
 
 The commit boundary does not change regardless of retrieval depth. What is committed is trusted. What is not committed is not trusted. Retrieval depth controls what Skyra sees. The commit controls what becomes truth.
 

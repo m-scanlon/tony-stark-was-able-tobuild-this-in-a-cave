@@ -37,7 +37,7 @@ Integration confidence is derived from two signals combined:
 
 ```
 for each new observational node:
-  → skyra search -scope graph -query node.content
+  → octos search -scope graph -query node.content
   → returns top N semantically similar existing nodes
   → check structural similarity: shared neighbors
   → reason over candidates
@@ -60,16 +60,16 @@ Integrate does not create nodes. The primary outputs are:
 
 ```
 // Mike (existing committed) and Mike (incoming observational) — same entity
-skyra write_edge \
+octos write_edge \
   -from "entity:mike_incoming" -to "entity:mike" \
   -type alias_of -weight 1.0 \
-  -reasoning "skyra write_edge ... -m \"high semantic + structural similarity. incoming 'Mike' resolves to existing committed entity.\""
+  -reasoning "octos write_edge ... -m \"high semantic + structural similarity. incoming 'Mike' resolves to existing committed entity.\""
 
 // New edge implied by incoming node that doesn't exist yet
-skyra write_edge \
+octos write_edge \
   -from "entity:mike" -to "entity:late_night" \
   -type works_at -weight 0.7 \
-  -reasoning "skyra write_edge ... -m \"edge does not exist in graph. adding from incoming signal.\""
+  -reasoning "octos write_edge ... -m \"edge does not exist in graph. adding from incoming signal.\""
 ```
 
 ---
