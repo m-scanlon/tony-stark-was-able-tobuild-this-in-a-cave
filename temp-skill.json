@@ -1,0 +1,52 @@
+{
+  "id": "sha256:8f3d5c4f9f8a7a2f2e3e9d0a6b1c4d7e5f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
+  "model_id": "gpt-5-local-32b",
+  "layer": "committed",
+  "definition_visibility": "open",
+  "definition": {
+    "name": "log_workout",
+    "description": "Logs a workout session and updates relevant memory entities.",
+    "roadmap": [
+      {
+        "name": "validate_input",
+        "description": "Check required workout fields.",
+        "args": ["type", "duration", "timestamp"]
+      },
+      {
+        "name": "write_observational_entry",
+        "description": "Write raw workout event to observational memory.",
+        "args": []
+      },
+      {
+        "name": "propose_commit",
+        "description": "Propose committed memory update.",
+        "args": []
+      }
+    ],
+    "boundary_rules": {
+      "allowed": ["search", "write_node", "write_edge"],
+      "gated": ["propose_commit"],
+      "denied": ["run_shell", "delete_memory"]
+    },
+    "severity_policy": "moderate",
+    "replan_budget": 3,
+    "validation_criteria": "Workout event is stored, linked, and commit proposal generated when needed.",
+    "compute_requirements": ["fast_reasoning"]
+  },
+  "memory": {
+    "namespace": "skill.log_workout",
+    "seed_memory": "base64-encoded-bytes"
+  },
+  "provisioning": {
+    "access": "write",
+    "provisioned_at": "2026-03-11T22:00:00Z",
+    "signed_by": "ed25519:USER_PUBLIC_KEY",
+    "signature": "base64-signature-bytes"
+  },
+  "history": {
+    "executions": 0,
+    "commit_rate": 0.0,
+    "user_count": 0,
+    "versions": []
+  }
+}

@@ -99,7 +99,7 @@ Run the same persona multiple times. The graph should strengthen and stabilize �
 
 ## Related
 
-- `docs/arch/v1/skill-reasoning.md` — what the reasoning pass produces
-- `docs/arch/v1/skill-integrate.md` — what integrate does with the output
+- `docs/arch/v1/skill/skill-reasoning.md` — what the reasoning pass produces
+- `docs/arch/v1/skill/skill-integrate.md` — what integrate does with the output
 - `docs/arch/v1/memory-structure.md` — node + edge schema
 - `docs/arch/v1/observational-store.md` — session history + VAD streams

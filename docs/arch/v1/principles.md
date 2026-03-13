@@ -1,6 +1,6 @@
 # Skyra Design Principles
 
-## 1. Models Are Bound by Human Nature
+## 1. Humans are bound by reality so let the model be
 
 Models are a reflection of us. The protocol is bound to the same realities that shape human systems: incentives, reputation, adversarial behavior, and probabilistic outcomes.
 
@@ -88,6 +88,8 @@ Two distinct registries. Two distinct concerns.
 
 Skills execute on shards whose capabilities support them. The reasoning layer never sees shard capabilities — only agent skills. Shards are transparent above the routing layer.
 
+Shards are defined by the kernel. A shard cannot be something the kernel does not recognize.
+
 ---
 
 ## 8. No Special Cases in Routing
@@ -101,6 +103,7 @@ When a design requires a special case, that is a signal the model is wrong. The 
 ## 9. The System Grows With the Models
 
 Pre-registering every possible skill would be missing the point. Skyra can discover and build new skills using her base skills — Google Search finds the how, Code Execution builds the what, the registry makes it permanent.
+But this is always bound to explicit user intent. If the user did not ask for that outcome, no skill discovery or skill building occurs. No exceptions.
 
 As models get better, Skyra builds better skills. The job tree becomes more efficient. Agents reason in fewer steps. The system does not need to be redesigned to benefit from model improvements — it inherits them automatically.
 
