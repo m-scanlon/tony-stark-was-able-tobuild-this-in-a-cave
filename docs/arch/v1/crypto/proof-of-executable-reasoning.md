@@ -414,7 +414,7 @@ The following are intentionally left open in v1:
 ## Related
 
 - `docs/arch/v1/crypto/crypto-protocol.md`
-- `docs/arch/v1/introspect.md`
+- `docs/arch/v1/native-protocol/iintrospect/introspect.md`
 - `docs/arch/v1/skill/skill.md`
 - `docs/arch/v1/skill/skill-lifecycle.md`
 - `docs/arch/v1/skill/skill-licensing.md`

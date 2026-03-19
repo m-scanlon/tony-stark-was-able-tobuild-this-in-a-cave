@@ -1,4 +1,5 @@
 .venv/
 __pycache__/
 *.pyc
-octos/voice/audit.log.jsonl
+.env
+skyra/voice/audit.log.jsonl

@@ -1,6 +1,6 @@
 # Executor (Kernel Internal)
 
-> **Architecture note**: The Executor is not a standalone service. It is an internal method of the Kernel. This document describes the execution loop in detail, but the Executor has no external interface — the Kernel owns it. See `docs/arch/v1/kernel.md`.
+> **Architecture note**: The Executor is not a standalone service. It is an internal method of the Kernel. This document describes the execution loop in detail, but the Executor has no external interface — the Kernel owns it. See `docs/arch/v1/kernel/kernel.md`.
 
 > Draft status: this design is based on conceptual notes and **requires product owner validation** before implementation lock-in.
 

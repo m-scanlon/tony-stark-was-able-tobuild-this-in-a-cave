@@ -135,6 +135,6 @@ trigger: new shard comes online with sufficient capacity
 
 ## Related
 
-- `docs/arch/v1/memory-structure.md` — committed vs observational layers
-- `docs/arch/v1/kernel.md` — primitive skills, cron service
+- `docs/arch/v1/memory/memory-structure.md` — committed vs observational layers
+- `docs/arch/v1/kernel/kernel.md` — primitive skills, cron service
 - `docs/arch/v1/shard/shard-registration.md` — shard capability registration

@@ -171,7 +171,7 @@ skill attempts unauthorized introspect command
   → user notified
 ```
 
-Revocation is terminal. The skill cannot be re-provisioned without explicit user action. See `docs/arch/v1/introspect.md`.
+Revocation is terminal. The skill cannot be re-provisioned without explicit user action. See `docs/arch/v1/native-protocol/iintrospect/introspect.md`.
 
 ---
 
@@ -211,6 +211,6 @@ What remains undefined: how expiration is set, who sets it, what "auditable" mea
 
 ## Related
 
-- `docs/arch/v1/kernel.md` — kernel pattern recognition, memory provisioning
+- `docs/arch/v1/kernel/kernel.md` — kernel pattern recognition, memory provisioning
 - `docs/arch/v1/gaps.md` — G28 (memory provisioning flow), G29 (skill learning threshold)
-- `docs/arch/v1/capability-model.md` — Redis skill registry, execution gate
+- `docs/arch/v1/native-protocol/shard/capability-model.md` — Redis skill registry, execution gate

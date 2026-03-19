@@ -37,8 +37,8 @@ The Job Registry is passive state tracking, not scheduling logic.
 
 ## Related
 
-- `docs/arch/v1/kernel.md`
-- `docs/arch/v1/executor.md`
+- `docs/arch/v1/kernel/kernel.md`
+- `docs/arch/v1/kernel/executor.md`
 - `docs/arch/v1/skill/skill-contract-definition.md`
 - `docs/arch/v1/dataflow-walk-notes.md`
 

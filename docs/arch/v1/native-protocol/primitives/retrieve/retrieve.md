@@ -14,13 +14,13 @@ This primitive is a first-class interface with multiple implementations.
 Root form:
 
 ```bash
-octos retrieve [args...]
+skyra retrieve [args...]
 ```
 
 Nested form:
 
 ```bash
-octos <root_skill>.retrieve [args...]
+skyra <root_skill>.retrieve [args...]
 ```
 
 ## Core Model

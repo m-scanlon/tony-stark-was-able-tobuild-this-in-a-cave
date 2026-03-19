@@ -138,7 +138,7 @@ Inside the declared aspects: unconstrained reasoning. Outside: nothing. Improvem
 
 **Discovery** — skills live in memory as vector data. The model searches memory semantically to find relevant skills. No hardcoded tool list. No context injection.
 
-**Execution** — gated by Redis. Even if the model finds a skill in memory and emits `octos <tool> [args]`, the kernel checks Redis. If the skill is not provisioned, it does not run.
+**Execution** — gated by Redis. Even if the model finds a skill in memory and emits `skyra <tool> [args]`, the kernel checks Redis. If the skill is not provisioned, it does not run.
 
 A skill can be visible in memory — discoverable, reasoned about — without being executable. Redis is the gate, not memory.
 
@@ -146,7 +146,7 @@ A skill can be visible in memory — discoverable, reasoned about — without be
 
 ## Skill Inputs and Composition
 
-Skills can call other skills by emitting `octos <root_skill>.<nested_skill> [args...]` during execution.
+Skills can call other skills by emitting `skyra <root_skill>.<nested_skill> [args...]` during execution.
 
 The nested skill must be declared in the root skill contract's `provisioned_skills[]`.
 
@@ -219,5 +219,5 @@ Pre-provisioned in Redis at boot. The system cannot function without these. They
 - `docs/arch/v1/skill/skill-integrate.md` — integrate primitive
 - `docs/arch/v1/skill/skill-update-skill.md` — update_skill primitive
 - `docs/arch/v1/crypto/crypto-protocol.md` — signing, trust model, definition visibility
-- `docs/arch/v1/memory-structure.md` — observational vs committed layer
-- `docs/arch/v1/kernel.md` — execution, Redis trust boundary, job tree
+- `docs/arch/v1/memory/memory-structure.md` — observational vs committed layer
+- `docs/arch/v1/kernel/kernel.md` — execution, Redis trust boundary, job tree

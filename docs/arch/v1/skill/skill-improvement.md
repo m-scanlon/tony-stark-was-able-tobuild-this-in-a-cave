@@ -85,8 +85,8 @@ Better models produce better improvement proposals from the same observational d
 
 ## Related
 
-- `docs/arch/v1/kernel.md` — skill contract schema, improvement_scope field
+- `docs/arch/v1/kernel/kernel.md` — skill contract schema, improvement_scope field
 - `docs/arch/v1/skill/skill-lifecycle.md` — skill versioning, provision_skill
 - `docs/arch/v1/crypto/crypto-protocol.md` — trust is model-scoped, provisioning + versioning flow
-- `docs/arch/v1/memory-structure.md` — observational namespace, committed layer
+- `docs/arch/v1/memory/memory-structure.md` — observational namespace, committed layer
 - `docs/arch/v1/principles.md` — Principle 4 (constrain the data), Principle 9 (system grows with models)

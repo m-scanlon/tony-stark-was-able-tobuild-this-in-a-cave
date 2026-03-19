@@ -4,7 +4,7 @@
 
 The Event Ingress and ACK system guarantees reliable delivery of shard commands to the API Gateway with durable persistence and duplicate-safe handling.
 
-**The command is the event.** No context. No envelope. No JSON payload. The only state is the command itself — `octos <tool> [args]`. The API Gateway assembles everything else from Redis after receiving it.
+**The command is the event.** No context. No envelope. No JSON payload. The only state is the command itself — `skyra <tool> [args]`. The API Gateway assembles everything else from Redis after receiving it.
 
 Reliability goals:
 
@@ -17,10 +17,10 @@ Reliability goals:
 
 ## Terminology
 
-- **Command**: `octos <tool> [args]` — the only thing a shard sends. No context attached.
+- **Command**: `skyra <tool> [args]` — the only thing a shard sends. No context attached.
 - **Command Register**: durable store on the sending shard tracking commands awaiting ACK.
 - **Inbox**: durable store on the API Gateway for received commands.
-- **ACK**: `octos ack --turn=<turn_id> --status=stored` — sent back as a command.
+- **ACK**: `skyra ack --turn=<turn_id> --status=stored` — sent back as a command.
 - **Idempotency**: duplicate commands produce no duplicate side effects.
 - **At-least-once delivery**: sender retries until ACK; duplicates handled by inbox.
 
@@ -31,11 +31,11 @@ Reliability goals:
 ```
 +---------------------+       +-----------------------+       +----------------------+
 | Shard               |       | Transport             |       | API Gateway          |
-| command emitter     |-----> | octos <tool> [args]   |-----> | Ingress + Inbox      |
+| command emitter     |-----> | skyra <tool> [args]   |-----> | Ingress + Inbox      |
 +----------+----------+       +-----------+-----------+       +----------+-----------+
            |                                  ^                           |
            v                                  |                           v
-  +------------------+             octos ack --turn=...            +-------------+
+  +------------------+             skyra ack --turn=...            +-------------+
   | Command Register | <------------------------------------------ | SQLite Inbox|
   +------------------+                                             +-------------+
            |
@@ -56,9 +56,9 @@ Reliability goals:
 Shards emit only their registered primitives. A Voice Shard streams tokens and vectors — no session, no turn, no context:
 
 ```
-octos stream --token="what" --valence=-0.4 --arousal=0.7 --dominance=0.5
-octos stream --token="did" --valence=-0.3 --arousal=0.6 --dominance=0.5
-octos stream --token="nginx" --valence=-0.5 --arousal=0.8 --dominance=0.4
+skyra stream --token="what" --valence=-0.4 --arousal=0.7 --dominance=0.5
+skyra stream --token="did" --valence=-0.3 --arousal=0.6 --dominance=0.5
+skyra stream --token="nginx" --valence=-0.5 --arousal=0.8 --dominance=0.4
 ```
 
 That is the entire payload. The brain receives the stream, assigns identity, resolves everything else.
@@ -70,7 +70,7 @@ That is the entire payload. The brain receives the stream, assigns identity, res
 ACK is a command — same syntax, other direction:
 
 ```
-octos ack --turn=turn_8f4c --status=stored
+skyra ack --turn=turn_8f4c --status=stored
 ```
 
 Rules:
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS command_inbox (
   command_id      TEXT PRIMARY KEY,      -- API Gateway-generated ULID
   session_id      TEXT NOT NULL,
   turn_id         TEXT NOT NULL,
-  command         TEXT NOT NULL,         -- the raw "octos <tool> [args]" string
+  command         TEXT NOT NULL,         -- the raw "skyra <tool> [args]" string
   status          TEXT NOT NULL,
   received_at     TEXT NOT NULL,
   last_updated_at TEXT NOT NULL,
@@ -118,7 +118,7 @@ onCommand(raw_command):
     on duplicate (session_id, turn_id): no-op
   commit tx
 
-  send: octos ack --turn=turn_id --status=stored
+  send: skyra ack --turn=turn_id --status=stored
 ```
 
 ---
@@ -136,4 +136,4 @@ onCommand(raw_command):
 ## Related
 
 - `docs/arch/v1/shard/shard-communication.md` — unified command protocol, shard primitives
-- `docs/arch/v1/api-gateway/api-gateway.md` — Ingress handler, job envelope assembly
+- `docs/arch/v1/api-gateway/api-gateway.md` — ingress and transport boundary for the standalone kernel

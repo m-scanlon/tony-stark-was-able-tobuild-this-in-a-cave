@@ -211,6 +211,6 @@ OS audit logging is off by default on every platform. The capability exists ever
 
 ## Related
 
-- `docs/arch/v1/kernel.md` — kernel execution model, primitive skills
-- `docs/arch/v1/data-resilience.md` — system_health, migrate_data, emergency_offload
+- `docs/arch/v1/kernel/kernel.md` — kernel execution model, primitive skills
+- `docs/arch/v1/shard/data-resilience.md` — system_health, migrate_data, emergency_offload
 - `docs/arch/v1/crypto/crypto-protocol.md` — mTLS, signed records, trust boundary

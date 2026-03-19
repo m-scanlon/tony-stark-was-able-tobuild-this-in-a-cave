@@ -125,6 +125,6 @@ Skyra gates all commits. Nothing lands in memory without her approval.
 
 ## Related
 
-- `docs/arch/v1/kernel.md` — kernel router, execution model, trust boundary
+- `docs/arch/v1/kernel/kernel.md` — kernel router, execution model, trust boundary
 - `docs/arch/v1/shard/shard-registration.md` — capability registration at boot
 - `docs/arch/v1/api-gateway/api-gateway.md` — skill validation, job envelope assembly

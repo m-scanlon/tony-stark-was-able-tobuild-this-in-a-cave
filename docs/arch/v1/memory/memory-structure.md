@@ -260,6 +260,6 @@ Domains are nodes. Containment is expressed through `belongs_to` edges, not stru
 
 ## Related
 
-- `docs/arch/v1/predictive-memory.md` — observational streams, entity weights, decay formula
+- `docs/arch/v1/native-protocol/retrieve/predictive-memory.md` — observational streams, entity weights, decay formula
 - `docs/arch/v1/skill/skill-lifecycle.md` — node promotion path for skills and domains
-- `docs/arch/v1/kernel.md` — pattern recognition, memory provisioning
+- `docs/arch/v1/kernel/kernel.md` — pattern recognition, memory provisioning

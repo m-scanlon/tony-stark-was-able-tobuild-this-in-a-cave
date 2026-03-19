@@ -12,13 +12,13 @@ Provide one memory-write primitive interface with multiple implementations while
 Root form:
 
 ```bash
-octos remember [args...]
+skyra remember [args...]
 ```
 
 Nested form:
 
 ```bash
-octos <root_skill>.remember [args...]
+skyra <root_skill>.remember [args...]
 ```
 
 ## Required Fields
@@ -30,7 +30,7 @@ octos <root_skill>.remember [args...]
 
 ## Optional Fields (Recommended)
 
-- `impl`: `auto | episodic | semantic | procedural` (default `auto`)
+- `impl`: `auto | synthesize_append | append_only` (default `auto`)
 - `reason`
 - `ttl`
 - `dedupe_mode`: `hash | semantic`
@@ -59,3 +59,5 @@ Return:
 - `remember` is an interface primitive; implementations are extensible.
 - All remember implementations must satisfy this output contract.
 - Use `layer=working` for scratch memory and `layer=committed` for user-gated canonical memory.
+- Preferred v1 implementation path is `synthesize -> append` (derive bounded mini-graph, then persist bounded deltas).
+- `synthesize` remains a non-primitive system capability used by `remember`, not a primitive itself.

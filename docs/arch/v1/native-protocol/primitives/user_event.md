@@ -12,13 +12,13 @@ Provide one input primitive interface for user-originated events, with multiple 
 Root form:
 
 ```bash
-octos user_event [args...]
+skyra user_event [args...]
 ```
 
 Nested form:
 
 ```bash
-octos <root_skill>.user_event [args...]
+skyra <root_skill>.user_event [args...]
 ```
 
 ## Required Fields

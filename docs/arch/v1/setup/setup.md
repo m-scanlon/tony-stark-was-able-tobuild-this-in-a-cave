@@ -78,5 +78,5 @@ Terminal access is only required on the new shard itself during its own initial 
 
 - `docs/arch/v1/shard/shard-registration.md` — adding new shards after initial setup
 - `docs/arch/v1/crypto/crypto-protocol.md` — keypair generation, mTLS, signed records
-- `docs/arch/v1/kernel.md` — kernel boot, primitive skill provisioning
+- `docs/arch/v1/kernel/kernel.md` — kernel boot, primitive skill provisioning
 - `docs/arch/v1/api-gateway/api-gateway.md` — gateway decomposability, plugin model

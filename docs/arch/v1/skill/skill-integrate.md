@@ -37,7 +37,7 @@ Integration confidence is derived from two signals combined:
 
 ```
 for each new observational node:
-  → octos search -scope graph -query node.content
+  → skyra search -scope graph -query node.content
   → returns top N semantically similar existing nodes
   → check structural similarity: shared neighbors
   → reason over candidates
@@ -60,16 +60,16 @@ Integrate does not create nodes. The primary outputs are:
 
 ```
 // Mike (existing committed) and Mike (incoming observational) — same entity
-octos write_edge \
+skyra write_edge \
   -from "entity:mike_incoming" -to "entity:mike" \
   -type alias_of -weight 1.0 \
-  -reasoning "octos write_edge ... -m \"high semantic + structural similarity. incoming 'Mike' resolves to existing committed entity.\""
+  -reasoning "skyra write_edge ... -m \"high semantic + structural similarity. incoming 'Mike' resolves to existing committed entity.\""
 
 // New edge implied by incoming node that doesn't exist yet
-octos write_edge \
+skyra write_edge \
   -from "entity:mike" -to "entity:late_night" \
   -type works_at -weight 0.7 \
-  -reasoning "octos write_edge ... -m \"edge does not exist in graph. adding from incoming signal.\""
+  -reasoning "skyra write_edge ... -m \"edge does not exist in graph. adding from incoming signal.\""
 ```
 
 ---
@@ -127,6 +127,6 @@ This skill is designed around the output of the reasoning skill. The quality of 
 ## Related
 
 - `docs/arch/v1/skill/skill-reasoning.md` — produces the mini graph integrate consumes
-- `docs/arch/v1/memory-structure.md` — node + edge schema, two-tier graph
+- `docs/arch/v1/memory/memory-structure.md` — node + edge schema, two-tier graph
 - `docs/arch/v1/skill/skill.md` — skill schema, closed for modification
-- `docs/arch/v1/kernel.md` — job execution, primitive skills
+- `docs/arch/v1/kernel/kernel.md` — job execution, primitive skills

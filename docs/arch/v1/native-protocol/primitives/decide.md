@@ -15,18 +15,30 @@ Given candidate references, choose one action:
 
 `extract` is not a primitive. It is derived behavior from `retrieve + decide`.
 
+For failure-handling inside a job loop, the same decision surface may also be
+used to choose one of:
+
+- `retry_same`
+- `retry_revised`
+- `escalate`
+- `close`
+
+This distinguishes mechanical retry from cognitive retry. Mechanical retry
+belongs to kernel execution policy. These outcomes are for reasoning over a
+failed attempt and choosing what to do next.
+
 ## Command Shape
 
 Root form:
 
 ```bash
-octos decide [args...]
+skyra decide [args...]
 ```
 
 Nested form:
 
 ```bash
-octos <root_skill>.decide [args...]
+skyra <root_skill>.decide [args...]
 ```
 
 ## Required Fields
@@ -57,9 +69,9 @@ Stop when any condition is true:
 ## Recursive Step
 
 1. Evaluate candidate set.
-2. Choose action (`keep|drop|split|delegate|close`).
+2. Choose action (`keep|drop|split|delegate|close|retry_same|retry_revised|escalate`).
 3. Append a `decision_record`.
-4. If action is `split` or `delegate`, recurse on child candidate sets with decremented `decision_budget_left`.
+4. If action is `split`, `delegate`, `retry_same`, or `retry_revised`, recurse on child candidate sets with decremented `decision_budget_left`.
 
 ## Output Contract
 

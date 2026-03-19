@@ -435,6 +435,6 @@ One loop. Every turn. Every interaction makes the next one better.
 
 ## Related
 
-- `docs/arch/v1/kernel.md` — pattern recognition as kernel function
+- `docs/arch/v1/kernel/kernel.md` — pattern recognition as kernel function
 - `docs/arch/v1/skill/skill-lifecycle.md` — how pattern recognition drives skill and domain proposal
-- `docs/arch/v1/memory-structure.md` — graph data structure, node/edge schema
+- `docs/arch/v1/memory/memory-structure.md` — graph data structure, node/edge schema

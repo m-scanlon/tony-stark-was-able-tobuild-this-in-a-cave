@@ -12,13 +12,13 @@ Provide a bounded, explicit response primitive for user-facing updates and final
 Root form:
 
 ```bash
-octos reply [args...]
+skyra reply [args...]
 ```
 
 Nested form:
 
 ```bash
-octos <root_skill>.reply [args...]
+skyra <root_skill>.reply [args...]
 ```
 
 ## Required Fields
@@ -51,4 +51,4 @@ Return:
 ## Notes
 
 - `reply` is pre-provisioned as a system primitive skill.
-- Job closure remains explicit via `octos job.close ...`; `reply status=final` is not implicit close.
+- Job closure remains explicit via `skyra job.close ...`; `reply status=final` is not implicit close.

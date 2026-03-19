@@ -43,13 +43,13 @@ system: "Mike seems important to your work"
 ```
 
 ```
-octos write_node -type entity -layer observational \
+skyra write_node -type entity -layer observational \
   -content "late night" \
-  -reasoning "octos write_node ... -m \"user turn: repeated across 6 sessions, user active after 11pm\""
+  -reasoning "skyra write_node ... -m \"user turn: repeated across 6 sessions, user active after 11pm\""
 
-octos write_node -type entity -layer observational \
+skyra write_node -type entity -layer observational \
   -content "Skyra project" \
-  -reasoning "octos write_node ... -m \"user turn: primary topic of session, referenced 14 times\""
+  -reasoning "skyra write_node ... -m \"user turn: primary topic of session, referenced 14 times\""
 ```
 
 **Rules**:
@@ -70,20 +70,20 @@ octos write_node -type entity -layer observational \
 **Output**: observational edges written to the graph
 
 ```
-octos write_edge \
+skyra write_edge \
   -from "entity:mike" -to "entity:skyra_project" \
   -type works_on -weight 0.9 \
-  -reasoning "octos write_edge ... -m \"14 references to skyra project across session, high arousal, positive valence\""
+  -reasoning "skyra write_edge ... -m \"14 references to skyra project across session, high arousal, positive valence\""
 
-octos write_edge \
+skyra write_edge \
   -from "entity:mike" -to "entity:late_night" \
   -type works_at -weight 0.7 \
-  -reasoning "octos write_edge ... -m \"session timestamps consistently 11pm-2am, VAD arousal elevated\""
+  -reasoning "skyra write_edge ... -m \"session timestamps consistently 11pm-2am, VAD arousal elevated\""
 
-octos write_edge \
+skyra write_edge \
   -from "entity:skyra_project" -to "entity:late_night" \
   -type associated_with -weight 0.6 \
-  -reasoning "octos write_edge ... -m \"co-occurrence — skyra project work clusters with late night sessions\""
+  -reasoning "skyra write_edge ... -m \"co-occurrence — skyra project work clusters with late night sessions\""
 ```
 
 **Rules**:
@@ -136,7 +136,7 @@ replan_budget: 2
 
 ## Related
 
-- `docs/arch/v1/memory-structure.md` — node + edge schema, two-tier graph, cron pass
-- `docs/arch/v1/observational-store.md` — four streams, VAD, session history
+- `docs/arch/v1/memory/memory-structure.md` — node + edge schema, two-tier graph, cron pass
+- `docs/arch/v1/memory/observational-store.md` — four streams, VAD, session history
 - `docs/arch/v1/skill/skill-lifecycle.md` — how skills crystallize from observational nodes
-- `docs/arch/v1/kernel.md` — cron service, job execution
+- `docs/arch/v1/kernel/kernel.md` — cron service, job execution

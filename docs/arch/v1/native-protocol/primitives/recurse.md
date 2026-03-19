@@ -12,13 +12,13 @@ Enable reusable nested workflows while preventing unbounded context growth.
 Root form:
 
 ```bash
-octos recurse [args...]
+skyra recurse [args...]
 ```
 
 Nested form:
 
 ```bash
-octos <root_skill>.recurse [args...]
+skyra <root_skill>.recurse [args...]
 ```
 
 ## Required Fields

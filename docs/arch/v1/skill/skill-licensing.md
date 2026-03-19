@@ -48,4 +48,4 @@ With expiration, the trust is time-bounded. The owner knows that at some point t
 ## Related
 
 - `docs/arch/v1/skill/skill-lifecycle.md` — skill provisioning, trust model
-- `docs/arch/v1/introspect.md` — violation policy, verifiable malpractice
+- `docs/arch/v1/native-protocol/iintrospect/introspect.md` — violation policy, verifiable malpractice

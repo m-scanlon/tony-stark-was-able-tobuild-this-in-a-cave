@@ -292,7 +292,7 @@ Queries the pattern recognition engine needs:
 
 ## Related Docs
 
-- `docs/arch/v1/importance-vectors.md` — vector model, affect dimension, retrieval scoring
+- `docs/arch/v1/memory/importance-vectors.md` — vector model, affect dimension, retrieval scoring
 - `docs/arch/v1/context-engine.md` — context package assembly, retrieval pipeline
-- `docs/arch/v1/native-protocol/primitive-skill-types.md` — retrieval primitive (`octos retrieve`) is the context loop mechanism over these streams
+- `docs/arch/v1/native-protocol/primitive-skill-types.md` — retrieval primitive (`skyra retrieve`) is the context loop mechanism over these streams
 - `skyra/internal/agent/README.md` — object store, authoritative memory, commit model

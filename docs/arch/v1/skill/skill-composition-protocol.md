@@ -8,7 +8,7 @@ This protocol defines how one skill calls another skill and how a skill referenc
 The command language stays the same:
 
 ```
-octos [global_flags] <skill>[.<method>] [local_flags]
+skyra [global_flags] <skill>[.<method>] [local_flags]
 ```
 
 No JSON payload is added to shard-emitted commands.
@@ -16,8 +16,8 @@ No JSON payload is added to shard-emitted commands.
 Root and nested forms remain:
 
 ```
-octos [global_flags] <skill> [local_flags]
-octos [global_flags] <root_skill>.<nested_skill> [local_flags]
+skyra [global_flags] <skill> [local_flags]
+skyra [global_flags] <root_skill>.<nested_skill> [local_flags]
 ```
 
 ---
@@ -60,8 +60,8 @@ A skill input is passed with a reserved flag namespace:
 Examples:
 
 ```
-octos integrate --skill.source=skill:reasoning.v1 --skill.target=skill:search.v3
-octos orchestrator.integrate --skill.source=skill:reasoning.v1 --skill.target=skill:search.v3
+skyra integrate --skill.source=skill:reasoning.v1 --skill.target=skill:search.v3
+skyra orchestrator.integrate --skill.source=skill:reasoning.v1 --skill.target=skill:search.v3
 ```
 
 Rules:
@@ -77,7 +77,7 @@ Rules:
 A running call invokes another skill by emitting:
 
 ```
-octos <root_skill>.<nested_skill> [args...]
+skyra <root_skill>.<nested_skill> [args...]
 ```
 
 This is a nested call if emitted from an active call context. It is a root call otherwise.
@@ -115,7 +115,7 @@ Rules:
 
 For every command:
 
-1. Parse command as `octos [global_flags] <skill>[.<method>] [local_flags]`, then classify as root or nested.
+1. Parse command as `skyra [global_flags] <skill>[.<method>] [local_flags]`, then classify as root or nested.
 2. Resolve root skill from Redis.
 3. If nested form, resolve nested skill from Redis.
 4. Resolve all `--skill.<param>` references.
@@ -166,7 +166,7 @@ Enforcement:
 2. A job may close only through explicit close command with a decision reference:
 
 ```
-octos job.close --job=<job_id> --decision=<decision_id> --status=done|abandoned|superseded
+skyra job.close --job=<job_id> --decision=<decision_id> --status=done|abandoned|superseded
 ```
 
 3. Reject close when unresolved `must_call[]` obligations remain, unless policy/user approval explicitly waives them.
@@ -209,17 +209,17 @@ Standard rejection reasons:
 Root call:
 
 ```
-octos orchestrator --targets=home,gym --intent="turn off lights and cancel gym"
+skyra orchestrator --targets=home,gym --intent="turn off lights and cancel gym"
 ```
 
 Nested call:
 
 ```
-octos orchestrator.search --query="today's gym booking"
+skyra orchestrator.search --query="today's gym booking"
 ```
 
 Skill-as-input:
 
 ```
-octos integrate --skill.source=skill:reasoning.v1 --skill.target=skill:search.v3
+skyra integrate --skill.source=skill:reasoning.v1 --skill.target=skill:search.v3
 ```

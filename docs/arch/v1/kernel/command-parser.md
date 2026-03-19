@@ -3,35 +3,35 @@
 ## Syntax
 
 ```
-octos <tool> [args...]
+skyra <tool> [args...]
 ```
 
 One prefix. One tool. Args. That's the entire protocol. Every shard, every direction.
 
 ```
-octos reply "You hit 4 workouts this week"
-octos fan_out -gym -home "cancel gym and turn off lights"
-octos report "gym session cancelled"
-octos check_nginx
-octos log_workout --type=run --duration=30
-octos stream --token="nginx" --valence=-0.5 --arousal=0.8
-octos ack --turn=turn_8f4c --status=stored
+skyra reply "You hit 4 workouts this week"
+skyra fan_out -gym -home "cancel gym and turn off lights"
+skyra report "gym session cancelled"
+skyra check_nginx
+skyra log_workout --type=run --duration=30
+skyra stream --token="nginx" --valence=-0.5 --arousal=0.8
+skyra ack --turn=turn_8f4c --status=stored
 ```
 
 ### Skill Composition Encoding
 
 Skill-to-skill composition does not change base syntax.
 
-- Root call: `octos <skill> [args...]`
-- Nested call: `octos <root_skill>.<nested_skill> [args...]`
+- Root call: `skyra <skill> [args...]`
+- Nested call: `skyra <root_skill>.<nested_skill> [args...]`
 - Skill-as-input: `--skill.<param>=skill:<skill_id>`
 
 Examples:
 
 ```
-octos search --query="today's booking"
-octos orchestrator.search --query="today's booking"
-octos integrate --skill.source=skill:reasoning.v1 --skill.target=skill:search.v3
+skyra search --query="today's booking"
+skyra orchestrator.search --query="today's booking"
+skyra integrate --skill.source=skill:reasoning.v1 --skill.target=skill:search.v3
 ```
 
 Protocol details (lineage, intent scope, limits, errors): `docs/arch/v1/skill/skill-composition-protocol.md`.
@@ -63,7 +63,7 @@ skill contract: { compute: "control_plane" }    → routes to Brain Shard
 
 ## Related
 
-- `docs/arch/v1/kernel.md` — kernel router, execution model
+- `docs/arch/v1/kernel/kernel.md` — kernel router, execution model
 - `docs/arch/v1/api-gateway/api-gateway.md` — Ingress validation, job envelope assembly
 - `docs/arch/v1/shard/shard-communication.md` — unified protocol, shard primitives
 - `docs/arch/v1/skill/skill-composition-protocol.md` — skill-to-skill and skill-as-input contract

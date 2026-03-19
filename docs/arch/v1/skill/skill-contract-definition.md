@@ -15,6 +15,6 @@ Scope:
 Primary references:
 
 - `docs/arch/v1/skill/skill.md`
-- `docs/arch/v1/kernel.md`
+- `docs/arch/v1/kernel/kernel.md`
 - `docs/arch/v1/skill/skill-composition-protocol.md`
 - `docs/arch/v1/native-protocol/native-protocol.md`

@@ -1,69 +1,42 @@
-# OctOS - Personal Runtime
+# Skyra - Personal Runtime
 
-OctOS is a local-first personal runtime that executes intent across your own devices, learns from real usage over time, and keeps trust anchored to user-controlled commits.
+Skyra v1 is a local-first cognitive runtime built around a standalone kernel service, an unbounded stimulus stream, and a bounded chain-of-thought attention loop.
 
----
+## Current v1 Model
 
-## Core Model
+- The kernel is the canonical runtime boundary.
+- Incoming stimuli append to the stimulus stream first.
+- Nexus decides what becomes active kernel work.
+- The kernel queue is a max heap.
+- User messages run at priority `100`.
+- Internal chain-of-thought work runs at priority `50`.
+- The only top-level primitives are `understand` and `interact`.
+- Native primitives are the v1 protocol language. The later skill system is not important for v1.
+- Chain of Thought and Human-to-Machine Interaction are separate runtime boundaries.
+- `perception` always contains `history` and `stimulus`.
+- `understanding` is absent until `resolve` finishes an interpret cycle.
+- v1 runtime state is in-memory only. It does not need to survive restarts.
+- v1 has two separate frontend surfaces:
+  - a human interaction surface
+  - a read-only internal chain-of-thought surface
 
-- **Execution boundary**: the kernel is the canonical runtime boundary for all work.
-- **Command protocol**: all work is expressed as `octos <tool> [args]`.
-- **Shards**: devices register capabilities; routing is capability-based, not hardcoded.
-- **Skills**: executable contracts discovered in memory and gated by Redis provisioning.
-- **Memory**: property graph with two trust layers:
-  - `observational`: writable working model, untrusted
-  - `committed`: user-approved, append-only, trusted
+## Not Canonical For v1
 
-Mental model:
+Older docs in this repo still describe a future-facing architecture built around later-phase registry and orchestration abstractions.
 
-> Nodes are identity. Edges are history. Truth is derived, not stored.
-
----
-
-## Trust Model
-
-- User keypair (Ed25519) is the root of trust.
-- Committed writes require user-approved signed commits.
-- Skills are content-addressed, immutable, and model-scoped for trust.
-- Redis is the live execution gate; memory discovery alone does not grant execution.
-- Non-brain shards are restricted to registered command primitives.
-
----
-
-## Current v1 Status
-
-- Kernel-first architecture is canonical.
-- API Gateway + command protocol + shard capability model are documented.
-- Graph memory model, skill model, and cryptographic trust model are defined.
-- Voice event schema and ingress ACK semantics are defined.
-- Open gaps remain around idempotency, job schema, plan approval return path, and Redis auth/write controls.
-
----
-
-## Naming
-
-- Canonical project name in this repo: **OctOS**
-- Canonical command prefix: `octos`
-- Legacy names in v1 docs: **Skyra** and **OctaOS**
-
-When names conflict, treat `OctOS`/`octos` as canonical.
-
----
+That material belongs to later phases and should not be treated as important for the current v1 runtime.
 
 ## Documentation Map
 
-- Architecture index: `docs/arch/v1/README.md`
-- Kernel (canonical execution model): `docs/arch/v1/kernel.md`
-- API Gateway: `docs/arch/v1/api-gateway.md`
-- Command protocol: `docs/arch/v1/command-parser.md`
-- Shard communication: `docs/arch/v1/shard-communication.md`
-- Shard registration: `docs/arch/v1/shard-registration.md`
-- Capability model: `docs/arch/v1/capability-model.md`
-- Memory model: `docs/arch/v1/memory-structure.md`
-- Skill model: `docs/arch/v1/skill.md`
-- Skill lifecycle: `docs/arch/v1/skill-lifecycle.md`
-- Crypto protocol: `docs/arch/v1/crypto-protocol.md`
-- Gaps register: `docs/arch/v1/gaps.md`
-- Next steps: `docs/arch/v1/next-steps.md`
-- Voice schema: `octos/voice/README.md`
-- White paper (draft): `docs/whitepaper.md`
+- Runtime PRD: `skyra/chain-of-thought/experience.md`
+- Kernel contract: `docs/arch/v1/kernel/kernel.md`
+- Gateway/transport contract: `docs/arch/v1/api-gateway/api-gateway.md`
+- Architecture sheet: `docs/arch/v1/high-level-architecture-sheet.md`
+- Active gaps: `docs/arch/v1/gaps.md`
+
+## Run v1
+
+1. Copy `.env.example` to `.env` and set `OLLAMA_GATEWAY_WS_URL` and `OLLAMA_GATEWAY_TOKEN` for your local gateway.
+2. Start the stack with `docker compose up --build`.
+3. Open `http://127.0.0.1:9090/interact` for the human surface.
+4. Open `http://127.0.0.1:9090/thoughts` for the read-only chain-of-thought surface.

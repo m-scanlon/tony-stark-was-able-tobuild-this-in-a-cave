@@ -246,8 +246,8 @@ This means: even if Redis is compromised, an attacker cannot inject skills witho
 
 ## Related
 
-- `docs/arch/v1/kernel.md` — Redis trust boundary, dispatch flow
+- `docs/arch/v1/kernel/kernel.md` — Redis trust boundary, dispatch flow
 - `docs/arch/v1/skill/skill-lifecycle.md` — skill crystallization, provisioning flow
-- `docs/arch/v1/memory-structure.md` — committed layer, append-only model
+- `docs/arch/v1/memory/memory-structure.md` — committed layer, append-only model
 - `docs/arch/v1/principles.md` — Principle 3 (data integrity), Principle 13 (sovereignty), Principle 14 (model as dependency)
-- `docs/arch/v1/proof-of-executable-reasoning.md` — market verification receipts, model cohorts, strike policy
+- `docs/arch/v1/crypto/proof-of-executable-reasoning.md` — market verification receipts, model cohorts, strike policy

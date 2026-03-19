@@ -193,7 +193,7 @@ Relevance-based data pulled from beyond the current session. The Context Retriev
 score = global * regional * semantic_similarity * affect_similarity
 ```
 
-Full vector design, scoring formula, decay model, long term memory store, and versioned rollout: see `docs/arch/v1/importance-vectors.md`.
+Full vector design, scoring formula, decay model, long term memory store, and versioned rollout: see `docs/arch/v1/memory/importance-vectors.md`.
 
 ### Context Package Shape
 
@@ -208,7 +208,7 @@ context_package {
 
 ## 5. Retrieval Strategy
 
-Retrieval is a system primitive skill. The context engine does not contain hardcoded retrieval logic — it invokes `octos retrieve [args]`. Pre-provisioned at boot alongside the other primitives.
+Retrieval is a system primitive skill. The context engine does not contain hardcoded retrieval logic — it invokes `skyra retrieve [args]`. Pre-provisioned at boot alongside the other primitives.
 
 The initial `retrieve` skill implementation follows this order:
 
@@ -311,7 +311,7 @@ No tools. No hydration. Just context.
 
 The retrieval steps in section 5 remain relevant but their role changes. They are no longer a request-time assembly pipeline — they describe the logic the **background loop** runs continuously to decide what to commit. Domain routing, vector search over agent state, recent commit retrieval, reranking — all of that happens in the background, not at request time.
 
-The background loop invokes `octos retrieve [args]` — a system primitive. The loop doesn't know or care what the retrieval algorithm does internally. It calls the skill, gets back a ranked result set, and commits what's relevant.
+The background loop invokes `skyra retrieve [args]` — a system primitive. The loop doesn't know or care what the retrieval algorithm does internally. It calls the skill, gets back a ranked result set, and commits what's relevant.
 
 ### Open Questions
 
@@ -326,7 +326,7 @@ The background loop invokes `octos retrieve [args]` — a system primitive. The 
 
 ## 11. Related Docs
 
-- `docs/arch/v1/importance-vectors.md` — full importance vector design, scoring formula, decay, long term memory, self-tuning
+- `docs/arch/v1/memory/importance-vectors.md` — full importance vector design, scoring formula, decay, long term memory, self-tuning
 - `docs/arch/v1/lifecycle.md` — full 8-stage pipeline
 - `docs/arch/v1/domain-expert/README.md` — planning phase, tool system
 - `docs/arch/v1/agents/README.md` — agent model, system vs domain agents

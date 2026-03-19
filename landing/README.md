@@ -28,9 +28,9 @@ Add another founder by appending an object to `window.founders`:
 }
 ```
 
-## Update the OctOS image
+## Update the Skyra image
 
-The hero image is at `assets/octos-mark.svg`.
+The hero image is at `assets/skyra-mark.svg`.
 
 To use your own photo/logo, replace that file or update the `<img src>` in
 `index.html`.

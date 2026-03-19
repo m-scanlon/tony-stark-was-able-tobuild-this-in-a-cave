@@ -77,6 +77,16 @@ Shards are infrastructure. Skills are the execution layer. Every capability, eve
 
 This unifies the mental model — whether the system is replying to a user, running background reasoning, integrating memory, or executing a domain action, it is always instantiating and executing a skill. The routing layer handles placement.
 
+The stack should stay clean:
+
+- Skills define behavior.
+- The kernel defines execution.
+- Primitives define cognition.
+
+Behavior is the contract the system exposes. Execution is the runtime that
+enforces and carries it out. Cognition is the bounded reasoning vocabulary the
+model uses inside that contract.
+
 ---
 
 ## 7. Shards Have Capabilities. Agents Have Skills.
@@ -94,7 +104,7 @@ Shards are defined by the kernel. A shard cannot be something the kernel does no
 
 ## 8. No Special Cases in Routing
 
-The same routing model that dispatches `turn_on` to a TV dispatches a distributed inference job across two GPUs. The same `octos delegate` command Skyra issues at the top of the tree can be issued by any agent anywhere in the tree.
+The same routing model that dispatches `turn_on` to a TV dispatches a distributed inference job across two GPUs. The same `skyra delegate` command Skyra issues at the top of the tree can be issued by any agent anywhere in the tree.
 
 When a design requires a special case, that is a signal the model is wrong. The right model has no special cases.
 
