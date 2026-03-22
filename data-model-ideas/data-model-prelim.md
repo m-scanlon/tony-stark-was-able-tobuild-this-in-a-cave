@@ -2,7 +2,7 @@
 
 ## Key Decisions (Today)
 
-### 1. Core Model Shift: From Graph to Episodes
+### 1. Core Model Shift: From Graph to Scoped Episodes
 
 Decision:
 
@@ -10,90 +10,113 @@ A knowledge graph is not the primary data model.
 
 Instead:
 
-The system is centered around episodes, which are bounded units of activity.
+The system is composed of scoped episodes rather than a single global episode object.
+
+The currently defined scopes are:
+
+- node episode
+- intent episode
+
+History is reconstructed from episodes over time.
 
 Why:
 
 - the system is temporal, not just relational
-- sequence, lifecycle, and meaning over time matter
+- scoped participation matters
+- intent can coordinate execution across nodes
+- sequence, lifecycle, and reconstruction over time matter
 - graphs are better as a secondary layer for patterns and relations
 
-### 2. Episodes Are the Core Unit
+### 2. Node Episodes Are the Atomic Unit
 
 Decision:
 
-An episode is a bounded, coherent unit of activity grouped by purpose and time.
+A node episode is the atomic unit of execution history.
 
 Clarifications:
 
-- not just user interaction
-- not just time grouping
-- includes stimuli
-- includes internal processing
-- includes external actions such as API calls
-- includes outcome
+- local to one node
+- bounded by the node's contract
+- captures stimulus
+- captures permitted experience
+- captures produced interaction
+- does not attempt to store the full system story
+- may be linked through `intent_id` when execution is intent-driven
 
 Key property:
 
-"A thing that started, happened, and finished"
+"What this node received, used, and produced"
 
 ### 3. Clean Layered Backbone
 
 Current structure:
 
-- Episodes (core)
-- History (derived)
+- Episodes (scoped units)
+- History (factual component and reconstructed views)
+- Cognition (internal processing component)
 - Retained Experience (memory)
 - Patterns
 - Standing Intents
 
 Definitions:
 
-- Episodes: what happened as a coherent activity
-- History: what factually occurred in the episode
-- Retained Experience: what mattered about the episode
+- Episodes: bounded units of activity at node or intent scope
+- Node Episodes: atomic local records of node participation
+- Intent Episodes: higher-level episodes composed of related node episodes linked by `intent_id`
+- History: the factual record within episodes; larger history views are reconstructed from episodes over time
+- Cognition: the internal processing within episodes, separate from history
+- Retained Experience: the longer-lived experience layer that nodes draw from through contract-bounded experience access
 - Patterns: connections across retained experiences
 - Standing Intents: things that generate future episodes
 
-### 4. Separation of Fact vs Meaning
+### 4. Episode Structure: History + Cognition
 
 Decision:
 
-History and Retained Experience must be separate.
+Every episode contains two distinct components: history and cognition.
 
 History:
 
-- factual
-- minimal
-- stable
+- stimulus
+- interaction
+- external actions
+- state changes
+- timestamps
 - append-only
+- objective
+- non-interpretive
 
-Retained Experience:
+Cognition:
 
-- interpreted
-- enriched with meaning, salience, and confidence
-- evolves over time
+- interpretation
+- inference
+- ambiguity handling
+- decision formation
+- emerging intent
+- internal
+- bounded by scope
+- separate from history
 
 Why:
 
-- allows reinterpretation later
-- prevents meaning from corrupting ground truth
+- keeps facts separate from internal processing
+- prevents internal reasoning from corrupting the factual record
 
-### 5. Loose Coupling Between Layers
+### 5. History Is Derived, Not Stored
 
 Decision:
 
-These layers should be linked, not embedded.
+There is no single mutable history object.
 
-Examples:
+The system stores episodes as atomic records.
 
-- episode -> history
-- episode -> retained experience
-- retained experience -> patterns
+History is produced by:
 
-Not:
+- grouping episodes by scope and relation
+- ordering them over time
+- following `intent_id` when execution moves across nodes
 
-- one giant JSON object
+This supports node-scoped and intent-scoped views without requiring a global history object.
 
 Why:
 
@@ -122,7 +145,7 @@ You cannot encode cross-time meaning inside a single experience object.
 
 Decision:
 
-Some episodes create durable objects that generate future episodes.
+Some executions create durable objects that generate future episodes.
 
 Example:
 
@@ -133,13 +156,13 @@ This produces future episodes such as daily checks.
 So:
 
 - episodes are bounded
-- intents persist across episodes
+- standing intents persist across episodes
 
 ### 8. Perception Definition (Critical Anchor)
 
 Decision:
 
-Perception is the bounded runtime frame for the active episode.
+Perception is the bounded runtime frame through which a node handles the current work within its contract.
 
 Composed of:
 
@@ -162,23 +185,25 @@ Rejected:
 
 Decision:
 
-Purpose belongs to the node, not the episode.
+Purpose does not belong to an episode.
 
-### 10. Intrinsic Purpose (Strong Concept)
+It belongs with the node definition.
+
+### 10. Contract as Node Definition (Current Direction)
 
 Decision:
 
-Each node has a stable intrinsic purpose.
+Each node exists under a contract.
 
-Example:
+For now, `contract` is the high-level term for:
 
-"stay attentive to Mike"
+- why the node exists
+- what stimuli it responds to
+- what it can call
+- what it can touch
+- where its authority stops
 
-This governs:
-
-- what it should handle
-- what it should delegate
-- how it maintains coherence
+The exact contract schema is not yet defined.
 
 ### 11. Frame = Scope
 
@@ -188,7 +213,7 @@ The frame defines what is currently in scope for the node.
 
 So:
 
-- purpose = why the node exists
+- contract = why the node exists and its operating boundary
 - frame = what it can handle right now
 
 ### 12. Delegation (Key Mechanism)
@@ -199,11 +224,16 @@ When intent falls outside the frame, the node delegates.
 
 Not because it cannot, but because it is outside the scope of the current frame.
 
-This creates:
+This can create:
 
 - a new bounded context
-- a child node
-- a more specific purpose
+- delegation into more specific handling
+- structural pressure when the current arrangement is insufficient
+
+Important:
+
+- this does not, by itself, imply a new `intent_id`
+- structural change should not be treated as part of ordinary node execution
 
 ### 13. Node-Based Model (Instead of "Agents")
 
@@ -219,50 +249,69 @@ Use:
 
 Model:
 
-- nodes have intrinsic purpose
+- nodes exist under contracts
 - nodes operate within frames
 - nodes can delegate
 
-### 14. Episodes Still Matter (But Not for Purpose)
+### 14. Episode Needs Qualification
 
 Decision:
 
-Episodes remain the record of what happened.
+Episodes are the primary unit of activity, but they exist at different scopes.
 
-But:
+There is no single global episode object.
 
-- they do not carry deep purpose
-- they do not define system identity
+Use a qualified form when precision matters.
 
-They are the unit of activity, not the unit of intent.
+Right now, the defined forms are:
+
+- node episode
+- intent episode
+
+Not all episodes are intent-driven.
+
+History remains derived from episodes rather than stored as one mutable object.
+
+The exact relationship between episode cognition and retained experience remains open.
 
 ## Final Mental Model
 
 ```text
-Node (intrinsic purpose)
-   ->
+Node (contract)
+  operates within a
 Frame (current scope)
-   ->
-Episode (bounded activity)
-   ->
-History (facts)
-   ->
-Retained Experience (meaning)
-   ->
-Patterns (cross-episode connections)
+  and records a
+Node Episode (local scoped episode)
+
+Related Node Episodes
+  linked by intent_id
+  can form an
+Intent Episode (cross-node scoped episode)
+
+Every Episode contains
+  History (facts)
+  and
+  Cognition (internal processing)
+
+History views are reconstructed from episodes over time.
+
+Retained Experience and Patterns remain separate longer-lived layers.
 ```
 
 Additional dynamics:
 
 - Standing Intents generate future episodes
-- Delegation creates new nodes and frames when needed
+- Delegation can move work into more specific handling contexts
+- Delegation does not automatically create a new `intent_id`
 
 ## Important Insight
 
-- Purpose is durable and structural
-- Scope is local and dynamic
-- Episodes are what happened
-- Meaning is derived later
+- Episodes are scoped, not global
+- Contract is durable and structural
+- History records what happened
+- Cognition captures how it was understood
+- Intent coordinates execution across nodes when needed
+- History is reconstructed when needed
 
 This is a strong foundation.
 
