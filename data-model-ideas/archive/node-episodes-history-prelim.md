@@ -1,4 +1,4 @@
-# Node Episodes, Intent Episodes & History (Prelim)
+# Node Episodes, Intent Episodes & Reconstructed History (Prelim)
 
 ## Core Idea
 
@@ -13,20 +13,22 @@ There is no single global episode object.
 
 ## Node Episodes
 
-A node episode is the atomic unit of execution history.
+A node episode is a bounded grouping of one or more cycles of node participation.
 
-Each node episode represents:
+Each node episode organizes the active frame of that participation into:
 
-- the stimulus the node received
-- the experience it was allowed to use
-- the interaction it produced
+- interaction
+- recall
+- cognition
 
 A node episode is always:
 
 - bounded by the node's contract
 - local to that node's perspective
 
-A node does not record the full system story, only its participation.
+A node does not record the full system story, only its participation across its included cycles.
+
+When intent is present, a node episode may be associated with one or more `intent_id`s.
 
 ## Intent Episodes
 
@@ -42,7 +44,9 @@ An `intent_id` represents a unit of intent moving through the system.
 
 As work is delegated across nodes, the same `intent_id` is passed along.
 
-A node episode may be associated with multiple `intent_id`s.
+A single `intent_id` may link multiple node episodes.
+
+A single node episode may also participate in multiple `intent_id`s.
 
 Intent tracks execution flow, not all activity.
 
@@ -55,23 +59,36 @@ Examples:
 
 ## Episode Structure
 
-Every episode, regardless of scope, contains two distinct components.
+Every episode, regardless of scope, organizes its active frame into three distinct parts.
 
-### History
+### Interaction
 
-History records what occurred:
+Interaction captures exchange between the episode and the external world:
 
 - stimulus
-- interaction
+- interact
 - external actions
-- state changes
 - timestamps
 
-History is:
+Interaction is:
 
 - append-only
-- objective
-- non-interpretive
+- factual
+- directional
+
+### Recall
+
+Recall captures what was activated into scope:
+
+- anchors
+- understandings
+
+Recall is:
+
+- selected rather than exhaustive
+- bounded by scope
+- activation-driven
+- not a full memory dump
 
 ### Cognition
 
@@ -81,15 +98,16 @@ Cognition records internal processing:
 - inference
 - ambiguity handling
 - decision formation
-- emerging intent
+- candidate memory updates
 
 Cognition is:
 
 - internal
 - bounded by scope
-- separate from history
+- uses recall to interpret interaction
+- separate from interaction and recall
 
-## History
+## Reconstructed History
 
 History is not stored as a single mutable object.
 
@@ -100,7 +118,9 @@ The system stores episodes as atomic records.
 History emerges by:
 
 - grouping episodes by scope and relation
+- following cycles within each episode
 - ordering them over time
+- following `intent_id` when execution moves across nodes
 
 There is no single global history object.
 
@@ -120,6 +140,6 @@ The user-facing node formats and returns the answer, then completes its node epi
 
 These related node episodes form an intent episode.
 
-Each node records only its own view.
+Each node records only its own interaction, recall, and cognition across the cycles in that episode.
 
-The larger history can be reconstructed by grouping and ordering the related episodes.
+The larger history can be reconstructed by grouping and ordering the related episodes and their cycles.

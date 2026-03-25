@@ -19,15 +19,16 @@ This creates tension between:
 
 We have a well-defined atomic unit:
 
-Cycle = stimulus -> cognition -> interaction
+Cycle = stimulus -> activation/recall -> cognition -> interact
 
 This represents a single unit of execution.
 
 - Begins with stimulus
-- Ends with interaction
+- activates recall as needed
+- Ends with interact
 - Does not require a broader "completion" definition
 
-History and cognition are naturally expressed through these cycles.
+Interaction, recall, and cognition are naturally expressed through these cycles.
 
 ## Where the Tension Lies
 
@@ -52,6 +53,13 @@ Instead:
 - Nodes operate continuously
 - Activity is recorded as discrete cycles
 - Episodes are treated as semantic groupings of cycles
+- A node episode is currently treated as a bounded grouping of one or more cycles
+
+Current preliminary operating rule:
+
+- if the user has not said anything for 30 minutes, treat that inactivity boundary as the end of the current episode
+
+This should be treated as a practical heuristic for now, not a final definition of what an episode is.
 
 Boundaries are expected to emerge from:
 
@@ -64,14 +72,14 @@ Boundaries are expected to emerge from:
 
 Cycles are defined; episodes are inferred.
 
-## Open Question
+## Current Resolution
 
-It is not yet decided whether a node episode is:
+For now:
 
-- exactly one cycle
-- or a grouping of multiple cycles
+- the cycle is the atomic unit of execution
+- the node episode is a bounded grouping of multiple cycles
 
-This remains open.
+The remaining open question is not whether cycles or episodes exist, but how episode boundaries should eventually be defined beyond the current inactivity heuristic.
 
 ## Goal
 

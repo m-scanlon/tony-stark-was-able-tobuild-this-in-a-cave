@@ -2,17 +2,17 @@
 
 ## Core Framing
 
-Experience is the retained pattern that emerges from past interactions as interpreted through cognition.
+Experience is the retained layer of understandings anchored to entities and relationships.
 
-It is selective, persistent, and used to inform future cognition.
+It emerges from past episodes through consolidation and is used to inform future recall and cognition.
 
-Contract-level experience draws from this layer.
+Recall draws from this layer.
 
-The contract determines what portion of the experience layer a node is permitted to operate over.
+The recall mechanism determines what portion of the experience layer enters the episode frame.
 
 ## What Experience Contains
 
-Think in terms of what kinds of patterns can exist, not how they are stored.
+Think in terms of what kinds of understandings can exist, not just how they are stored.
 
 ### A. Entity Formation
 
@@ -25,7 +25,7 @@ Examples:
 - a tool
 - a recurring topic
 
-Experience allows the system to recognize something again.
+Experience allows the system to recognize something again through anchored understanding.
 
 ### B. Relationships
 
@@ -37,9 +37,9 @@ Examples:
 - Project <-> deadline
 - Capability <-> API
 
-This is where structure starts forming.
+This is where structure becomes usable as anchor substrate.
 
-### C. Patterns Over Time
+### C. Recurring Dynamics Over Time
 
 "this tends to happen"
 
@@ -49,7 +49,7 @@ Examples:
 - infra upgrades cause downstream issues
 - certain requests lead to follow-ups
 
-This is temporal intelligence.
+This is temporal intelligence expressed through understandings, not a separate pattern layer.
 
 ### D. Preferences / Tendencies
 
@@ -105,7 +105,7 @@ Experience is useful because of how it is used.
 
 ### A. Supports Recall
 
-Allows cognition to pull relevant patterns into the current frame.
+Allows the recall primitive to pull relevant understandings into the episode frame.
 
 ### B. Shapes Interpretation
 
@@ -149,29 +149,29 @@ Experience is not:
 - a single global object
 - guaranteed to be consistent or complete
 
-It is also not identical to contract-level experience.
+It is also not identical to recall itself.
 
-Contract-level experience is a bounded access surface over this layer.
+Recall is the bounded access process over this layer.
 
 ## Open Edges
 
 The following remain open:
 
-- how does cognition write to experience?
-- what determines retention, such as salience, repetition, intent, or something else?
-- how is experience retrieved into frame?
+- how is the "same understanding" resolved during consolidation?
+- how should strength be represented and updated?
+- how should activation be stored and queried?
 - do Life and System share storage or just abstraction?
 
 ## Short Framing Block
 
-Experience is the retained pattern that emerges from past interactions as interpreted through cognition.
+Experience is the retained layer of understandings anchored to entities and relationships.
 
-It is selective and persistent, and informs future interpretation, recall, and decision-making.
+It is selective and persistent, and informs future recall, interpretation, and decision-making.
 
 Experience may include:
 
-- entities and their relationships
-- patterns over time
+- entities and relationships
+- recurring dynamics over time
 - preferences and tendencies
 - salience and importance signals
 - capabilities and constraints
@@ -183,4 +183,4 @@ It appears to exist in at least two domains:
 - Life-oriented experience, or user world
 - System-oriented experience, or capabilities and execution
 
-The mechanisms for retention, retrieval, and update remain open questions.
+The detailed mechanisms for matching, strength updates, activation storage, and Life/System storage remain open questions.

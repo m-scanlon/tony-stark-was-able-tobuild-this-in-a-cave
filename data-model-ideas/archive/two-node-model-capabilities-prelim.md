@@ -7,7 +7,7 @@ The system is organized around two foundational nodes:
 - Life — determines user-facing meaning, attentiveness, and what matters
 - System — handles execution, routing, capabilities, and structure
 
-Both share the same contract shape, but differ in their domain of concern.
+Both share the same contract primitives, such as purpose, stimulus, and interact, but differ in their domain of concern.
 
 ## Devices as Capabilities
 

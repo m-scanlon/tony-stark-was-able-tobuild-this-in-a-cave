@@ -1,336 +1,228 @@
-# Data Model Prelim
+# Data Model Overview
 
-## Key Decisions (Today)
+## Core Framing
 
-### 1. Core Model Shift: From Graph to Scoped Episodes
+The system is not primarily a global graph.
 
-Decision:
+It is a temporal system organized around bounded episodes, runtime cognition inside those episodes, and a retained experience layer produced later through learning.
 
-A knowledge graph is not the primary data model.
+Canonical structure still matters, but it is the substrate the other layers refer into rather than the sole primary model.
 
-Instead:
+## Canonical Layers
 
-The system is composed of scoped episodes rather than a single global episode object.
+The current working model is:
 
-The currently defined scopes are:
+- `Structure` — canonical entities and relationships
+- `Episode` — bounded activity at node or intent scope
+- `Episode Field` — the scored entity/relationship layer active within the current episode
+- `Runtime Cognition` — callable runtime primitives and transient runtime artifacts inside the episode
+- `Retention Layer` — retained artifacts that survive the episode
+- `Reconstructed History` — derived views across episodes over time
 
-- node episode
-- intent episode
+This is the main layered backbone.
 
-History is reconstructed from episodes over time.
+## Applies To All Nodes
 
-Why:
+This model applies to any node in the system.
 
-- the system is temporal, not just relational
-- scoped participation matters
-- intent can coordinate execution across nodes
-- sequence, lifecycle, and reconstruction over time matter
-- graphs are better as a secondary layer for patterns and relations
+That includes:
 
-### 2. Node Episodes Are the Atomic Unit
+- user-facing or task-facing nodes
+- `Jarvis` (user-facing meaning node)
+- `Stark` (structural node)
 
-Decision:
+It is not outside the node model.
 
-A node episode is the atomic unit of execution history.
+## Cycles And Episodes
 
-Clarifications:
+A cycle is the atomic unit of execution.
 
-- local to one node
-- bounded by the node's contract
-- captures stimulus
-- captures permitted experience
-- captures produced interaction
-- does not attempt to store the full system story
-- may be linked through `intent_id` when execution is intent-driven
+The working cycle shape remains:
 
-Key property:
+```text
+stimulus -> recall -> cognition -> interact
+```
 
-"What this node received, used, and produced"
+A node episode is a bounded grouping of one or more cycles of one node's participation.
 
-### 3. Clean Layered Backbone
-
-Current structure:
-
-- Episodes (scoped units)
-- History (factual component and reconstructed views)
-- Cognition (internal processing component)
-- Retained Experience (memory)
-- Patterns
-- Standing Intents
-
-Definitions:
-
-- Episodes: bounded units of activity at node or intent scope
-- Node Episodes: atomic local records of node participation
-- Intent Episodes: higher-level episodes composed of related node episodes linked by `intent_id`
-- History: the factual record within episodes; larger history views are reconstructed from episodes over time
-- Cognition: the internal processing within episodes, separate from history
-- Retained Experience: the longer-lived experience layer that nodes draw from through contract-bounded experience access
-- Patterns: connections across retained experiences
-- Standing Intents: things that generate future episodes
-
-### 4. Episode Structure: History + Cognition
-
-Decision:
-
-Every episode contains two distinct components: history and cognition.
-
-History:
-
-- stimulus
-- interaction
-- external actions
-- state changes
-- timestamps
-- append-only
-- objective
-- non-interpretive
-
-Cognition:
-
-- interpretation
-- inference
-- ambiguity handling
-- decision formation
-- emerging intent
-- internal
-- bounded by scope
-- separate from history
-
-Why:
-
-- keeps facts separate from internal processing
-- prevents internal reasoning from corrupting the factual record
-
-### 5. History Is Derived, Not Stored
-
-Decision:
-
-There is no single mutable history object.
-
-The system stores episodes as atomic records.
-
-History is produced by:
-
-- grouping episodes by scope and relation
-- ordering them over time
-- following `intent_id` when execution moves across nodes
-
-This supports node-scoped and intent-scoped views without requiring a global history object.
-
-Why:
-
-- different lifecycles
-- future reinterpretation
-- cleaner evolution
-
-### 6. Patterns Are a First-Class Layer
-
-Decision:
-
-Patterns exist between experiences, not inside them.
-
-They represent:
-
-- habits
-- repetition
-- similarity
-- behavioral arcs
-
-Important realization:
-
-You cannot encode cross-time meaning inside a single experience object.
-
-### 7. Standing Intents (Continuity)
-
-Decision:
-
-Some executions create durable objects that generate future episodes.
-
-Example:
-
-"check email daily at 9pm"
-
-This produces future episodes such as daily checks.
-
-So:
-
-- episodes are bounded
-- standing intents persist across episodes
-
-### 8. Perception Definition (Critical Anchor)
-
-Decision:
-
-Perception is the bounded runtime frame through which a node handles the current work within its contract.
-
-Composed of:
-
-- stimuli
-- selected history
-- selected retained experience
-- optionally patterns
-
-Not:
-
-- global state
-- full history
-- storage object
-
-### 9. Purpose Reframed (Important Correction)
-
-Rejected:
-
-- "episodic purpose" as a field
-
-Decision:
-
-Purpose does not belong to an episode.
-
-It belongs with the node definition.
-
-### 10. Contract as Node Definition (Current Direction)
-
-Decision:
-
-Each node exists under a contract.
-
-For now, `contract` is the high-level term for:
-
-- why the node exists
-- what stimuli it responds to
-- what it can call
-- what it can touch
-- where its authority stops
-
-The exact contract schema is not yet defined.
-
-### 11. Frame = Scope
-
-Decision:
-
-The frame defines what is currently in scope for the node.
-
-So:
-
-- contract = why the node exists and its operating boundary
-- frame = what it can handle right now
-
-### 12. Delegation (Key Mechanism)
-
-Decision:
-
-When intent falls outside the frame, the node delegates.
-
-Not because it cannot, but because it is outside the scope of the current frame.
-
-This can create:
-
-- a new bounded context
-- delegation into more specific handling
-- structural pressure when the current arrangement is insufficient
-
-Important:
-
-- this does not, by itself, imply a new `intent_id`
-- structural change should not be treated as part of ordinary node execution
-
-### 13. Node-Based Model (Instead of "Agents")
-
-Decision:
-
-Avoid "agent".
-
-Use:
-
-- node
-- child node
-- delegated node
-
-Model:
-
-- nodes exist under contracts
-- nodes operate within frames
-- nodes can delegate
-
-### 14. Episode Needs Qualification
-
-Decision:
-
-Episodes are the primary unit of activity, but they exist at different scopes.
+An intent episode is a higher-level grouping of related node episodes linked by shared `intent_id`.
 
 There is no single global episode object.
 
-Use a qualified form when precision matters.
+## Episode Frame
 
-Right now, the defined forms are:
+Every episode organizes its active frame into:
 
-- node episode
-- intent episode
+- `interaction`
+- `recall`
+- `cognition`
 
-Not all episodes are intent-driven.
+Interaction:
 
-History remains derived from episodes rather than stored as one mutable object.
+- incoming stimulus
+- outgoing interact
+- external actions
+- timestamps
 
-The exact relationship between episode cognition and retained experience remains open.
+Recall:
 
-## Final Mental Model
+- retained artifacts activated into scope from retained experience
+- selected rather than exhaustive
+- bounded by episode context
 
-```text
-Node (contract)
-  operates within a
-Frame (current scope)
-  and records a
-Node Episode (local scoped episode)
+Cognition:
 
-Related Node Episodes
-  linked by intent_id
-  can form an
-Intent Episode (cross-node scoped episode)
+- in-episode reasoning and decision formation
+- runtime primitive execution
+- transient runtime artifact production
 
-Every Episode contains
-  History (facts)
-  and
-  Cognition (internal processing)
+## Episode Field
 
-History views are reconstructed from episodes over time.
+Each active episode should also maintain an episode field.
 
-Retained Experience and Patterns remain separate longer-lived layers.
-```
+The episode field is:
 
-Additional dynamics:
+- the scored entity/relationship layer of the current episode
+- the structural representation of what the episode is about right now
+- the main scoring surface that recall uses
 
-- Standing Intents generate future episodes
-- Delegation can move work into more specific handling contexts
-- Delegation does not automatically create a new `intent_id`
+It is not a separate abstract theme object.
 
-## Important Insight
+It is the accumulated scored structure of the episode itself.
 
-- Episodes are scoped, not global
-- Contract is durable and structural
-- History records what happened
-- Cognition captures how it was understood
-- Intent coordinates execution across nodes when needed
-- History is reconstructed when needed
+## Runtime Cognition
 
-This is a strong foundation.
+Runtime cognition occurs inside the active episode.
 
-## Idea for Later (Not Locked In)
+The current key distinction is:
 
-### Chain of Thought as a Shared Tool
+- runtime primitives are callable in-episode operations
+- runtime artifacts are transient outputs of those operations
 
-Idea:
+Runtime artifacts are not retained by default.
 
-Chain of Thought is not the front-facing mind.
+They remain episode-local unless later learning selects them into retained experience.
 
-It is a reusable reasoning and orchestration tool available to any node.
+## Retained Experience
 
-Used when:
+The retention layer is the layer of retained experience.
 
-- execution is unclear
-- ambiguity exists
-- structured reasoning is needed
+It is not the episode itself.
 
-Not used when:
+It is composed of retained artifacts, currently:
 
-- direct execution is sufficient
+- `retained_trace`
+- `retained_understanding`
+- `retained_salience`
+- `retained_tension`
+
+All retained artifacts share an `anchor_set` into canonical structure.
+
+`retained_trace` remains distinct from the derived retained artifact types.
+
+This preserves the boundary between:
+
+- what happened
+- what it meant
+- what mattered
+- what remained unresolved
+
+## Recall
+
+Recall is the read path from retained experience into the active episode frame.
+
+At a high level:
+
+1. the current stimulus updates the episode field
+2. the episode field scores entities and relationships
+3. the dominant connected slice of that field becomes the active recall surface
+4. retained artifacts with overlapping anchors are fetched and ranked
+5. a bounded mixed set enters recall
+
+Recall is therefore driven by:
+
+- the incoming stimulus
+- the accumulated structure of the current episode
+- structural overlap between the episode field and retained artifacts
+
+## Learning
+
+Learning is the write path from episodes into retained experience and structure.
+
+Learning is not ordinary runtime cognition.
+
+It is the later process that decides what from an episode should survive as:
+
+- retained traces
+- derived retained artifacts
+- structure updates
+
+Runtime artifacts may inform learning, but they do not become retained experience automatically.
+
+## Structure
+
+Structure remains canonical.
+
+It contains:
+
+- entities
+- relationships
+
+Retained artifacts do not replace structure.
+
+They refer into it through `anchor_set`.
+
+The episode field also scores over that same structural substrate.
+
+## History
+
+History is not stored as one mutable object.
+
+It is reconstructed from:
+
+- episodes
+- their cycles
+- their ordering over time
+- shared `intent_id`
+
+Different scopes may reconstruct different histories from the same underlying episodic records.
+
+## Node Contract
+
+Every node exists under a contract.
+
+At the contract level, the core primitives remain:
+
+- `purpose`
+- `stimulus`
+- `interact`
+
+These define the node's boundary and eligibility to act.
+
+They are not the same thing as runtime callable primitives inside an episode.
+
+## Current Design Posture
+
+The strongest current claims are:
+
+- episodes are the primary bounded unit of activity
+- the episode field is the scored structural layer active within an episode
+- runtime primitives and runtime artifacts belong to in-episode cognition
+- retained artifacts belong to retained experience
+- recall reads from retained experience through the scored episode field
+- learning writes from episodes into retained experience and structure
+- the same model applies across node types, including `Jarvis` and `Stark`
+
+## Short Framing
+
+The current data model is a layered episode-based architecture.
+
+Episodes hold active work.
+
+Episode fields score the current structural context.
+
+Runtime cognition operates inside episodes.
+
+Learning turns selected episode outcomes into retained artifacts.
+
+Recall brings retained artifacts back into later episodes through shared structural anchors.

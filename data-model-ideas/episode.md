@@ -6,88 +6,151 @@ An episode is a bounded unit of activity at a given scope.
 
 There is no single global episode object.
 
-When precision matters, the episode scope should be qualified.
+When precision matters, the scope should be qualified.
 
 ## Scoped Episode Forms
 
-Currently defined:
+The currently defined episode forms are:
 
-- node episode
-- intent episode
+- `node episode`
+- `intent episode`
 
-Episodes are the primary unit of activity.
-
-Intent is optional and exists when execution requires coordination.
-
-Each episode captures activity relative to its scope.
+Episodes are the primary bounded unit of activity.
 
 ## Node Episode
 
-A node episode represents a node's bounded participation in system activity.
-
-It records:
-
-- the stimulus the node received
-- the experience it was allowed to use
-- the interaction it produced
+A node episode is a bounded grouping of one or more cycles of one node's participation.
 
 A node episode is:
 
-- bounded by the node's contract
 - local to that node's perspective
-
-A node episode records only that node's participation.
+- bounded by that node's contract
+- a record of that node's participation rather than the whole system story
 
 When intent is present, a node episode may be linked to one or more `intent_id`s.
 
 ## Intent Episode
 
-An intent episode represents the lifecycle of an intent as it moves through the system.
+An intent episode is a higher-level view of execution across nodes.
 
-It is composed of multiple node episodes linked by shared `intent_id`.
+It is composed of related node episodes linked by shared `intent_id`.
 
-An intent episode provides a higher-level view of execution across nodes.
+Intent episodes are reconstructed across nodes rather than lived from one single perspective.
 
-## Episode Structure
+## Episode Frame
 
-Every episode, regardless of scope, contains two distinct components: history and cognition.
+The active frame of an episode is organized into:
 
-History:
+- `interaction`
+- `recall`
+- `cognition`
 
-- records what occurred
-- is append-only
-- is objective
-- is non-interpretive
+Interaction captures:
 
-Cognition:
+- incoming stimulus
+- outgoing interact
+- external actions
+- timestamps
 
-- records internal processing
-- is bounded by scope
-- is separate from history
+Interaction is factual, directional, and append-only.
 
-## Intent and Continuity
+Recall captures:
 
-Continuity across the system is maintained through shared `intent_id`.
+- retained artifacts activated into scope from retained experience
+- a selected bounded set, not a full dump
 
-Intent links related node episodes when execution flows across nodes.
+Recall may include mixed retained artifact types such as:
+
+- trace
+- understanding
+- salience
+- tension
+
+Cognition captures:
+
+- in-episode reasoning
+- ambiguity handling
+- runtime primitive execution
+- transient runtime artifact production
+- decision formation
+
+Cognition is internal and bounded by the episode.
+
+## Episode Field
+
+In addition to the frame, each active episode should maintain an episode field.
+
+The episode field is:
+
+- the scored entity/relationship layer of the episode
+- the structural representation of what is currently active in that episode
+- the main scoring surface used by recall
+
+It sits just behind the current turn inside the episode.
+
+It is not a separate theme object.
+
+## Cycles
+
+A cycle is the atomic unit of execution.
+
+The current working cycle shape is:
+
+```text
+stimulus -> recall -> cognition -> interact
+```
+
+A node episode contains one or more such cycles.
+
+## Intent And Continuity
+
+`intent_id` provides continuity when work moves across nodes.
 
 Intent tracks execution flow, not all activity.
 
 Not all episodes are intent-driven.
 
-Examples:
+Examples of non-intent-driven activity include:
 
-- user sharing context
 - conversational interaction
+- user sharing context
 
-## History
+## Reconstructed History
 
 There is no single global history object.
 
-History is reconstructed from episodes by grouping them and ordering them over time.
+History is reconstructed from:
+
+- episodes
+- their included cycles
+- their ordering over time
+- their scope and relation
+- shared `intent_id`
+
+## Boundaries
+
+Episode boundaries are still operationally heuristic rather than fully settled ontologically.
+
+The current practical rule remains that inactivity may close an episode.
+
+That rule is useful, but not final.
 
 ## Current Design Posture
 
-The currently defined forms are `node episode` and `intent episode`.
+The strongest current claims are:
 
-The exact relationship between episode cognition and retained experience remains open.
+- episodes are scoped and bounded
+- node episodes are the primary local record of participation
+- intent episodes are reconstructed across nodes
+- the episode frame is organized as interaction, recall, and cognition
+- the episode field is the scored structural layer active inside the episode
+
+## Short Framing
+
+An episode is a bounded scoped unit of activity.
+
+Its frame contains interaction, recall, and cognition.
+
+Its episode field maintains the scored structural context active during that episode.
+
+History is reconstructed from episodes over time rather than stored as one mutable object.

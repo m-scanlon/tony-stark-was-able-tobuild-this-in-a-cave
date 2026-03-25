@@ -1,61 +1,100 @@
 # Node Contract (v0)
 
-## Node Contract Axioms (v0)
+## Core Contract Axioms
 
-### 1. Purpose
+Every node exists under a contract.
+
+The contract defines:
+
+- why the node exists
+- what stimuli it may respond to
+- what outward interaction forms it may emit
+
+At the contract level, the active primitives remain:
+
+- `purpose`
+- `stimulus`
+- `interact`
+
+## 1. Purpose
 
 A node must have a defined reason for existing.
 
-Its purpose bounds the role it plays in the system.
+Purpose bounds:
 
-### 2. Stimulus
+- its role
+- its responsibilities
+- its limits
+
+Purpose belongs to the node definition, not to the episode.
+
+## 2. Stimulus
 
 A node may only be invoked by valid stimulus.
 
-If the input does not match its accepted form, the node is not eligible to act.
+If incoming stimulus does not match the node's accepted form, the node is not eligible to act.
 
-### 3. Experience
+Stimulus therefore defines the node's input boundary.
 
-A node may only operate over permitted experience.
+## 3. Interact
 
-It can use only the context, memory, and state made available within its bounds.
+A node may only emit valid interact output.
 
-This contract-level experience draws from the broader experience layer.
+Its output must conform to forms the kernel and surrounding system can receive and interpret.
 
-### 4. Interaction
+Interact therefore defines the node's outward action boundary.
 
-A node may only produce valid interaction.
+## Contract Level vs Runtime Level
 
-Its output must conform to defined forms the system can receive and interpret.
+Contract primitives are not the same thing as runtime callable primitives.
 
-## Purpose
+The contract says:
 
-Every node exists to perform a specific, bounded role in the system.
+- what the node is for
+- what can wake it up
+- what kinds of outward result it may emit
 
-Its purpose defines what it is responsible for and what it is not.
+Runtime primitives are in-episode operations the node may issue through the kernel during cognition.
 
-## Stimulus
+Those belong to runtime execution, not the core contract surface.
 
-Every node accepts only defined input signals.
+## Same Contract Model Across Nodes
 
-These signals must match the node's expected shape.
+This contract model applies across node roles.
 
-If the stimulus does not match, the node does not execute.
+That includes:
 
-## Experience
+- user-facing or task-facing nodes
+- `Jarvis` as the user-facing meaning node
+- `Stark` as the structural node
 
-Every node operates over a bounded set of accessible context and state.
+What differs between nodes is role and allowed behavior, not the existence of a separate ontology.
 
-This includes only the memory, data, or system information it is permitted to use.
+## Episode Relation
 
-This bounded experience is drawn from the broader experience layer.
+A node contract bounds what may happen inside a node episode.
 
-A node cannot access anything outside of this scope.
+The contract does not store the episode itself.
 
-## Interaction
+Instead:
 
-Every node produces only defined outputs.
+- the node contract is durable
+- the node episode is bounded runtime participation under that contract
 
-These outputs must conform to known interaction types that other nodes or the system can understand.
+## Possible Future Additions
 
-A node cannot emit arbitrary or undefined results.
+Potential contract-adjacent additions may later include ideas such as:
+
+- allowed runtime primitive menus
+- recall policy or recall defaults
+- capability constraints
+
+Those are not part of the active v0 contract surface yet.
+
+## Short Framing
+
+The node contract defines why a node exists, what stimulus it may act on, and what interact output it may emit.
+
+It is the node's durable boundary.
+
+Runtime cognition happens inside episodes under that boundary.
