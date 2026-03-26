@@ -1,0 +1,5 @@
+target/
+.venv/
+models/*.bin
+models/*.spell
+models/*.tar.gz
