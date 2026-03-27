@@ -39,11 +39,18 @@ Intent episodes are reconstructed across nodes rather than lived from one single
 
 ## Episode Frame
 
-The active frame of an episode is organized into:
+The active frame of an episode is projected from the episode.
 
+The current frame layout is:
+
+- `purpose`
 - `interaction`
 - `recall`
-- `cognition`
+- `available_primitives`
+
+This is not the same thing as the whole episode.
+
+The episode remains the bounded runtime container.
 
 Interaction captures:
 
@@ -66,15 +73,12 @@ Recall may include mixed retained artifact types such as:
 - salience
 - tension
 
-Cognition captures:
+Available primitives captures:
 
-- in-episode reasoning
-- ambiguity handling
-- runtime primitive execution
-- transient runtime artifact production
-- decision formation
+- the currently allowed runtime action surface for the episode
+- the operations inference may choose next
 
-Cognition is internal and bounded by the episode.
+It is projected into frame because it bounds what the node may do at that moment.
 
 ## Episode Field
 
@@ -90,17 +94,25 @@ It sits just behind the current turn inside the episode.
 
 It is not a separate theme object.
 
-## Cycles
+## Runtime Turns
 
-A cycle is the atomic unit of execution.
+The exact atomic runtime turn is not fully locked yet.
 
-The current working cycle shape is:
+Earlier shorthand such as:
 
 ```text
 stimulus -> recall -> cognition -> interact
 ```
 
-A node episode contains one or more such cycles.
+was useful, but should not be treated as the final canonical runtime loop.
+
+What is stable now is:
+
+- nodes are event-driven
+- episodes group bounded spans of runtime activity
+- events may lead to recall, inference, command dispatch, interaction, and command-result writeback
+
+A node episode contains one or more such bounded runtime turns.
 
 ## Intent And Continuity
 
@@ -142,14 +154,14 @@ The strongest current claims are:
 - episodes are scoped and bounded
 - node episodes are the primary local record of participation
 - intent episodes are reconstructed across nodes
-- the episode frame is organized as interaction, recall, and cognition
+- the frame is projected from the episode as purpose, interaction, recall, and available primitives
 - the episode field is the scored structural layer active inside the episode
 
 ## Short Framing
 
 An episode is a bounded scoped unit of activity.
 
-Its frame contains interaction, recall, and cognition.
+Its frame is projected from episode state.
 
 Its episode field maintains the scored structural context active during that episode.
 

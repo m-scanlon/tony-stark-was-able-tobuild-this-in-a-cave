@@ -12,31 +12,31 @@ These are not the same layer.
 
 Retained artifacts belong to learning and longer-lived retained experience.
 
-Runtime primitives and runtime artifacts belong to cognition inside an active episode.
+Runtime commands and runtime artifacts belong to runtime execution inside an active episode.
 
 ## The Split
 
 The current working split is:
 
 - retained artifacts are long-lived outputs of learning
-- runtime primitives are callable operations the node can invoke during cognition
-- runtime artifacts are transient outputs produced by those primitives inside an episode
+- runtime commands are callable operations the node can invoke during runtime execution
+- runtime artifacts are transient outputs produced by those commands inside an episode
 
-This means the system should not treat every cognitive result as retained memory.
+This means the system should not treat every runtime result as retained memory.
 
-Most cognition should remain runtime-local unless later learning decides it should be retained.
+Most runtime execution should remain episode-local unless later learning decides it should be retained.
 
-## Runtime Primitive
+## Runtime Command
 
-A runtime primitive is a callable operation that the node may issue during an active episode.
+A runtime command is a callable operation that the node may issue during an active episode.
 
 Conceptually:
 
 ```text
-skyra <primitive> -<args>
+skyra <namespace> <command> <args>
 ```
 
-The primitive command is emitted by the node.
+The command is emitted by the node.
 
 The kernel receives that command and remains the authority over what happens next.
 
@@ -47,22 +47,22 @@ The kernel is the organizer and authority for runtime primitive execution.
 At a high level, the flow is:
 
 1. the node sees the current frame
-2. the node emits a primitive command
-3. the kernel validates that command
-4. the kernel applies the primitive's frame template
-5. the primitive executes
-6. the resulting runtime artifact or computation output is written into the frame
-7. the node chooses the next primitive
+2. inference selects an allowed runtime command
+3. the node emits that command
+4. the kernel validates and dispatches it
+5. the command executes
+6. the resulting runtime artifact or interaction-relevant output is written back into episode state
+7. the node may later project another frame and choose the next command
 
 This means:
 
 - the node chooses the next operation
-- the kernel controls execution and frame transition
-- runtime cognition unfolds as a sequence of bounded operations
+- the kernel controls execution and writeback
+- runtime execution unfolds as a sequence of bounded operations
 
 ## Runtime Artifacts
 
-A runtime artifact is a transient output produced during cognition inside an episode.
+A runtime artifact is a transient output produced during runtime execution inside an episode.
 
 Runtime artifacts are:
 
@@ -91,18 +91,18 @@ That creates confusion about what should exist only inside an active episode ver
 
 The intended rule is:
 
-- runtime cognition may produce many transient artifacts
+- runtime execution may produce many transient artifacts
 - learning later decides whether any of that becomes retained experience
 
 ## Interpret
 
-`interpret` is a strong candidate for a runtime primitive.
+`interpret` is a strong candidate for a runtime command.
 
 Its role would be:
 
 - help the node make sense of confusing, incomplete, or ambiguous stimulus
 - produce a transient runtime artifact
-- shape the current frame for later cognition
+- shape later inference and episode-local state
 
 It should not create retained understanding by default.
 
@@ -115,7 +115,7 @@ Instead:
 
 The current working distinction is:
 
-- runtime artifact = transient cognitive output inside an episode
+- runtime artifact = transient runtime output inside an episode
 - retained artifact = long-lived retained experience selected by learning
 
 Retained artifacts currently include:
@@ -133,9 +133,10 @@ This split also implies a cleaner kernel organization.
 
 The kernel may eventually need separate sections or subsystems for:
 
-- primitive command routing
-- primitive validation
-- frame template application
+- command routing
+- command validation
+- command dispatch
+- command-result writeback
 - bounded computation
 - runtime artifact handling
 - interaction handling
@@ -153,7 +154,7 @@ That means learning may use:
 
 - the episode record
 - the episode's structural field
-- runtime artifacts produced during cognition
+- runtime artifacts produced during runtime execution
 - interaction outputs
 
 to decide what should become retained experience.
@@ -162,23 +163,23 @@ to decide what should become retained experience.
 
 The strongest current claims are:
 
-- callable runtime primitives are distinct from retained artifacts
-- runtime artifacts are transient outputs of runtime primitives
-- the kernel is the authority over primitive execution and frame transition
+- callable runtime commands are distinct from retained artifacts
+- runtime artifacts are transient outputs of runtime commands
+- the kernel is the authority over command execution and writeback
 - runtime artifacts should be available to later learning
-- `interpret` is a good candidate for a runtime primitive
+- `interpret` is a good candidate for a runtime command
 - `interpret` should not create retained understanding by default
 
-The exact primitive menu remains open.
+The exact command surface remains open.
 
 ## Short Framing
 
-The system should distinguish between runtime cognition and retained experience.
+The system should distinguish between runtime execution and retained experience.
 
-Runtime primitives are callable in-episode operations.
+Runtime commands are callable in-episode operations.
 
 Runtime artifacts are transient outputs of those operations.
 
 Retained artifacts are longer-lived outputs of learning.
 
-The kernel remains the authority that validates primitive execution, applies frame templates, and organizes runtime progression.
+The kernel remains the authority that validates command execution, routes writeback, and organizes runtime progression.

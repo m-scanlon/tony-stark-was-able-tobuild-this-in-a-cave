@@ -1,5 +1,22 @@
 # Episode Representation Layer v0
 
+Archived as superseded.
+
+This document described a separate episode-side representation object for recall.
+
+That role is now handled more directly by:
+
+- `episode_field` inside the episode
+- the current episode contract
+- the current recall bridge docs
+
+The remaining useful ideas here are:
+
+- optional semantic sidecars
+- optional runtime-artifact references inside a recall-oriented query surface
+
+Those ideas may return later, but this document should not be treated as active canon for `v1`.
+
 This layer is separate from the episode itself.
 
 It is a derived, mutable representation of what is active in the current episode.

@@ -180,7 +180,7 @@ type RecalledArtifact = {
 }
 ```
 
-This recalled set then enters the current episode frame for cognition.
+This recalled set then enters the current episode frame for inference and runtime execution.
 
 ## Current Design Posture
 

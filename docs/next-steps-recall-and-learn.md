@@ -35,23 +35,38 @@ Do not focus on these yet:
 
 ### 1. Node Foundation v0
 
-Define:
+Status:
 
-- what Stark provides at node birth
-- what the node owns versus what the episode owns
-- how the active contract gates acceptable stimulus/events
-- how the node opens or reuses an episode
-- how the node updates episode-local state and projects a frame
-- what generic primitive execution substrate the node uses so the runtime can support loops like `OODA`, `ReAct`, or one-shot execution without hardcoding one fixed loop
-- how the active contract defines the allowed loop envelope for that node
-- how inference may choose the actual next step or loop progression inside that contract-bounded envelope
-- how later contract updates may be adopted safely
+- materially complete enough for `v1`
 
-Outputs:
+Covered:
+
+- node birth
+- node substrate interface
+- node vs episode ownership
+- event intake posture
+- mailbox posture
+- episode reuse/closure policy
+- pending command handling posture
+- contract publication timing
+- command allowance surface
+- node process framing
+
+Canonical outputs now in place:
 
 - `node-birth-v0.md`
+- `node-substrate-interface-v0.md`
+- `node-and-episode-ownership-v0.md`
 - `node-process-v0.md`
-- `contract-update-v0.md`
+- `node-open-questions-v0.md`
+- `command-namespace-prelim.md`
+- `interaction-unification-prelim.md`
+
+Remaining node gap:
+
+- inference-readiness / frame projection timing remains open
+
+This should not block moving to recall.
 
 ### 2. Recall v0
 

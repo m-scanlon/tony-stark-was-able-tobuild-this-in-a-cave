@@ -17,22 +17,26 @@ This creates tension between:
 
 ## What Is Clear
 
-We have a well-defined atomic unit:
+We do have bounded runtime activity, but the exact atomic turn shape is not fully locked.
 
-Cycle = stimulus -> activation/recall -> cognition -> interact
+What is currently stable is:
 
-This represents a single unit of execution.
+- nodes are event-driven
+- routed events update bounded episode state
+- recall, inference, command dispatch, interaction, and command-result writeback may all occur inside one episode
+- episodes group that activity into bounded spans
 
-- Begins with stimulus
-- activates recall as needed
-- Ends with interact
-- Does not require a broader "completion" definition
+Older shorthand such as:
 
-Interaction, recall, and cognition are naturally expressed through these cycles.
+```text
+stimulus -> recall -> cognition -> interact
+```
+
+was useful, but should not be treated as the final canonical runtime loop.
 
 ## Where the Tension Lies
 
-The open question is not how execution works, but:
+The open question is not whether bounded runtime turns exist, but:
 
 How do we group cycles into meaningful higher-level units?
 
@@ -51,9 +55,9 @@ We do not enforce a strict definition of episode boundaries at this time.
 Instead:
 
 - Nodes operate continuously
-- Activity is recorded as discrete cycles
-- Episodes are treated as semantic groupings of cycles
-- A node episode is currently treated as a bounded grouping of one or more cycles
+- Activity is recorded as bounded runtime events/turns
+- Episodes are treated as bounded groupings of that activity
+- A node episode is currently treated as a bounded grouping of one or more routed-event turns
 
 Current preliminary operating rule:
 
@@ -70,16 +74,16 @@ Boundaries are expected to emerge from:
 
 ## Guiding Principle
 
-Cycles are defined; episodes are inferred.
+Bounded runtime turns exist; episode boundaries are inferred.
 
 ## Current Resolution
 
 For now:
 
-- the cycle is the atomic unit of execution
-- the node episode is a bounded grouping of multiple cycles
-
-The remaining open question is not whether cycles or episodes exist, but how episode boundaries should eventually be defined beyond the current inactivity heuristic.
+- the node is event-driven
+- the episode is a bounded grouping of routed-event activity
+- inactivity remains the practical closure heuristic
+The remaining open question is how episode boundaries should eventually be defined beyond the current inactivity heuristic.
 
 ## Goal
 

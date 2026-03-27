@@ -15,7 +15,7 @@ Learning may draw from:
 - completed episodes
 - the episode field
 - interaction records
-- runtime artifacts produced during cognition
+- runtime artifacts produced during runtime execution
 - previously active retained artifacts present in recall
 
 These inputs give learning both:
@@ -90,7 +90,7 @@ Retention remains selective.
 
 Runtime artifacts should remain available to learning.
 
-That means in-episode interpretation or other transient cognition may inform what gets retained later.
+That means in-episode interpretation or other transient runtime execution may inform what gets retained later.
 
 But runtime artifacts are not retained by default.
 
@@ -122,7 +122,7 @@ Retention should remain selective and bounded.
 
 ### 3. Runtime First, Retained Later
 
-In-episode cognition may produce runtime artifacts freely.
+In-episode runtime execution may produce runtime artifacts freely.
 
 Only learning decides whether any of that becomes retained experience.
 

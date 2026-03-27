@@ -2,114 +2,161 @@
 
 ## Core Framing
 
-The system is not primarily a global graph.
+The system is not primarily a global graph and it is not primarily a prompt transcript.
 
-It is a temporal system organized around bounded episodes, runtime cognition inside those episodes, and a retained experience layer produced later through learning.
+It is a runtime system organized around:
 
-Canonical structure still matters, but it is the substrate the other layers refer into rather than the sole primary model.
+- durable nodes under contract
+- bounded episodes inside those nodes
+- a scored structural layer active within each episode
+- projected frames for inference
+- retained artifacts produced later through learning
+
+Canonical structure still matters, but it is the substrate these other layers refer into rather than the sole primary model.
 
 ## Canonical Layers
 
 The current working model is:
 
 - `Structure` — canonical entities and relationships
-- `Episode` — bounded activity at node or intent scope
+- `Node` — durable runtime operator under contract
+- `Episode` — bounded runtime container for one span of activity
 - `Episode Field` — the scored entity/relationship layer active within the current episode
-- `Runtime Cognition` — callable runtime primitives and transient runtime artifacts inside the episode
+- `Frame` — the bounded inference page projected from the current episode
+- `Runtime Execution` — namespaced commands and transient runtime artifacts inside the episode
 - `Retention Layer` — retained artifacts that survive the episode
 - `Reconstructed History` — derived views across episodes over time
 
-This is the main layered backbone.
+This is the current backbone.
 
 ## Applies To All Nodes
 
-This model applies to any node in the system.
+This model applies across node types.
 
 That includes:
 
 - user-facing or task-facing nodes
-- `Jarvis` (user-facing meaning node)
-- `Stark` (structural node)
+- `Jarvis`
+- `Stark`
 
-It is not outside the node model.
+The same layered runtime model applies even when a node has a different purpose.
 
-## Cycles And Episodes
+## Node And Contract
 
-A cycle is the atomic unit of execution.
+Every node exists under a contract.
 
-The working cycle shape remains:
+At the current contract level, the durable boundary remains:
 
-```text
-stimulus -> recall -> cognition -> interact
-```
+- `purpose`
+- `stimulus`
+- `interact`
 
-A node episode is a bounded grouping of one or more cycles of one node's participation.
+These define:
 
-An intent episode is a higher-level grouping of related node episodes linked by shared `intent_id`.
+- why the node exists
+- what may wake it up
+- what outward interaction forms it may emit
 
-There is no single global episode object.
+The contract is durable.
 
-## Episode Frame
+The node is the long-lived runtime operator acting under that contract.
 
-Every episode organizes its active frame into:
+## Episode
 
-- `interaction`
+An episode is the bounded runtime container for one span of activity.
+
+It is the main episode-local state container from which the frame is projected.
+
+The current core episode sections are:
+
+- `purpose`
+- `interaction_history`
 - `recall`
-- `cognition`
+- `episode_field`
+- `available_primitives`
 
-Interaction:
+The episode is not the same thing as the frame.
 
-- incoming stimulus
-- outgoing interact
-- external actions
-- timestamps
+The episode is the source of truth for bounded runtime state.
 
-Recall:
+## Frame
 
-- retained artifacts activated into scope from retained experience
-- selected rather than exhaustive
-- bounded by episode context
+The frame is the full page consumed by inference.
 
-Cognition:
+It is projected from the current episode.
 
-- in-episode reasoning and decision formation
-- runtime primitive execution
-- transient runtime artifact production
+The current frame layout is:
+
+1. `purpose`
+2. `interaction`
+3. `recall`
+4. `available_primitives`
+
+The frame should stay smaller than the episode.
+
+It is the bounded inference page, not the durable runtime container.
+
+## Interaction
+
+Interaction should remain unified and chronological by default.
+
+That means:
+
+- one chronological interaction log inside the episode
+- typed events inside that log
+- no premature splitting into many separate frame channels
+
+The frame later projects:
+
+- `current_stimulus`
+- `recent_interaction_history`
+
+from the larger interaction history.
 
 ## Episode Field
 
-Each active episode should also maintain an episode field.
+Each episode maintains an `episode_field`.
 
 The episode field is:
 
-- the scored entity/relationship layer of the current episode
+- the scored entity/relationship layer active within the current episode
 - the structural representation of what the episode is about right now
-- the main scoring surface that recall uses
+- the main cue surface that recall uses
 
-It is not a separate abstract theme object.
+It is not:
 
-It is the accumulated scored structure of the episode itself.
+- interaction history
+- retained recall itself
+- a separate abstract theme object
 
-## Runtime Cognition
+It is the dynamically updated structural layer sitting behind the current frame.
 
-Runtime cognition occurs inside the active episode.
+## Runtime Execution
 
-The current key distinction is:
+Runtime execution occurs inside the active episode.
 
-- runtime primitives are callable in-episode operations
+The current key split is:
+
+- runtime commands are callable in-episode operations
 - runtime artifacts are transient outputs of those operations
 
-Runtime artifacts are not retained by default.
+Runtime execution should assume the namespace-based command surface:
 
-They remain episode-local unless later learning selects them into retained experience.
+```text
+skyra <namespace> <command> <args>
+```
 
-## Retained Experience
+This keeps runtime execution more flexible than a flat primitive-only model.
+
+Runtime artifacts remain episode-local unless later learning selects something from them into retained experience.
+
+## Retention Layer
 
 The retention layer is the layer of retained experience.
 
-It is not the episode itself.
+It is not the episode and it is not canonical structure.
 
-It is composed of retained artifacts, currently:
+The current retained artifact family is:
 
 - `retained_trace`
 - `retained_understanding`
@@ -118,38 +165,31 @@ It is composed of retained artifacts, currently:
 
 All retained artifacts share an `anchor_set` into canonical structure.
 
-`retained_trace` remains distinct from the derived retained artifact types.
-
-This preserves the boundary between:
-
-- what happened
-- what it meant
-- what mattered
-- what remained unresolved
+That anchor set is the main bridge between retained experience and recall.
 
 ## Recall
 
-Recall is the read path from retained experience into the active episode frame.
+Recall is the read path from retained experience into the current episode frame.
 
 At a high level:
 
-1. the current stimulus updates the episode field
+1. current episode activity updates the `episode_field`
 2. the episode field scores entities and relationships
-3. the dominant connected slice of that field becomes the active recall surface
+3. the dominant connected slice of that field becomes the active cue surface
 4. retained artifacts with overlapping anchors are fetched and ranked
-5. a bounded mixed set enters recall
+5. a bounded mixed set enters episode recall and may be projected into frame
 
 Recall is therefore driven by:
 
-- the incoming stimulus
-- the accumulated structure of the current episode
+- current interaction/stimulus
+- accumulated episode structure
 - structural overlap between the episode field and retained artifacts
 
 ## Learning
 
 Learning is the write path from episodes into retained experience and structure.
 
-Learning is not ordinary runtime cognition.
+Learning is not ordinary runtime execution.
 
 It is the later process that decides what from an episode should survive as:
 
@@ -157,7 +197,7 @@ It is the later process that decides what from an episode should survive as:
 - derived retained artifacts
 - structure updates
 
-Runtime artifacts may inform learning, but they do not become retained experience automatically.
+Runtime artifacts may inform learning, but they are not retained by default.
 
 ## Structure
 
@@ -170,59 +210,46 @@ It contains:
 
 Retained artifacts do not replace structure.
 
-They refer into it through `anchor_set`.
+Episodes do not replace structure.
 
-The episode field also scores over that same structural substrate.
+Both refer into it.
 
 ## History
 
-History is not stored as one mutable object.
+History is not one mutable object.
 
 It is reconstructed from:
 
 - episodes
-- their cycles
 - their ordering over time
-- shared `intent_id`
+- shared identifiers such as `intent_id`
+- retained artifacts that survive across episodes
 
-Different scopes may reconstruct different histories from the same underlying episodic records.
-
-## Node Contract
-
-Every node exists under a contract.
-
-At the contract level, the core primitives remain:
-
-- `purpose`
-- `stimulus`
-- `interact`
-
-These define the node's boundary and eligibility to act.
-
-They are not the same thing as runtime callable primitives inside an episode.
+Different scopes may reconstruct different historical views from the same underlying records.
 
 ## Current Design Posture
 
 The strongest current claims are:
 
-- episodes are the primary bounded unit of activity
+- nodes are the durable runtime operators
+- episodes are the primary bounded unit of runtime state
+- frames are projected from episodes for inference
 - the episode field is the scored structural layer active within an episode
-- runtime primitives and runtime artifacts belong to in-episode cognition
-- retained artifacts belong to retained experience
-- recall reads from retained experience through the scored episode field
+- runtime commands and runtime artifacts remain episode-local by default
+- retained artifacts belong to the retention layer
+- recall reads from retained experience through the episode field
 - learning writes from episodes into retained experience and structure
-- the same model applies across node types, including `Jarvis` and `Stark`
 
 ## Short Framing
 
-The current data model is a layered episode-based architecture.
+The current data model is a layered runtime architecture.
 
-Episodes hold active work.
+Nodes operate under durable contracts.
+
+Episodes hold bounded runtime state.
+
+Frames are projected from episodes for inference.
 
 Episode fields score the current structural context.
 
-Runtime cognition operates inside episodes.
-
-Learning turns selected episode outcomes into retained artifacts.
-
-Recall brings retained artifacts back into later episodes through shared structural anchors.
+Runtime execution stays local to the episode unless later learning turns selected outcomes into retained artifacts.

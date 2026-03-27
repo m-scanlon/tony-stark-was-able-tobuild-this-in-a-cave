@@ -10,7 +10,7 @@ The contract defines:
 - what stimuli it may respond to
 - what outward interaction forms it may emit
 
-At the contract level, the active primitives remain:
+At the contract level, the core boundary remains:
 
 - `purpose`
 - `stimulus`
@@ -46,7 +46,7 @@ Interact therefore defines the node's outward action boundary.
 
 ## Contract Level vs Runtime Level
 
-Contract primitives are not the same thing as runtime callable primitives.
+Contract primitives are not the same thing as runtime callable commands.
 
 The contract says:
 
@@ -54,7 +54,7 @@ The contract says:
 - what can wake it up
 - what kinds of outward result it may emit
 
-Runtime primitives are in-episode operations the node may issue through the kernel during cognition.
+Runtime commands are in-episode operations the node may issue through the kernel during runtime execution.
 
 Those belong to runtime execution, not the core contract surface.
 
@@ -85,7 +85,7 @@ Instead:
 
 Potential contract-adjacent additions may later include ideas such as:
 
-- allowed runtime primitive menus
+- allowed runtime command namespaces and commands
 - recall policy or recall defaults
 - capability constraints
 
@@ -97,4 +97,4 @@ The node contract defines why a node exists, what stimulus it may act on, and wh
 
 It is the node's durable boundary.
 
-Runtime cognition happens inside episodes under that boundary.
+Runtime execution happens inside episodes under that boundary.

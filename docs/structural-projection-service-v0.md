@@ -1,10 +1,12 @@
 # Structural Projection Service v0
 
-The system needs a service that breaks source objects into entities and relationships and updates the episode field.
+## Core Framing
+
+The system needs a service that breaks episode-local source objects into entities and relationships and updates the episode field.
 
 This service exists before recall scoring.
 
-Its job is to turn incoming episode material into a unified structural projection that the episode field can use.
+Its job is to turn bounded episode material into a unified structural projection that the episode field can use.
 
 ## Purpose
 
@@ -17,9 +19,9 @@ The structural projection service:
 
 This is the missing bridge between:
 
-- interaction
-- recall
-- workspace
+- interaction history
+- in-scope recall
+- runtime artifacts when present
 
 and:
 
@@ -27,15 +29,21 @@ and:
 
 ## Inputs
 
-The service should be able to read from:
+The current `v1`-compatible source objects are:
 
 - `interaction`
 - `recall`
-- `workspace`
+- `runtime_artifact`
 
-Each source object remains distinct.
+These sources remain distinct.
 
-The projection service turns them into one fused structural field.
+The projection service turns them into one fused structural field inside the episode.
+
+Notes:
+
+- `interaction` is the main source in `v1`
+- `recall` may also project structure back into the episode field
+- `runtime_artifact` is a valid later source when transient runtime outputs become structurally useful
 
 ## Flow
 
@@ -57,7 +65,7 @@ The output is an update to the episode field.
 
 ```ts
 type StructuralProjection = {
-  source: "interaction" | "recall" | "workspace"
+  source: "interaction" | "recall" | "runtime_artifact"
   source_id: string
   entities: ProjectedEntity[]
   relationships: ProjectedRelationship[]
@@ -87,7 +95,7 @@ Each entity and relationship in the episode field should keep its own update rec
 
 ```ts
 type FieldUpdate = {
-  source: "interaction" | "recall" | "workspace"
+  source: "interaction" | "recall" | "runtime_artifact"
   source_id: string
   delta: number
   timestamp: string
@@ -118,7 +126,7 @@ type RelationshipFieldState = {
 
 The episode field should remain unified.
 
-Interaction, recall, and workspace should not each create separate query surfaces.
+Interaction, recall, and runtime artifacts should not each create separate query surfaces.
 
 They remain separate source objects, but they project into one fused structural field.
 
@@ -131,3 +139,4 @@ But the architectural role is now clear:
 - source objects stay separate
 - the structural projection service extracts and resolves entities and relationships
 - the episode field stores the fused result with per-item update records
+- `workspace` is not a canonical `v1` source object for this service

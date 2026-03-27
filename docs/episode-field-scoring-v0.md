@@ -48,7 +48,7 @@ with dynamic activation scores attached.
 
 So:
 
-- the episode frame holds the current interaction, recall, and cognition
+- the frame projects the current purpose, interaction, recall, and available primitives
 - the episode field is the scored entity/relationship layer that sits just behind the current turn inside the episode
 
 ## Scoring Unit

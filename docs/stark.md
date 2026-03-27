@@ -35,7 +35,7 @@ That means Stark still participates through:
 
 - bounded episodes
 - episode fields
-- runtime cognition
+- runtime execution
 - retained experience
 
 What differs is role and authority, not ontology.

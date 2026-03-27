@@ -11,9 +11,9 @@ It is meant to track unresolved edges without reintroducing older superseded ass
 The current stable enough baseline is:
 
 - episodes are the primary bounded unit of activity
-- the episode frame is organized as interaction, recall, and cognition
+- the frame is projected as purpose, interaction, recall, and available primitives
 - the episode field is the scored entity/relationship layer active within the episode
-- runtime primitives and runtime artifacts belong to in-episode cognition
+- runtime commands and runtime artifacts belong to in-episode runtime execution
 - learning is the write path from episodes into retained experience and structure
 - retained experience is a family of retained artifact types rather than an understandings-only layer
 - retained artifacts share an `anchor_set`
@@ -26,9 +26,9 @@ The runtime-vs-retained boundary is now clearer, but the primitive menu is still
 
 Questions:
 
-- which runtime primitives are first-class?
-- which operations remain internal to cognition rather than kernel-callable?
-- how fine-grained should primitive-specific frame templates become?
+- which runtime commands are first-class?
+- which operations remain internal to runtime execution rather than kernel-callable?
+- how fine-grained should command-specific runtime handling become?
 
 ## 2. Runtime Artifact Types
 
