@@ -89,6 +89,12 @@ Potential contract-adjacent additions may later include ideas such as:
 - recall policy or recall defaults
 - capability constraints
 
+Device-facing capability surfaces should be treated as capability contracts rather than as node contracts.
+
+See also:
+
+- [capability-contract-prelim.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/capability-contract-prelim.md)
+
 Those are not part of the active v0 contract surface yet.
 
 ## Short Framing

@@ -11,7 +11,7 @@ It is based on the git history from:
 
 Recent pace reference:
 
-- `157` commits on `HEAD`
+- `159` commits on `HEAD`
 - the most recent `20` commits span about `14.1` days
 
 This is not a full changelog.
@@ -35,6 +35,7 @@ The architecture changed in a few major waves:
 6. kernel + skill + graph-centric cognitive OS phase
 7. runtime rewrite into episodes, retention, and primitives
 8. current node/episode/frame/process model
+9. node substrate + recall v1 simplification + canon cleanup
 
 The biggest long-term shift was:
 
@@ -544,10 +545,6 @@ Almost everything central to the current model starts here.
 
 - `2026-03-25` to `2026-03-26`
 
-### Representative work
-
-This phase has not been fully committed yet, but the current canonical docs now reflect it.
-
 ### Representative docs
 
 - [episode-contract-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/episode-contract-v0.md)
@@ -582,6 +579,14 @@ This is also where the current execution-flexibility requirement became explicit
 
 That is a much more mature runtime idea than anything early in the repo.
 
+### What survived
+
+- node as durable operator
+- episode as bounded runtime container
+- frame as inference projection
+- episode field as recall surface
+- the idea that execution flexibility should be bounded by contract rather than hardcoded globally
+
 ## Parallel Track: Structural Projection Demo
 
 ### Dates
@@ -608,6 +613,80 @@ The OpenIE path proved too noisy.
 
 The current dependency-first projection path is the first one that feels aligned with the retained-experience runtime model.
 
+## Phase 9: Node Substrate, Stimulus-First Recall, And Canon Cleanup
+
+### Dates
+
+- `2026-03-26`
+
+### Representative commit
+
+- `37d480e` `docs: refine node runtime and recall model`
+
+### Representative docs
+
+- [node-birth-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/node-birth-v0.md)
+- [node-substrate-interface-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/node-substrate-interface-v0.md)
+- [node-process-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/node-process-v0.md)
+- [node-open-questions-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/node-open-questions-v0.md)
+- [command-namespace-prelim.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/command-namespace-prelim.md)
+- [interaction-unification-prelim.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/interaction-unification-prelim.md)
+- [recall-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/recall-v0.md)
+
+### Main model
+
+This phase turned the runtime model from a strong sketch into something much closer to an implementable base system.
+
+The architecture clarified:
+
+- kernel births Stark
+- Stark publishes later node contracts
+- the contract itself acts as the birth spec
+- nodes are live immediately on instantiation
+- the kernel owns the global priority heap
+- each node owns a lightweight mailbox for already-routed events
+- the node substrate exposes a small explicit runtime surface
+- command execution is namespace-based rather than flat primitive-only
+
+This phase also simplified recall in an important way.
+
+Instead of requiring the full long-horizon episode-field scoring model immediately, `v1` recall became:
+
+- current stimulus
+- one light inference call
+- entity/relationship extraction
+- thin episode field
+- retained-artifact lookup by `anchor_set` overlap
+
+That was a major simplification without discarding the larger architecture.
+
+### Why this phase mattered
+
+This phase answered several questions that would otherwise have blocked implementation:
+
+- who births nodes
+- what a node's public runtime surface is
+- how routed events reach a node
+- when contracts change
+- how `v1` recall can work without overbuilding the episode field
+
+It also cleaned the canon enough that the docs now mostly agree on:
+
+- node
+- episode
+- frame
+- episode field
+- runtime execution
+- retained artifacts
+
+### What survived
+
+- node/episode/frame separation
+- kernel authority
+- contract-bounded runtime behavior
+- structural recall through retained anchors
+- the need for a richer episode field later, even though `v1` keeps it thin
+
 ## Structural Changes In The Repo
 
 The repository structure also tells the story.
@@ -629,6 +708,7 @@ The repository structure also tells the story.
 - [docs](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs) is canonical
 - [docs-archived-v.01](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs-archived-v.01) is legacy
 - current docs are flatter and more contract-oriented
+- current docs are also more implementation-facing than the earlier architecture trees
 - archive docs preserve the older `arch/v1` worldview
 
 That structural change mirrors the architectural change:
@@ -665,13 +745,14 @@ Current work treats:
 - retained artifacts as selective long-lived consequence
 - structure as substrate rather than sole primary object
 
-### 3. Skills Everywhere -> Primitives + Runtime
+### 3. Skills Everywhere -> Runtime Surface + Namespaced Commands
 
 Earlier work made skills do too much.
 
 Current work is more disciplined:
 
-- primitives first
+- a small runtime surface first
+- namespaced commands first
 - runtime state first
 - higher-order compositions later
 
@@ -715,6 +796,7 @@ The biggest maturation was the shift from broad future-system diagrams to explic
 - node
 - episode
 - frame
+- node substrate
 - retained artifacts
 - recall
 - structural projection

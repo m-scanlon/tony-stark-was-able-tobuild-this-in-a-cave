@@ -14,6 +14,20 @@ It is a runtime system organized around:
 
 Canonical structure still matters, but it is the substrate these other layers refer into rather than the sole primary model.
 
+## V1 Emphasis
+
+For `v1`, the highest-level operating theme is:
+
+- experiencing
+- interacting
+- learning
+
+The current runtime machinery exists mainly to support those three concerns.
+
+See also:
+
+- [v1-operating-theme-prelim.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/v1-operating-theme-prelim.md)
+
 ## Canonical Layers
 
 The current working model is:
