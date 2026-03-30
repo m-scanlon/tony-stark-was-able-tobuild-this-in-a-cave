@@ -7,14 +7,22 @@ Every node exists under a contract.
 The contract defines:
 
 - why the node exists
+- what capabilities it may rely on
 - what stimuli it may respond to
-- what outward interaction forms it may emit
+- what cognition envelope it may operate under
+- what commands it may emit
 
-At the contract level, the core boundary remains:
+A node does not act directly on the user, an API, or the runtime.
+
+It emits commands that the system validates and executes.
+
+At the contract level, the active boundary is:
 
 - `purpose`
+- `capabilities`
 - `stimulus`
-- `interact`
+- `cognition`
+- `commands`
 
 ## 1. Purpose
 
@@ -28,7 +36,15 @@ Purpose bounds:
 
 Purpose belongs to the node definition, not to the episode.
 
-## 2. Stimulus
+## 2. Capabilities
+
+A node contract should name what capability surfaces the node is allowed to rely on.
+
+This does not replace the capability contract itself.
+
+It is the node-side allowance boundary over those capability surfaces.
+
+## 3. Stimulus
 
 A node may only be invoked by valid stimulus.
 
@@ -36,27 +52,75 @@ If incoming stimulus does not match the node's accepted form, the node is not el
 
 Stimulus therefore defines the node's input boundary.
 
-## 3. Interact
+## 4. Cognition
 
-A node may only emit valid interact output.
+Cognition is not free-standing inner autonomy.
 
-Its output must conform to forms the kernel and surrounding system can receive and interpret.
+It is the contract-bounded envelope within which the node may continue reasoning and choose the next command.
 
-Interact therefore defines the node's outward action boundary.
+A node may emit a command that causes another inference or prompt step.
+
+The exact budgeting and stop rules are not fully locked yet, but that envelope belongs to the contract.
+
+## 5. Commands
+
+A node does not interact directly.
+
+A node emits commands.
+
+That includes:
+
+- user-facing output
+- capability or API use
+- commands that request another reasoning step
+
+The current working protocol shape is:
+
+```text
+skyra <command_set> <command> -<args> -reason "<why this command is being emitted>"
+```
+
+`interaction` is therefore not a separate direct action path.
+
+It is one command path inside the contract-allowed command surface.
+
+For example:
+
+```text
+skyra primitive interact -reason "the current frame requires an outward response"
+```
+
+`reason` should be treated as mandatory.
+
+The node's emitted command surface is part of the system's audit trail.
+
+That means:
+
+- every emitted command must include an explicit rationale
+- runtime should reject commands that omit `reason`
+- `reason` explains why the node emitted the command
+- `reason` does not replace later execution validation or evidence
 
 ## Contract Level vs Runtime Level
-
-Contract primitives are not the same thing as runtime callable commands.
 
 The contract says:
 
 - what the node is for
+- what capabilities it may rely on
 - what can wake it up
-- what kinds of outward result it may emit
+- how cognition is bounded
+- what commands it may emit
 
-Runtime commands are in-episode operations the node may issue through the kernel during runtime execution.
+Runtime execution then handles:
 
-Those belong to runtime execution, not the core contract surface.
+- actual command dispatch
+- pending-command state
+- command-result writeback
+- episode-local state updates
+
+So the command surface is part of the contract.
+
+Execution mechanics remain part of runtime.
 
 ## Same Contract Model Across Nodes
 
@@ -81,13 +145,14 @@ Instead:
 - the node contract is durable
 - the node episode is bounded runtime participation under that contract
 
-## Possible Future Additions
+## Still Open
 
-Potential contract-adjacent additions may later include ideas such as:
+The following remain open even with the command surface inside the active contract:
 
-- allowed runtime command namespaces and commands
+- exact `command_set` vocabulary
+- exact command argument grammar
+- exact cognition budgeting and stop rules
 - recall policy or recall defaults
-- capability constraints
 
 Device-facing capability surfaces should be treated as capability contracts rather than as node contracts.
 
@@ -95,11 +160,9 @@ See also:
 
 - [capability-contract-prelim.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/capability-contract-prelim.md)
 
-Those are not part of the active v0 contract surface yet.
-
 ## Short Framing
 
-The node contract defines why a node exists, what stimulus it may act on, and what interact output it may emit.
+The node contract defines why a node exists, what capabilities and stimulus it may operate on, how cognition is bounded, and what commands it may emit.
 
 It is the node's durable boundary.
 
