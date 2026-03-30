@@ -20,7 +20,7 @@ The current core episode sections are:
 - `interaction_history`
 - `recall`
 - `episode_field`
-- `available_primitives`
+- `available_commands`
 
 This is the current minimum useful container.
 
@@ -49,7 +49,7 @@ type Episode = {
   interaction_history: InteractionHistory
   recall: EpisodeRecall
   episode_field: EpisodeField
-  available_primitives: AvailablePrimitive[]
+  available_commands: AvailableCommand[]
 
   opened_at: string
   updated_at: string
@@ -111,14 +111,14 @@ It is not the same thing as retained recall.
 
 It is the structural layer that sits behind both.
 
-## Available Primitives
+## Available Commands
 
-`available_primitives` is the current runtime action menu available to the node during the episode.
+`available_commands` is the current runtime command menu available to the node during the episode.
 
-The current first-class primitives are:
+The current first-class command examples are:
 
-- `recall`
-- `interact`
+- `primitive recall`
+- `primitive interact`
 
 This menu belongs in the episode because it helps define what the frame may expose to inference at that moment.
 
@@ -143,8 +143,9 @@ type EpisodeRecall = {
 ```
 
 ```ts
-type AvailablePrimitive = {
-  primitive_id: string
+type AvailableCommand = {
+  command_set: string
+  command: string
 }
 ```
 
@@ -160,7 +161,7 @@ type Frame = {
     recent_interaction_history: InteractionEvent[]
   }
   recall: EpisodeRecall
-  available_primitives: AvailablePrimitive[]
+  available_commands: AvailableCommand[]
 }
 ```
 
@@ -175,7 +176,7 @@ The strongest current claims are:
 
 - the episode is the main bounded runtime container
 - it acts as the episode-local blackboard
-- purpose, interaction history, recall, episode field, and available primitives are the current core sections
+- purpose, interaction history, recall, episode field, and available commands are the current core sections
 - the entity/relationship projection belongs to `episode_field`, not `workspace`
 - the frame is projected from the episode rather than being the episode itself
 
@@ -183,6 +184,6 @@ The strongest current claims are:
 
 An episode is the bounded container that holds the live state for one span of activity.
 
-Its current core sections are purpose, interaction history, recall, episode field, and available primitives.
+Its current core sections are purpose, interaction_history, recall, episode_field, and available_commands.
 
 The frame is then projected from that episode for inference.

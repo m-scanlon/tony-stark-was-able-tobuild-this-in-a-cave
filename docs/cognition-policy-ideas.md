@@ -83,11 +83,9 @@ And a command added by cognition might look like:
 
 ```ts
 cog.addCommand({
-  namespace: "primitive",
+  command_set: "primitive",
   command: "interact",
-  args: {
-    message: "Hi nice to meet you"
-  }
+  args: {}
 })
 ```
 

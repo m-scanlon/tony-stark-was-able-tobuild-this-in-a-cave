@@ -21,7 +21,9 @@ Stark exists to maintain and reshape system structure.
 This includes:
 
 - node topology
+- node registry
 - node contracts
+- node contract publication
 - capability attachment
 - distribution of responsibility
 
@@ -65,7 +67,21 @@ It emits valid structural interaction commands that the kernel can apply, such a
 - replace node
 - deprovision node
 
+After bootstrap, Stark is also the publisher of later node contracts.
+
+Stark should also be understood as the structural owner of the node registry.
+
+That registry is the live structural record of which nodes exist and where routed packages addressed by `node_id` should go.
+
 The kernel remains the authority that applies those changes.
+
+## Bootstrap Role
+
+`Stark` is the bootstrap structural node.
+
+The kernel births Stark at system startup from a hardcoded contract.
+
+After that point, Stark becomes the structural origin for later node contract publication.
 
 ## Structural History
 
@@ -114,5 +130,7 @@ It does not define:
 Stark is the canonical structural node.
 
 It decides what system structure should exist.
+
+It also publishes later node contracts.
 
 The kernel makes those structural decisions executable.

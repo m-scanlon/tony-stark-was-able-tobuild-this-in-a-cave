@@ -11,7 +11,7 @@ The current working frame layout is:
 1. `purpose`
 2. `interaction`
 3. `recall`
-4. `available_primitives`
+4. `available_commands`
 
 ## Purpose
 
@@ -45,14 +45,14 @@ Recall is supportive and provisional.
 
 It informs interpretation but does not by itself finalize meaning.
 
-## Available Primitives
+## Available Commands
 
-`available_primitives` tells the model what it is allowed to do next.
+`available_commands` tells the model what command surface it is allowed to use next.
 
-The current first-class primitives are:
+The current first-class command examples are:
 
-- `recall`
-- `interact`
+- `primitive recall`
+- `primitive interact`
 
 ## Current Framing
 

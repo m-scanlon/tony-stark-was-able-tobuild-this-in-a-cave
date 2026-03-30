@@ -17,9 +17,10 @@ A node contract governs a node as a runtime operator.
 It defines:
 
 - why the node exists
+- what capabilities it may rely on
 - what stimuli may invoke it
-- what outward interaction forms it may emit
-- later, what command surface it may be allowed to use
+- what cognition envelope it may operate under
+- what commands it may emit
 
 A node contract is about bounded runtime participation.
 
@@ -52,7 +53,7 @@ The cleaner split is:
 
 ## Relationship To Stark
 
-Stark is the most likely publisher of capability contracts.
+Stark is the publisher of capability contracts.
 
 At a high level:
 
@@ -84,7 +85,7 @@ not:
 - node contracts
 - fake internal primitives
 
-This fits the namespace-based runtime direction better.
+This fits the command-set-based runtime direction better.
 
 ## Short Framing
 

@@ -49,7 +49,8 @@ For regular nodes, the flow is:
 2. the kernel receives that contract
 3. the kernel passes the contract to the node factory
 4. the node factory instantiates the node
-5. the node becomes live immediately under that contract
+5. the kernel registers the new `node_id` in the node registry Stark owns structurally
+6. the node becomes live immediately under that contract
 
 ## Contract As Birth Spec
 
@@ -58,13 +59,13 @@ The node contract itself is the birth spec.
 At minimum, it currently provides:
 
 - purpose
+- capability allowance
 - accepted stimulus boundary
-- allowed interact boundary
+- cognition envelope
+- allowed command surface
 
 This means node birth does not currently require separate birth-only metadata for:
 
-- capability state
-- loop envelope
 - node role
 
 Those are not part of the active birth contract in this model.
@@ -112,11 +113,13 @@ The split is:
 
 - kernel = instantiation authority
 - Stark = publisher of later node contracts
+- Stark = structural owner of the node registry
 - node factory = constructor path used by the kernel
 
 This keeps:
 
 - publication
+- registry authority
 - instantiation
 - runtime execution
 
@@ -130,6 +133,7 @@ The strongest current claims are:
 - the kernel is the node birth authority
 - Stark is the bootstrap exception at system start
 - Stark publishes contracts for later nodes, but the kernel still performs instantiation
+- Stark owns the node registry structurally, while the kernel keeps it live during runtime
 - nodes are live immediately on instantiation
 - node birth does not automatically open an episode
 

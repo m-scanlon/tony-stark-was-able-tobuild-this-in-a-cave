@@ -646,7 +646,7 @@ The architecture clarified:
 - the kernel owns the global priority heap
 - each node owns a lightweight mailbox for already-routed events
 - the node substrate exposes a small explicit runtime surface
-- command execution is namespace-based rather than flat primitive-only
+- command execution is command-set-based rather than flat primitive-only
 
 This phase also simplified recall in an important way.
 
@@ -752,7 +752,7 @@ Earlier work made skills do too much.
 Current work is more disciplined:
 
 - a small runtime surface first
-- namespaced commands first
+- explicit command sets first
 - runtime state first
 - higher-order compositions later
 

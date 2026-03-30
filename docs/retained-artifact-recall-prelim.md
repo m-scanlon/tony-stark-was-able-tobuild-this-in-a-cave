@@ -34,6 +34,7 @@ It sits just behind the immediate incoming turn and provides continuity across r
 
 The retention layer contains retained artifacts such as:
 
+- retained trace
 - retained understanding
 - retained salience
 - retained tension
@@ -52,7 +53,7 @@ Conceptually:
 ```ts
 type RetainedArtifact = {
   id: string
-  kind: "understanding" | "salience" | "tension"
+  kind: "trace" | "understanding" | "salience" | "tension"
   anchor_set: {
     entity_ids: string[]
     relationship_ids: string[]
@@ -60,6 +61,8 @@ type RetainedArtifact = {
   payload: unknown
 }
 ```
+
+`retained_trace` remains semantically distinct because it preserves the factual retained happening, but it is still part of the same retrievable retained experience family.
 
 ## The Recall Bridge
 
@@ -172,7 +175,7 @@ Conceptually:
 ```ts
 type RecalledArtifact = {
   artifact_id: string
-  kind: "understanding" | "salience" | "tension"
+  kind: "trace" | "understanding" | "salience" | "tension"
   score: number
   matched_entity_ids: string[]
   matched_relationship_ids: string[]
@@ -188,6 +191,7 @@ The strongest current claims are:
 
 - the current episode should maintain a scored entity/relationship layer
 - retained artifacts should carry structural references into the same canonical layer
+- `retained_trace` is part of that retrievable retained artifact surface
 - recall should retrieve candidates through shared ids
 - recall should rank those candidates by weighted structural overlap
 

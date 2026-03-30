@@ -4,6 +4,8 @@
 
 Recall is the read path from retained experience into the current episode.
 
+That retained experience surface includes `retained_trace` as well as the more derived retained artifact types.
+
 For `v1`, recall should stay simple.
 
 It should be driven primarily by the current stimulus rather than by a fully accumulated and heavily scored episode field.
@@ -113,6 +115,70 @@ The `v1` recall flow should be:
 
 This makes recall stimulus-first while still keeping the episode and retention model intact.
 
+## Working Recall Command Shape
+
+If recall is expressed as an emitted runtime command, a good current working shape is:
+
+```text
+skyra primitive recall \
+  -entity <entity_id> \
+  -relationship <relationship_id> \
+  -bundle <left_entity_id>:<relationship_id>:<right_entity_id> \
+  -top_k <n>
+```
+
+This matches the current recall posture:
+
+- `-entity` supports broad candidate generation
+- `-relationship` supports more specific structural lookup
+- `-bundle` supports the strongest bound relational cue when the full triple is known
+- `-top_k` keeps recall admission bounded
+
+Example:
+
+```text
+skyra primitive recall \
+  -entity assistant \
+  -entity terraform \
+  -relationship help_with \
+  -relationship has_property \
+  -bundle assistant:help_with:terraform \
+  -top_k 8
+```
+
+This should still be treated as a working command form rather than a final locked argument grammar.
+
+Internally, that command is best normalized into a query array rather than handled as one flat string.
+
+Conceptually:
+
+```ts
+type RecallQuery =
+  | { kind: "entity"; entity_id: string }
+  | { kind: "relationship"; relationship_id: string }
+  | {
+      kind: "bundle"
+      left_entity_id: string
+      relationship_id: string
+      right_entity_id: string
+    }
+```
+
+```ts
+type RecallArgs = {
+  queries: RecallQuery[]
+  top_k?: number
+}
+```
+
+This keeps the primitive simple:
+
+- normalize the emitted command into `RecallQuery[]`
+- loop through those queries
+- build the candidate set
+- rank the candidates
+- return one typed recall package
+
 ## Light Inference Extraction
 
 The extraction call should produce:
@@ -192,9 +258,48 @@ The exact math can stay simple for `v1`.
 
 The important thing is the shape of the behavior, not precise scoring sophistication yet.
 
+## Base Case / Stop Rule
+
+For `v1`, recall should stay one-pass and bounded.
+
+That means:
+
+- if the current stimulus/frame projection yields no usable entity or relationship ids, recall should return an empty result
+- recall should do one candidate-generation pass through the anchor indexes
+- recall should do one scoring pass against the current stimulus-derived frame structure
+- recall should admit only the top bounded matches that clear the current minimum score threshold
+- recall should then stop
+
+So the base case is not "walk until there are no more matching ids."
+
+The base case is:
+
+- one structural retrieval pass
+- one scoring pass
+- bounded admission
+
+`v1` should not yet walk outward through attached retained artifacts until exhaustion.
+
+If that kind of multi-hop recall exists later, it should arrive with explicit depth, threshold, or candidate-budget bounds.
+
 ## Recall Output
 
-The output of recall is a bounded mixed set of retained artifacts admitted into the current episode.
+The primitive result of recall should be one typed recall package.
+
+Conceptually:
+
+```ts
+type RecallPackage = {
+  retained_artifact_ids: string[]
+  matches: RecalledArtifact[]
+}
+```
+
+That package should then be returned through the shared kernel result-routing/writeback path.
+
+The node can then write the admitted retained artifact ids into episode recall and use the richer match detail for frame projection or later runtime choice.
+
+The bounded mixed set admitted into the current episode is:
 
 Conceptually:
 
@@ -306,6 +411,8 @@ The strongest current claims are:
 - one light inference call should produce the structural cue surface
 - the current cue surface should be written into a thin episode field
 - retained artifacts should be fetched through `anchor_set` overlap
+- `v1` recall should stop after one bounded scored retrieval pass
+- that retained artifact surface includes `retained_trace`
 - the strongest retained artifacts should be admitted into episode recall and projected into frame
 
 ## Short Framing
@@ -313,3 +420,7 @@ The strongest current claims are:
 For `v1`, recall should start from the current stimulus.
 
 Make one light inference call, extract entities and relationships, write them into a thin episode field, and use that structural cue set to pull the top matching retained artifacts into recall.
+
+Then stop after that one bounded scored pass.
+
+That recalled set may include `retained_trace`, even though trace remains semantically distinct from more derived retained artifacts.

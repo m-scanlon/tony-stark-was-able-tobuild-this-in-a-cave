@@ -46,7 +46,7 @@ The current frame layout is:
 - `purpose`
 - `interaction`
 - `recall`
-- `available_primitives`
+- `available_commands`
 
 This is not the same thing as the whole episode.
 
@@ -73,10 +73,15 @@ Recall may include mixed retained artifact types such as:
 - salience
 - tension
 
-Available primitives captures:
+Available commands captures:
 
-- the currently allowed runtime action surface for the episode
+- the currently allowed runtime command surface for the episode
 - the operations inference may choose next
+
+The current first-class command examples are:
+
+- `primitive recall`
+- `primitive interact`
 
 It is projected into frame because it bounds what the node may do at that moment.
 
@@ -154,7 +159,7 @@ The strongest current claims are:
 - episodes are scoped and bounded
 - node episodes are the primary local record of participation
 - intent episodes are reconstructed across nodes
-- the frame is projected from the episode as purpose, interaction, recall, and available primitives
+- the frame is projected from the episode as purpose, interaction, recall, and available commands
 - the episode field is the scored structural layer active inside the episode
 
 ## Short Framing

@@ -17,7 +17,7 @@ It is the runtime behavior that:
 - maintains an active episode
 - updates bounded runtime state
 - projects frames for inference
-- dispatches commands
+- emits commands
 - writes command results back
 - applies published contracts at episode boundaries
 
@@ -48,10 +48,20 @@ The node process remains idle until a valid event arrives.
 
 The current `v1` posture is:
 
-- the kernel owns the global priority heap
+- the kernel owns the global max heap
 - the heap carries typed events
-- the kernel routes events to the correct node
+- the kernel validates events first and then routes them to the correct node
 - each node owns a lightweight mailbox for already-routed events
+
+Routing should stay thin.
+
+At minimum, the router should:
+
+- accept a typed package or event
+- resolve the target node through the live node registry
+- hand the routed package to that node mailbox
+
+It should not need package-specific intelligence beyond validation and node lookup.
 
 So the node process does not own global scheduling.
 
@@ -63,6 +73,8 @@ At minimum, the relevant event families are:
 - `command_result`
 - `contract_publication`
 
+External interactions should reach this flow only after an abstraction layer has normalized them into typed stimulus events.
+
 ## Core Responsibilities
 
 The node process is responsible for:
@@ -73,7 +85,7 @@ The node process is responsible for:
 - writing event effects into episode state
 - maintaining pending-command state
 - projecting frames when the node is inference-ready
-- dispatching commands allowed by contract
+- emitting commands allowed by contract
 - writing command results back into episode state
 - closing episodes after inactivity
 - adopting published contracts only after episode closure
@@ -82,19 +94,22 @@ The node process is responsible for:
 
 The current high-level process is:
 
-1. kernel routes a typed event to the node mailbox
-2. node process takes the next routed event
-3. node process checks whether that event is valid under the active contract
-4. if valid, the node opens or reuses an episode
-5. the event is written into episode-local state
-6. any relevant background node machinery may update episode-local artifacts
-7. when the node is inference-ready, it projects a frame
-8. inference selects the next allowed command
-9. the node dispatches that command
-10. command results later return as routed events
-11. the node writes those results back into episode state
-12. after inactivity, the episode closes
-13. any newly published contract becomes active only after episode closure
+1. the next typed event rises to the top of the kernel max heap
+2. the kernel validates that event and routes it to the correct node mailbox
+3. node process takes the next routed event
+4. node process checks whether that event is valid under the active contract
+5. if valid, the node opens or reuses an episode
+6. the event is written into episode-local state
+7. any relevant background node machinery may update episode-local artifacts
+8. when the node is inference-ready, it projects a frame
+9. inference selects the next allowed command
+10. the node emits that command with `command_id`, `node_id`, `episode_id`, and optional `intent_id`
+11. the kernel validates and dispatches it
+12. primitive-specific execution returns typed result data
+13. the shared kernel result-routing/writeback path formats that result into a routed `command_result` event
+14. the node writes that result back into episode state
+15. after inactivity, the episode closes
+16. any newly published contract becomes active only after episode closure
 
 This is the current process skeleton.
 
@@ -115,15 +130,16 @@ The active contract remains the gate.
 At minimum, the contract currently bounds:
 
 - purpose
+- capability allowance
 - accepted stimulus boundary
-- allowed interact boundary
-- allowed command namespaces and commands
+- cognition envelope
+- allowed command sets and commands
 
 So the process rule is:
 
 - routed event arrives
 - node checks contract validity
-- invalid events are rejected, ignored, or deferred by runtime policy
+- unsupported or invalid event/package types are rejected, ignored, or deferred by runtime policy
 - valid events are allowed to affect the active episode
 
 ## Episode Management
@@ -141,6 +157,18 @@ That means:
 This is intentionally simpler than topic-based or semantic boundary logic.
 
 Episode closure should currently be understood as inactivity-driven rather than conceptually "timed out."
+
+Episode closure is also the natural learning handoff point.
+
+For `v1`, the owning node may emit:
+
+```text
+skyra primitive learn -episode_id <episode_id>
+```
+
+against the just-closed episode.
+
+That handoff should kick off the learning write path rather than reopen the closed episode as ordinary active runtime state.
 
 ## Event Write Paths
 
@@ -172,12 +200,17 @@ A command result event should:
 - update the pending-command registry
 - write relevant result effects into the episode
 - surface interaction-relevant outcomes into the interaction log when appropriate
+- preserve the primitive-specific typed result that the kernel routed back
 
 The important split is:
 
 - dispatch and completion are separate
 - outstanding tracking belongs to node runtime mechanics
 - result effects become part of episode state
+- in-flight command/result events remain part of the current episode's scheduled runtime flow
+- those results are written back under the currently active contract
+- shared kernel result routing happens after primitive execution rather than inside each primitive's own logic
+- command/result correlation should be driven by `command_id`, with `node_id` and `episode_id` carrying the return path
 
 ### `contract_publication`
 
@@ -185,7 +218,10 @@ A newly published contract should not switch the node mid-episode.
 
 Instead:
 
+- Stark publishes the new contract into the runtime
+- the kernel schedules and routes that publication like other typed events
 - the new contract is received by the running node
+- the node holds that contract in pending node state / mailbox flow
 - the current episode continues under the currently active contract
 - the new contract becomes active only after the current episode closes
 
@@ -207,6 +243,8 @@ The minimum useful internal distinctions are:
 - `completed`
 - `failed`
 - `timed_out`
+
+At minimum, pending-command tracking should key off `command_id`.
 
 This can remain an internal runtime mechanism.
 
@@ -233,18 +271,22 @@ So the node process should support frame projection, but `v1` does not yet lock 
 
 ## Commands And Loop Flexibility
 
-The node process should assume the namespace-based command model.
+The node process should assume the command-set-based command model.
 
 That means the process is compatible with:
 
-- `skyra <namespace> <command> <args>`
+- `skyra <command_set> <command> -<args>`
 
 The contract should explicitly allow:
 
-- namespaces
-- commands within those namespaces
+- command sets
+- commands within those command sets
 
 This allows the node process to stay generic.
+
+The node does not interact with users or APIs directly.
+
+Those effects happen only through emitted commands that the system validates and executes.
 
 It does not need to hardcode:
 
@@ -257,6 +299,10 @@ Instead:
 - the substrate/process provides the generic execution pattern
 - the contract bounds the allowed execution envelope
 - inference may later choose how to act within that envelope
+
+One valid result of cognition may be another emitted command that requests a further reasoning step.
+
+The exact cognition budget remains open, but that boundary belongs to the contract rather than to hidden node autonomy.
 
 ## Relationship To Other Node Docs
 
@@ -282,4 +328,4 @@ The strongest current claims are:
 
 The node process is the live behavior that sits between routed events and bounded episode state.
 
-It drains the node mailbox, updates or opens episodes, projects frames when appropriate, dispatches commands, writes results back, and only adopts new contracts after the current episode closes.
+It drains the node mailbox, updates or opens episodes, projects frames when appropriate, emits commands, writes results back, and only adopts new contracts after the current episode closes.

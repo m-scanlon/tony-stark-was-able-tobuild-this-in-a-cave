@@ -37,7 +37,7 @@ The current working model is:
 - `Episode` — bounded runtime container for one span of activity
 - `Episode Field` — the scored entity/relationship layer active within the current episode
 - `Frame` — the bounded inference page projected from the current episode
-- `Runtime Execution` — namespaced commands and transient runtime artifacts inside the episode
+- `Runtime Execution` — emitted commands and transient runtime artifacts inside the episode
 - `Retention Layer` — retained artifacts that survive the episode
 - `Reconstructed History` — derived views across episodes over time
 
@@ -62,14 +62,18 @@ Every node exists under a contract.
 At the current contract level, the durable boundary remains:
 
 - `purpose`
+- `capabilities`
 - `stimulus`
-- `interact`
+- `cognition`
+- `commands`
 
 These define:
 
 - why the node exists
+- what capability surfaces it may rely on
 - what may wake it up
-- what outward interaction forms it may emit
+- how cognition is bounded
+- what commands it may emit
 
 The contract is durable.
 
@@ -87,7 +91,7 @@ The current core episode sections are:
 - `interaction_history`
 - `recall`
 - `episode_field`
-- `available_primitives`
+- `available_commands`
 
 The episode is not the same thing as the frame.
 
@@ -104,7 +108,7 @@ The current frame layout is:
 1. `purpose`
 2. `interaction`
 3. `recall`
-4. `available_primitives`
+4. `available_commands`
 
 The frame should stay smaller than the episode.
 
@@ -154,10 +158,10 @@ The current key split is:
 - runtime commands are callable in-episode operations
 - runtime artifacts are transient outputs of those operations
 
-Runtime execution should assume the namespace-based command surface:
+Runtime execution should assume the command-set-based command surface:
 
 ```text
-skyra <namespace> <command> <args>
+skyra <command_set> <command> -<args>
 ```
 
 This keeps runtime execution more flexible than a flat primitive-only model.

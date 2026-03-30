@@ -44,12 +44,12 @@ Resolution:
 
 - `v1` uses one unified typed event intake surface
 - event ordering and global routing should sit at the kernel front
-- the runtime should use the existing priority heap rather than invent a second global queue
+- the runtime should use the existing max heap rather than invent a second global queue
 - each node should own a lightweight mailbox for already-routed events
 
 Current posture:
 
-- the kernel owns the unified priority heap
+- the kernel owns the unified max heap
 - the heap may contain typed events such as:
   - `stimulus`
   - `command_result`
@@ -159,27 +159,27 @@ Current posture:
 
 Question:
 
-- when does a published contract become effective on a running node
-
-Candidate timings:
-
-- immediately
-- next safe boundary
-- next episode
+- when a published contract arrives for a running node, what is the exact receipt-to-adoption flow
 
 Why it matters:
 
-- this defines runtime stability versus agility
+- this defines runtime stability, auditability, and contract authority
 
 Resolution:
 
-- a published contract should take effect when the current episode closes
+- Stark may publish a contract for a running node while that node is mid-episode
+- the kernel routes that contract publication through the same typed event flow
+- the node receives that publication and holds the new contract in pending node state / mailbox flow
+- the current episode continues under the currently active contract
+- the new contract takes effect only when the current episode closes
 
 Current posture:
 
 - the node should not switch contracts mid-episode
 - the current episode remains bounded by the contract that was active when that episode was running
-- a newly published contract becomes active after the current episode resolves or closes
+- the node may receive the next contract before episode close
+- that next contract remains pending until episode close
+- once the episode is over, the pending contract becomes the active contract
 - in `v1`, episode closure should be driven by inactivity rather than an abstract hard timeout
 
 Design note:
@@ -187,33 +187,39 @@ Design note:
 - this keeps contract transitions aligned to bounded runtime context
 - it also avoids mixing one episode across two different contract regimes
 
-## 6. Command Allowance Surface
+## 6. Command Surface
 
 Question:
 
-- how should the contract express allowed namespaces and commands
+- how should the contract express allowed command sets and commands
+- how much of the cognition envelope should be named alongside that command surface
+- how much command argument structure should be fixed now
 
 Why it matters:
 
-- this is where command namespaces meet node contracts
+- this is the node's real execution boundary
 
 Resolution:
 
-- `v1` should use a simple namespace/command allowlist
+- the active node contract should include the command surface
+- `v1` should use a simple command_set/command allowlist
+- one working protocol shape is `skyra <command_set> <command> -<args>`
 
 Current posture:
 
-- the contract should name the allowed namespaces
-- each allowed namespace should declare its allowed commands
+- the contract should name the allowed command sets
+- each allowed command set should declare its allowed commands
 - avoid wildcard or pattern matching in `v1`
 - keep the command allowance surface explicit and inspectable
+- `skyra primitive interact` is one valid example inside that surface
+- exact command argument schemas remain open for now
 
 Why this is the right `v1` move:
 
 - simple
 - auditable
 - easy to validate at runtime
-- flexible enough for the namespace-based command model
+- flexible enough for the command-set-based model
 
 ## Current Design Posture
 

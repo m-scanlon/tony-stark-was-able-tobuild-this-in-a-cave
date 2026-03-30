@@ -10,6 +10,8 @@ It is also not the same as canonical structure.
 
 The retention layer contains retained artifacts that survive past an episode and can later influence recall, cognition, and future experience.
 
+Retained experience is retrievable.
+
 ## Structural Position
 
 The current structural split is:
@@ -36,6 +38,8 @@ The current retained artifact family is:
 These are different retained artifact types.
 
 They belong to the same retained experience layer.
+
+They are all part of the retrievable retained experience surface.
 
 ## Anchor Set
 
@@ -182,6 +186,8 @@ The strongest current claims are:
 - the retention layer contains multiple retained artifact types
 - all retained artifacts share a structural grounding through `anchor_set`
 - retained artifacts may preserve shaping influence through `context_artifact_ids`
+- retained experience is retrievable
+- all retained artifact types belong to that retrievable retained experience layer
 - `retained_trace` remains a distinct retained artifact type
 - derived retained artifacts may carry `source_trace_ids` for factual grounding
 
@@ -199,6 +205,8 @@ It does not define:
 The retention layer is composed of multiple retained artifact types.
 
 All retained artifacts share an `anchor_set` into canonical structure and may record which prior retained artifacts shaped them.
+
+They all belong to the retrievable retained experience layer.
 
 `retained_trace` preserves the factual retained happening.
 

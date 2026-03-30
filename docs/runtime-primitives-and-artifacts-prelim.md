@@ -33,12 +33,18 @@ A runtime command is a callable operation that the node may issue during an acti
 Conceptually:
 
 ```text
-skyra <namespace> <command> <args>
+skyra <command_set> <command> -<args>
 ```
 
 The command is emitted by the node.
 
 The kernel receives that command and remains the authority over what happens next.
+
+That includes:
+
+- user-facing output commands
+- capability or API commands
+- commands that request another reasoning step
 
 ## Kernel Role
 
@@ -104,12 +110,32 @@ Its role would be:
 - produce a transient runtime artifact
 - shape later inference and episode-local state
 
+One later valid direction is that the node may emit a command that requests another prompt or reasoning step rather than "thinking by itself" outside the command model.
+
 It should not create retained understanding by default.
 
 Instead:
 
 - `interpret` creates runtime-local output
 - later learning may decide that some interpretation contributed to retained understanding, salience, tension, or trace formation
+
+## Learn
+
+`learn` is a strong candidate for the learning handoff command.
+
+Its role would be:
+
+- take a just-closed episode as input
+- run the learning / consolidation write path
+- produce retained artifact and structure updates
+
+A good current working shape is:
+
+```text
+skyra primitive learn -episode_id <episode_id>
+```
+
+This command should be understood as the kickoff into the learning path after episode closure rather than as ordinary in-episode state mutation.
 
 ## Runtime vs Retained Artifacts
 
@@ -159,6 +185,12 @@ That means learning may use:
 
 to decide what should become retained experience.
 
+When learning persists retained artifacts, the same write path should also update the anchor lookup layer used later by recall.
+
+That learning result may still return a typed write receipt containing the newly written artifact ids.
+
+The node may use that receipt to seed a small transient recent-learned cache if useful, but the durable owner of retained experience remains the retention/index layer rather than the node itself.
+
 ## Current Design Posture
 
 The strongest current claims are:
@@ -169,6 +201,7 @@ The strongest current claims are:
 - runtime artifacts should be available to later learning
 - `interpret` is a good candidate for a runtime command
 - `interpret` should not create retained understanding by default
+- `learn` is a good candidate for the post-episode learning kickoff command
 
 The exact command surface remains open.
 
