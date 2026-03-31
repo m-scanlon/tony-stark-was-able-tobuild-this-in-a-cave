@@ -2,17 +2,17 @@
 
 ## Working Definition
 
-`Stark` is the canonical name for the structural node.
+`Stark` is the canonical name for the structural orchestrator node.
 
 References to the older `Architect` and `system node` concepts should collapse into `Stark`.
 
 Functional subtitle:
 
-- `Stark` = structural node
+- `Stark` = structural orchestrator node
 
 Stark is not outside the node model.
 
-It is a node whose role is structural rather than ordinary task execution.
+It is a node whose role is structural coordination rather than ordinary specialized task execution.
 
 ## Purpose
 
@@ -26,8 +26,9 @@ This includes:
 - node contract publication
 - capability attachment
 - distribution of responsibility
+- routing structural work to other nodes when needed
 
-Stark is the node concerned with what should exist structurally, not with performing ordinary task work itself.
+Stark is the node concerned with what should exist structurally, not with performing all ordinary structural task work itself.
 
 ## Same Model As Other Nodes
 
@@ -42,6 +43,11 @@ That means Stark still participates through:
 
 What differs is role and authority, not ontology.
 
+The current important clarification is:
+
+- Stark is not the base worker layer
+- Stark is an orchestrator node
+
 ## Primary Stimulus
 
 Stark is primarily driven by structural pressure rather than ordinary user content.
@@ -53,12 +59,13 @@ Typical stimuli include:
 - topology problems
 - node blockage or structural mismatch
 - requests for structural revision
+- typed structural results returned from other nodes
 
 ## Outputs
 
 Stark does not directly mutate the system.
 
-It emits valid structural interaction commands that the kernel can apply, such as:
+It coordinates structural work and emits valid structural commands that the kernel can apply, such as:
 
 - create node
 - revise contract
@@ -81,7 +88,7 @@ The kernel remains the authority that applies those changes.
 
 The kernel births Stark at system startup from a hardcoded contract.
 
-After that point, Stark becomes the structural origin for later node contract publication.
+After that point, Stark becomes the structural origin for later node contract publication and structural orchestration.
 
 ## Structural History
 
@@ -100,20 +107,21 @@ Its view should be selected for structural decision-making.
 ## Design Principles
 
 - Stark is a node, not a hidden control plane
+- Stark is an orchestrator node, not a base worker node
 - Stark shapes structure; it does not bypass the kernel
 - Stark uses the same general runtime model as other nodes
-- Stark is the canonical structural node
+- Stark is the canonical structural orchestrator node
 
 ## Relationship To Other Nodes
 
 Other nodes perform bounded work within contract.
 
-Stark governs structure around that work.
+Stark governs structure around that work and coordinates structural delegation.
 
 So:
 
-- worker or user-facing nodes handle ordinary task participation
-- Stark handles structural continuity and revision
+- base worker nodes handle specialized task participation
+- Stark handles structural continuity, routing, and revision
 
 ## Scope Of This Document
 
@@ -124,12 +132,13 @@ It does not define:
 - the full contract revision protocol
 - the exact structural command schema
 - the full Stark/Jarvis collaboration contract
+- the exact structural routing policy Stark should use
 
 ## Short Framing
 
-Stark is the canonical structural node.
+Stark is the canonical structural orchestrator node.
 
-It decides what system structure should exist.
+It decides what system structure should exist and coordinates the node graph around that decision.
 
 It also publishes later node contracts.
 

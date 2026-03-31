@@ -1,40 +1,55 @@
-# Skyra
+# Skyra: Autonomous Programmable Cognition
 
-Skyra is an experimental local-first personal runtime project.
+Skyra is an experimental runtime for autonomous programmable cognition.
 
-This repository combines runtime code, architecture documentation, product notes, and exploratory data-model work for a system built around nodes, contracts, episodes, cognition, memory, and capability-driven execution.
+The project is moving toward a typed cognitive substrate built around:
 
-## Project Overview
+- small fixed primitives
+- extensible nodes
+- typed stimulus
+- contract-bounded orchestration
+- node-local retained experience
+- world interaction as a first-class runtime concern
 
-The repo is being used to work through a few related threads:
+This repository combines runtime code, architecture documentation, protocol work, product notes, and exploratory system-model design.
 
-- runtime and service implementation
-- architecture and protocol design
-- data-model exploration
-- product and interaction ideas
+## Project Direction
 
-Some parts of the repo describe active implementation, while others are preliminary design notes that are still evolving.
+The current direction is to treat Skyra less like a single agent and more like a runtime that can support many agent patterns.
+
+The emerging model is:
+
+- primitives provide the fixed substrate
+- nodes are the extensible unit
+- base nodes form the shipped standard library
+- orchestrator nodes coordinate other nodes
+- workflows emerge from typed node composition rather than one hardcoded loop
+
+This is still early-stage architecture work.
+
+Some parts of the repo are active implementation, while others are preliminary design notes that are still evolving.
 
 ## Repository Map
 
 - `skyra/`: runtime and application code
-- `docs/`: architecture, protocol, and design documentation
-- `data-model-ideas/`: active exploratory notes on the system model
+- `docs/`: architecture, protocol, memory, and design documentation
+- `data-model-ideas/`: exploratory system-model notes
 - `landing/`: landing page and related frontend work
 - `prds/`: product requirement drafts
-- `ideas/`: loose future-facing ideas and concept notes
+- `ideas/`: loose concept notes and future-facing explorations
 
 ## Current Focus
 
-The current work is centered on clarifying the system model:
+The current work is centered on stabilizing the core runtime shape:
 
-- nodes and contracts
-- scoped episodes and history
-- cognition and memory
-- capabilities and execution flow
-- foundational nodes and provisioned worker nodes
+- protocol and primitive boundaries
+- typed stimulus and node contracts
+- node-local memory and bounded recall
+- world-facing interaction
+- base nodes and orchestrator nodes
+- device registration and onboarding
 
 ## Notes
 
-- `data-model-ideas/` contains preliminary conceptual work and should be read as exploratory unless a decision is clearly stated.
-- `docs/arch/v1/` contains runtime architecture material for the current implementation direction.
+- `docs/` contains both active canon and prelim documents; not every file should be treated as fully settled.
+- `data-model-ideas/` should be read as exploratory unless a decision is clearly stated.

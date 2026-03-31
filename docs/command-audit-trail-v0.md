@@ -13,7 +13,7 @@ The main rule is simple:
 The working command protocol is:
 
 ```text
-skyra <command_set> <command> -<args> -reason "<why this command is being emitted>"
+skyra <node> <primitive> -<args> -reason "<why this command is being emitted>"
 ```
 
 `-reason` is mandatory.
@@ -28,6 +28,7 @@ The command surface is the system's execution boundary.
 
 If commands are the boundary, then the system needs an inspectable record of:
 
+- what node emitted the command
 - what command was emitted
 - what arguments it carried
 - why the node believed that command should happen
@@ -81,15 +82,15 @@ The node must state its reason, but the system does not confuse that reason with
 ## Examples
 
 ```text
-skyra primitive interact -channel human -reason "the current frame requires a user-facing response"
+skyra jarvis interact -method respond -target human -reason "the current frame requires a user-facing response"
 ```
 
 ```text
-skyra primitive recall -entity terraform -top_k 8 -reason "the stimulus explicitly introduced terraform as the active structural cue"
+skyra jarvis recall -entity terraform -top_k 8 -reason "the stimulus explicitly introduced terraform as the active structural cue"
 ```
 
 ```text
-skyra capability publish_contract -subject_id Michaels-MacBook-Pro-10.local -capability local_compute -reason "host OS introspection verified local compute resources on this subject"
+skyra stark interact -method write_device_registration -subject_id Michaels-MacBook-Pro-10.local -reason "verified capability state must be persisted for this subject"
 ```
 
 ## Current Design Posture

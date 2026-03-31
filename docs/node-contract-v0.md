@@ -8,9 +8,11 @@ The contract defines:
 
 - why the node exists
 - what capabilities it may rely on
-- what stimuli it may respond to
+- what typed stimuli it may respond to
+- what typed stimuli it may emit
 - what cognition envelope it may operate under
 - what commands it may emit
+- what recall boundary it exposes
 
 A node does not act directly on the user, an API, or the runtime.
 
@@ -23,6 +25,7 @@ At the contract level, the active boundary is:
 - `stimulus`
 - `cognition`
 - `commands`
+- `recall_exposure`
 
 ## 1. Purpose
 
@@ -52,6 +55,17 @@ If incoming stimulus does not match the node's accepted form, the node is not el
 
 Stimulus therefore defines the node's input boundary.
 
+The important current direction is:
+
+- stimulus should be typed up front
+
+That means a node contract should eventually define:
+
+- accepted stimulus types
+- emitted stimulus types
+
+This is part of what makes node-to-node routing composable.
+
 ## 4. Cognition
 
 Cognition is not free-standing inner autonomy.
@@ -77,17 +91,25 @@ That includes:
 The current working protocol shape is:
 
 ```text
-skyra <command_set> <command> -<args> -reason "<why this command is being emitted>"
+skyra <node> <primitive> -<args> -reason "<why this command is being emitted>"
 ```
 
-`interaction` is therefore not a separate direct action path.
+The explicit node slot matters because command authorship is part of the runtime boundary.
 
-It is one command path inside the contract-allowed command surface.
+The current primitive split is:
+
+- `recall`
+- `learn`
+- `interact`
+
+`interact` is therefore not a separate direct action path outside the command surface.
+
+It is one primitive inside the contract-allowed command surface.
 
 For example:
 
 ```text
-skyra primitive interact -reason "the current frame requires an outward response"
+skyra jarvis interact -method respond -target human -reason "the current frame requires an outward response"
 ```
 
 `reason` should be treated as mandatory.
@@ -101,6 +123,24 @@ That means:
 - `reason` explains why the node emitted the command
 - `reason` does not replace later execution validation or evidence
 
+## 6. Recall Exposure
+
+The node contract should also bound what recall boundary the node exposes.
+
+This matters because the current direction is:
+
+- no ambient global experience store
+- node-local retained experience by default
+- cross-node access only through explicit boundaries
+
+That means a node contract should eventually define:
+
+- whether other nodes may request recall from it
+- what stimulus types may trigger that
+- what shape of recall package may be returned
+
+This is still early, but the boundary belongs at the contract level.
+
 ## Contract Level vs Runtime Level
 
 The contract says:
@@ -108,8 +148,10 @@ The contract says:
 - what the node is for
 - what capabilities it may rely on
 - what can wake it up
+- what typed stimuli it may emit
 - how cognition is bounded
 - what commands it may emit
+- what recall boundary it exposes
 
 Runtime execution then handles:
 
@@ -149,20 +191,25 @@ Instead:
 
 The following remain open even with the command surface inside the active contract:
 
-- exact `command_set` vocabulary
-- exact command argument grammar
+- exact stimulus type vocabulary
+- exact primitive argument grammar
 - exact cognition budgeting and stop rules
 - recall policy or recall defaults
+- the final `interact` method taxonomy
+- whether `channel` becomes canonical inside `interact`
 
 Device-facing capability surfaces should be treated as capability contracts rather than as node contracts.
 
 See also:
 
 - [capability-contract-prelim.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/capability-contract-prelim.md)
+- [protocol-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/protocol-v0.md)
+- [stimulus-types-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/stimulus-types-v0.md)
+- [node-memory-boundary-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/node-memory-boundary-v0.md)
 
 ## Short Framing
 
-The node contract defines why a node exists, what capabilities and stimulus it may operate on, how cognition is bounded, and what commands it may emit.
+The node contract defines why a node exists, what capabilities and typed stimuli it may operate on, how cognition is bounded, what commands it may emit, and what recall boundary it exposes.
 
 It is the node's durable boundary.
 

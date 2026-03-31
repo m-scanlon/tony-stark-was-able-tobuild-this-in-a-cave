@@ -1,80 +1,61 @@
-# Command Set (Prelim)
+# Command Surface (Prelim)
 
 ## Core Framing
 
-The runtime should not assume every executable operation belongs to one flat primitive menu.
+This document preserves an intermediate protocol idea while clarifying the newer active direction.
 
-Earlier docs used the word `namespace`.
+Earlier docs moved from:
 
-The current working protocol term is `command_set`.
+- `namespace`
+- to `command_set`
 
-The older shape:
+That was useful, but the current architecture now points somewhere else.
 
-```text
-skyra <primitive> -<args>
-```
-
-is too narrow for the current runtime direction.
-
-The more flexible shape is:
+The current active direction is:
 
 ```text
-skyra <command_set> <command> -<args>
+skyra <node> <primitive> -<args> -reason "<why this command is being emitted>"
 ```
 
-## Why This Matters
+This makes the node explicit and keeps the primitive layer small.
 
-The runtime may eventually need to support more than one executable command family.
+## Why This Shift Happened
 
-Examples:
+The newer direction comes from three pressures:
 
-- atomic primitives
-- bounded loop schemas
-- later higher-order command families
+- nodes are becoming explicit runtime operators
+- typed stimulus is becoming the routing surface
+- the primitive split is becoming smaller and cleaner than a large top-level command taxonomy
 
-If everything is forced into one flat primitive surface too early, the runtime becomes harder to extend cleanly.
+The current primitive split is:
 
-## Current Direction
+- `recall`
+- `learn`
+- `interact`
 
-The command line shape should be thought of as:
-
-```text
-skyra <command_set> <command> -<args> -reason "<why this command is being emitted>"
-```
-
-Where:
-
-- `command_set` groups a family of commands
-- `command` is the executable operation inside that command set
-- `-reason` is the mandatory audit-trail rationale carried on every emitted command
-
-Nodes do not act directly on users, APIs, or the runtime.
-
-They emit commands.
-
-Commands without `-reason` should be treated as invalid by runtime validation.
+That makes a node-first protocol read more naturally than the earlier `command_set` framing.
 
 ## Example Direction
 
 Examples might later look like:
 
 ```text
-skyra primitive interact -reason "the current frame requires a user-facing response"
-skyra primitive recall -reason "the current stimulus introduced structural cues worth recall lookup"
-skyra loop react -reason "the contract allows bounded multi-step execution for this episode"
-skyra loop ooda -reason "the contract selected an ooda-style command family for this situation"
+skyra jarvis interact -method respond -target human -reason "the current frame requires a user-facing response"
+skyra jarvis recall -reason "the current stimulus introduced structural cues worth recall lookup"
+skyra stark interact -method probe -subject_id laptop -reason "the device needs capability discovery"
+skyra stark learn -episode_id ep_123 -reason "the episode should be consolidated into retained experience"
 ```
 
 These are only directional examples.
 
-They do not yet lock the final command-set vocabulary or argument grammar.
+They do not yet lock the final primitive grammar.
 
 ## Working Recall Command Shape
 
 One useful working shape for recall is:
 
 ```text
-skyra primitive recall \
+skyra <node> recall \
   -entity <entity_id> \
   -relationship <relationship_id> \
   -bundle <left_entity_id>:<relationship_id>:<right_entity_id> \
@@ -93,7 +74,7 @@ The retrieval surface may therefore accept:
 Example:
 
 ```text
-skyra primitive recall \
+skyra jarvis recall \
   -entity assistant \
   -entity terraform \
   -relationship help_with \
@@ -109,22 +90,13 @@ The important `v0` rule is already stable, though:
 
 - every emitted command must carry `-reason`
 
-## Primitive As Command Set
-
-`primitive` should now be thought of as one command set, not necessarily the only one.
-
-This keeps the runtime flexible enough to support:
-
-- atomic command execution
-- bounded loop execution
-- later command families without flattening them into one global surface
-
 ## Relationship To Contracts
 
 The active node contract should define:
 
-- which command sets are allowed
-- which commands inside those command sets are allowed
+- which primitives are allowed
+- what stimulus types are accepted and emitted
+- what interaction methods are allowed inside `interact`
 - what loop or execution envelopes are permitted
 
 This means:
@@ -136,15 +108,16 @@ This means:
 
 The strongest current claim is:
 
-- command execution should be organized around command sets, not one flat primitive surface
+- command execution should now be understood through explicit nodes and a small primitive set
 
-This is a flexibility move for the node runtime.
+This is a cleaner fit for the current runtime direction.
 
 It does not yet define:
 
-- the final command-set vocabulary
-- the final command grammar
-- the exact relation between command sets and skills
+- the final node vocabulary
+- the final primitive grammar
+- the final `interact` method taxonomy
+- whether `channel` becomes canonical
 
 It does define one important audit rule:
 
@@ -152,14 +125,8 @@ It does define one important audit rule:
 
 ## Short Framing
 
-The runtime command surface should move from:
+The runtime command surface should now be thought of as:
 
-- `skyra <primitive> -<args>`
-
-to:
-
-- `skyra <command_set> <command> -<args> -reason "<why this command is being emitted>"`
-
-`primitive` becomes one command set among others rather than the only executable family.
+- `skyra <node> <primitive> -<args> -reason "<why this command is being emitted>"`
 
 `-reason` is mandatory because it is part of the audit trail, not optional commentary.
