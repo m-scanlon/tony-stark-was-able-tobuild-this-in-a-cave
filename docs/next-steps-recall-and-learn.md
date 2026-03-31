@@ -92,6 +92,7 @@ Define:
 - how `retained_trace` is extracted
 - how derived artifacts are formed from traces
 - when `context_artifact_ids` and `source_trace_ids` are written
+- keep `v1` learning episode-bounded rather than requiring full node ancestry or orchestration trace replay
 
 Outputs:
 

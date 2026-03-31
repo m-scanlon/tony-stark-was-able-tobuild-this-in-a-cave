@@ -49,6 +49,58 @@ This keeps:
 - roles composable
 - delegation explicit
 
+## Subject Memory Domains
+
+Within a node's retained experience boundary, it is useful to distinguish subject-scoped memory domains from node identity or registry state.
+
+These domains are not automatically:
+
+- separate nodes
+- external capabilities
+- registration records
+
+They are retained-experience domains that help bound what kinds of traces and later derived artifacts a node is responsible for.
+
+### Human Subject Domains
+
+For a human-subject-facing node such as `Jarvis`, the current useful retained domains are:
+
+- `identity`
+- `preferences`
+- `boundaries`
+- `interaction_style`
+
+These should be understood primarily as retained-experience domains.
+
+They may begin from retained trace and later support derived understanding, salience, or tension.
+
+### System Subject Domains
+
+For a system-subject-facing node, the current useful retained domains are:
+
+- `identity`
+- `constraints`
+- `health`
+- `surface_behavior`
+
+These should also be treated as retained-experience domains rather than as registry truth.
+
+For example, they are not the same thing as:
+
+- transport metadata
+- verified capability inventory
+- capability contracts
+- registration envelopes
+
+Those belong to the registration and contract layers.
+
+The retained domains above instead capture what it is like to operate with that system subject over time:
+
+- stable identity-oriented facts
+- recurring limits and incompatibilities
+- degradation, failure, and recovery patterns
+- practical behavioral quirks of exposed surfaces
+
 ## Node-To-Node Access
 
 If one node needs something from another node, that access should happen through a deliberate boundary.

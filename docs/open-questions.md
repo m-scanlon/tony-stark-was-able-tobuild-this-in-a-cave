@@ -91,11 +91,23 @@ The current contracts allow:
 - `source_trace_ids`
 - `context_artifact_ids`
 
+The current `v1` posture should stay simpler:
+
+- learning operates over the closed local node episode
+- deep node ancestry or orchestration trace replay is not required for `v1`
+
 Questions:
 
 - how much provenance should be stored?
 - how strict should `context_artifact_ids` be?
 - when is prior artifact influence strong enough to record?
+
+Likely later variation by node role:
+
+- `identity` probably does not need a deep orchestration trace
+- `system_subject` debugging a capability mismatch may need a deeper call path
+- `boundaries` may need the exact user correction chain that led there
+- `interaction_style` probably needs mostly local episode context plus prior recalled artifacts
 
 ## 8. Promotion Into Stable Structure
 

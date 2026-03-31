@@ -41,6 +41,17 @@ This is the one intentional special case in the current model.
 
 After Stark exists, later node creation becomes regular.
 
+This does not mean `Stark` is the only hardcoded startup-time node.
+
+The runtime may ship with a small hardcoded bootstrap node set that is
+available at init time.
+
+Within that set:
+
+- `Stark` remains the primary structural bootstrap node
+- other shipped startup nodes are also fully instantiated during bootstrap
+- later non-bootstrap nodes still become regular births after startup
+
 ## Regular Node Birth
 
 For regular nodes, the flow is:
@@ -132,6 +143,9 @@ The strongest current claims are:
 - the contract is the birth spec
 - the kernel is the node birth authority
 - Stark is the bootstrap exception at system start
+- bootstrap may instantiate a small hardcoded startup node set in addition to
+  `Stark`
+- bootstrap-time nodes in that set are fully born during bootstrap
 - Stark publishes contracts for later nodes, but the kernel still performs instantiation
 - Stark owns the node registry structurally, while the kernel keeps it live during runtime
 - nodes are live immediately on instantiation
