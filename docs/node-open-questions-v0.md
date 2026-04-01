@@ -202,16 +202,15 @@ Why it matters:
 Resolution:
 
 - the active node contract should include the command surface
-- `v1` should use a simple command_set/command allowlist
-- one working protocol shape is `skyra <command_set> <command> -<args>`
+- `v1` should use a simple explicit command allowlist
+- one working protocol shape is `skyra <node> <command> -<args> -reason "..."`
 
 Current posture:
 
-- the contract should name the allowed command sets
-- each allowed command set should declare its allowed commands
+- the contract should name the allowed commands
 - avoid wildcard or pattern matching in `v1`
 - keep the command allowance surface explicit and inspectable
-- `skyra primitive interact` is one valid example inside that surface
+- `skyra jarvis interact` is one valid example inside that surface
 - exact command argument schemas remain open for now
 
 Why this is the right `v1` move:

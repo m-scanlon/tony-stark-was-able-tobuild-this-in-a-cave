@@ -8,8 +8,8 @@ It is a runtime system organized around:
 
 - durable nodes under contract
 - bounded episodes inside those nodes
-- a scored structural layer active within each episode
 - projected frames for inference
+- runtime execution inside the episode
 - retained artifacts produced later through learning
 
 Canonical structure still matters, but it is the substrate these other layers refer into rather than the sole primary model.
@@ -33,9 +33,9 @@ See also:
 The current working model is:
 
 - `Structure` — canonical entities and relationships
+- `Node Contract` — durable behavioral boundary
 - `Node` — durable runtime operator under contract
 - `Episode` — bounded runtime container for one span of activity
-- `Episode Field` — the scored entity/relationship layer active within the current episode
 - `Frame` — the bounded inference page projected from the current episode
 - `Runtime Execution` — emitted commands and transient runtime artifacts inside the episode
 - `Retention Layer` — retained artifacts that survive the episode
@@ -90,7 +90,6 @@ The current core episode sections are:
 - `purpose`
 - `interaction_history`
 - `recall`
-- `episode_field`
 - `available_commands`
 
 The episode is not the same thing as the frame.
@@ -131,24 +130,6 @@ The frame later projects:
 
 from the larger interaction history.
 
-## Episode Field
-
-Each episode maintains an `episode_field`.
-
-The episode field is:
-
-- the scored entity/relationship layer active within the current episode
-- the structural representation of what the episode is about right now
-- the main cue surface that recall uses
-
-It is not:
-
-- interaction history
-- retained recall itself
-- a separate abstract theme object
-
-It is the dynamically updated structural layer sitting behind the current frame.
-
 ## Runtime Execution
 
 Runtime execution occurs inside the active episode.
@@ -158,13 +139,13 @@ The current key split is:
 - runtime commands are callable in-episode operations
 - runtime artifacts are transient outputs of those operations
 
-Runtime execution should assume the command-set-based command surface:
+Runtime execution should assume the node-first command surface:
 
 ```text
-skyra <command_set> <command> -<args>
+skyra <node> <command> -<args> -reason "<why this command is being emitted>"
 ```
 
-This keeps runtime execution more flexible than a flat primitive-only model.
+This keeps runtime execution aligned with the explicit node-first protocol without falling back to an older `command_set` taxonomy.
 
 Runtime artifacts remain episode-local unless later learning selects something from them into retained experience.
 
@@ -187,21 +168,21 @@ That anchor set is the main bridge between retained experience and recall.
 
 ## Recall
 
-Recall is the read path from retained experience into the current episode frame.
+Recall is the read contract from retained experience into the current episode frame.
 
 At a high level:
 
-1. current episode activity updates the `episode_field`
-2. the episode field scores entities and relationships
-3. the dominant connected slice of that field becomes the active cue surface
-4. retained artifacts with overlapping anchors are fetched and ranked
-5. a bounded mixed set enters episode recall and may be projected into frame
+1. heavy inference reads current episode context
+2. heavy inference emits a bounded recall command when recall is needed
+3. retained artifacts with overlapping anchors are fetched and ranked
+4. a bounded mixed set enters episode recall and may be projected into frame
 
 Recall is therefore driven by:
 
-- current interaction/stimulus
-- accumulated episode structure
-- structural overlap between the episode field and retained artifacts
+- current episode context
+- heavy inference
+- bounded recall command execution
+- structural overlap between recall queries and retained artifacts
 
 ## Learning
 
@@ -252,22 +233,7 @@ The strongest current claims are:
 - nodes are the durable runtime operators
 - episodes are the primary bounded unit of runtime state
 - frames are projected from episodes for inference
-- the episode field is the scored structural layer active within an episode
 - runtime commands and runtime artifacts remain episode-local by default
 - retained artifacts belong to the retention layer
-- recall reads from retained experience through the episode field
+- recall is a contract driven by heavy inference
 - learning writes from episodes into retained experience and structure
-
-## Short Framing
-
-The current data model is a layered runtime architecture.
-
-Nodes operate under durable contracts.
-
-Episodes hold bounded runtime state.
-
-Frames are projected from episodes for inference.
-
-Episode fields score the current structural context.
-
-Runtime execution stays local to the episode unless later learning turns selected outcomes into retained artifacts.

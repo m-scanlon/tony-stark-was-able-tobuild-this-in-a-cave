@@ -124,6 +124,7 @@ If a local Skyra core is found, the tentative flow is:
 6. report the result to `Stark`
 7. write device registration
 8. publish verified capabilities
+9. in `v1`, immediately follow successful registration with `birth_node`
 
 ### 2. Start New Local Skyra
 
@@ -137,7 +138,8 @@ If no local Skyra core is found, the tentative flow is:
 6. probe the local device
 7. register the local subject
 8. publish verified capabilities
-9. advertise the instance on the local network
+9. in `v1`, immediately follow successful registration with `birth_node`
+10. advertise the instance on the local network
 
 These two branches are still conceptual.
 
@@ -200,8 +202,10 @@ transport.attach
 -> os.inference
 -> probe.strategy.select
 -> probe.execute
+-> contract.shape
 -> registration.write
 -> capability publication
+-> birth_node
 ```
 
 Important current posture:

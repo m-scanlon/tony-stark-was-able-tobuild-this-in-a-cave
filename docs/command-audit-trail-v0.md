@@ -82,7 +82,7 @@ The node must state its reason, but the system does not confuse that reason with
 ## Examples
 
 ```text
-skyra jarvis interact -method respond -target human -reason "the current frame requires a user-facing response"
+skyra jarvis interact -method talk -target human -reason "the current frame requires a user-facing response"
 ```
 
 ```text

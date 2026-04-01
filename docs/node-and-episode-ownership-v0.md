@@ -23,7 +23,6 @@ That currently includes:
 - primitive execution policy
 - capability bindings
 - recall machinery
-- structural projection machinery
 - frame assembly machinery
 - the pointer to the active episode
 
@@ -40,9 +39,8 @@ That currently includes:
 - purpose snapshot for that episode
 - `interaction_history`
 - `recall`
-- `episode_field`
 - derived episode-local artifacts
-- the available primitive surface for that episode
+- the available command surface for that episode
 - episode timestamps and open/closed state
 
 The episode owns what is true inside that bounded span of runtime participation.
@@ -58,17 +56,6 @@ The episode is instantiated runtime participation under that contract.
 The contract bounds behavior.
 
 The episode carries state.
-
-### Node vs Episode Field
-
-The node owns the structural projection machinery.
-
-The episode owns the actual `episode_field` state for the current episode.
-
-So:
-
-- node owns the mechanism
-- episode owns the current structural activation state
 
 ### Node vs Recall
 

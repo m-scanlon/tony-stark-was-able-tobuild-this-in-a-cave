@@ -2,9 +2,11 @@
 
 ## Core Framing
 
-Recall should be driven by the current episode's scored entity/relationship layer.
+Recall is the contract that reads retained experience into the current episode.
 
-Retained artifacts should be retrieved by matching against that scored layer.
+It is driven by heavy inference calls over current episode context.
+
+It does not depend on a separate episode-side scored field object.
 
 This creates a clean bridge between:
 
@@ -15,20 +17,20 @@ without requiring:
 
 - raw text lookup
 - a separate abstract theme object
-- a giant stored pattern layer
+- a scored episode-side structural field
 
-## Episode Structural Layer
+## Episode Context
 
-Within the current episode, there should be a structural layer composed of:
+The current episode context available to recall includes:
 
-- entities resolved in the episode
-- relationships resolved in the episode
+- `purpose`
+- the current stimulus
+- recent interaction history
+- already active recalled artifacts
+- available commands
+- relevant runtime artifacts when present
 
-This layer accumulates across the episode and carries activation scores.
-
-It is the current structural representation of what the episode is about.
-
-It sits just behind the immediate incoming turn and provides continuity across recall steps.
+Heavy inference reads that bounded context and decides whether recall is needed.
 
 ## Retained Artifacts
 
@@ -64,27 +66,50 @@ type RetainedArtifact = {
 
 `retained_trace` remains semantically distinct because it preserves the factual retained happening, but it is still part of the same retrievable retained experience family.
 
-## The Recall Bridge
-
-The tie between the episode and the retained artifacts is:
-
-- shared entity ids
-- shared relationship ids
-
-The current episode field and retained artifacts both point into the same canonical structure through the anchor set.
-
-That means recall can operate over structure directly rather than over text.
-
-## Recall Flow
+## The Recall Contract
 
 At a high level:
 
-1. resolve entities and relationships from the current stimulus
-2. update the scored entity/relationship layer of the episode
-3. take the strongest entities and relationships from that scored layer
-4. use those ids to pull candidate retained artifacts
-5. score candidate artifacts by weighted structural overlap with the current episode field
-6. admit the top artifacts into recall
+1. heavy inference reads current episode context
+2. if recall is needed, heavy inference emits a bounded recall command
+3. the recall command carries entity, relationship, and bundle queries
+4. candidate retained artifacts are fetched through `anchor_set` overlap
+5. bounded ranking admits the strongest retained artifacts
+6. admitted artifacts are written into `episode.recall`
+
+## Working Command Shape
+
+```text
+skyra <node> recall \
+  -entity <entity_id> \
+  -relationship <relationship_id> \
+  -bundle <left_entity_id>:<relationship_id>:<right_entity_id> \
+  -top_k <n> \
+  -reason "<why recall is needed now>"
+```
+
+Conceptually:
+
+```ts
+type RecallQuery =
+  | { kind: "entity"; entity_id: string }
+  | { kind: "relationship"; relationship_id: string }
+  | {
+      kind: "bundle"
+      left_entity_id: string
+      relationship_id: string
+      right_entity_id: string
+    }
+```
+
+```ts
+type RecallArgs = {
+  queries: RecallQuery[]
+  top_k?: number
+}
+```
+
+The active ids now come from inference-chosen recall queries rather than from an episode-side scored field.
 
 ## Candidate Generation
 
@@ -97,7 +122,7 @@ That means:
 - entity id -> artifact ids
 - relationship id -> artifact ids
 
-The scored episode field provides the active ids.
+The recall command provides the active ids.
 
 Those ids then retrieve a bounded candidate set of artifacts.
 
@@ -105,7 +130,7 @@ This is the first-stage filter.
 
 ## Artifact Match
 
-After candidate generation, each candidate artifact is scored against the current episode field.
+After candidate generation, each candidate artifact is scored against the bounded query selected by heavy inference.
 
 The point of this score is:
 
@@ -117,8 +142,8 @@ Conceptually:
 
 ```text
 artifact_match(a) =
-  overlap(a.anchor_set.entity_ids, scored_episode_entities)
-  + overlap(a.anchor_set.relationship_ids, scored_episode_relationships)
+  overlap(a.anchor_set.entity_ids, query.entity_ids)
+  + overlap(a.anchor_set.relationship_ids, query.relationship_ids)
   + connectedness_bonus
   - mismatch_penalty
 ```
@@ -129,32 +154,9 @@ The important behavior is:
 - relationship overlap provides specificity
 - connected relational matches should outrank weak entity-only matches
 
-## Why Relationships Matter
-
-An entity alone is often too weak to retrieve the right retained artifact.
-
-Example:
-
-- `outside`
-
-may retrieve something generic.
-
-But:
-
-- `self -> located_in -> outside`
-- `self -> doing -> construction`
-
-gives a much more specific current structure.
-
-That more specific structure should pull more specific retained artifacts.
-
-So the recall value is not a single entity.
-
-It is the scored relational slice currently active in the episode.
-
 ## Fault Tolerance
 
-The model should remain useful when the current episode structure is incomplete.
+The model should remain useful when the current episode context is incomplete.
 
 So:
 
@@ -189,11 +191,11 @@ This recalled set then enters the current episode frame for inference and runtim
 
 The strongest current claims are:
 
-- the current episode should maintain a scored entity/relationship layer
-- retained artifacts should carry structural references into the same canonical layer
-- `retained_trace` is part of that retrievable retained artifact surface
-- recall should retrieve candidates through shared ids
-- recall should rank those candidates by weighted structural overlap
+- recall is a contract driven by heavy inference calls
+- retained artifacts carry structural references into the same canonical layer
+- `retained_trace` is part of that retrievable retained artifact family
+- recall retrieves candidates through shared ids
+- recall ranks those candidates by bounded structural overlap
 
 The exact math for:
 
@@ -206,10 +208,10 @@ remains open.
 
 ## Short Framing
 
-Recall should operate by matching the scored entity/relationship layer of the current episode against the anchor sets carried by retained artifacts.
+Recall operates by issuing bounded structural queries against retained artifacts anchored into canonical structure.
 
-The episode provides the active structural field.
+Heavy inference chooses the query.
 
-The retention layer provides structurally addressable artifacts.
+The retention layer returns a bounded recalled set.
 
-Shared entity and relationship ids form the bridge between them.
+That set is then written into the current episode.

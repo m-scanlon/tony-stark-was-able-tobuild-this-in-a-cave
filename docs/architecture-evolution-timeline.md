@@ -516,7 +516,7 @@ The architecture became:
 Major breakthroughs in this phase:
 
 - episodes as the bounded unit of activity
-- episode field as the scored structural layer
+- the later-superseded scored episode-side field as the structural layer
 - runtime primitives versus runtime artifacts
 - retained artifact family:
   - `retained_trace`
@@ -561,7 +561,7 @@ The architecture is now clarifying:
 - `node` as durable runtime operator
 - `episode` as bounded runtime container
 - `frame` as the projected inference page
-- `episode_field` as the structural layer recall uses
+- the then-current scored episode-side field as the structural layer recall used
 
 This phase also sharpened the question of the node process:
 
@@ -584,7 +584,7 @@ That is a much more mature runtime idea than anything early in the repo.
 - node as durable operator
 - episode as bounded runtime container
 - frame as inference projection
-- episode field as recall surface
+- the older scored episode-side field model as the recall driver
 - the idea that execution flexibility should be bounded by contract rather than hardcoded globally
 
 ## Parallel Track: Structural Projection Demo
@@ -596,7 +596,7 @@ That is a much more mature runtime idea than anything early in the repo.
 ### Representative docs and files
 
 - [structural-projection-service-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/structural-projection-service-v0.md)
-- [structural-extraction-pipeline-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/structural-extraction-pipeline-v0.md)
+- [archive/structural-extraction-pipeline-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/archive/structural-extraction-pipeline-v0.md)
 - [dependency-projection-mapping-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/dependency-projection-mapping-v0.md)
 - [dependency-pattern-coverage-map-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/dependency-pattern-coverage-map-v0.md)
 - [HIGH_LEVEL_WALKTHROUGH.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/structural-projection-service-demo/HIGH_LEVEL_WALKTHROUGH.md)
@@ -605,15 +605,15 @@ That is a much more mature runtime idea than anything early in the repo.
 
 This demo is important because it solved a hidden blocker:
 
-- recall needs a structural layer
-- the episode field needs a real input path
+- recall needed a bounded structural query input
+- the earlier scored episode-side field model needed a real input path
 - raw language needs to become bound entity/relationship fragments
 
 The OpenIE path proved too noisy.
 
 The current dependency-first projection path is the first one that feels aligned with the retained-experience runtime model.
 
-## Phase 9: Node Substrate, Stimulus-First Recall, And Canon Cleanup
+## Phase 9: Node Substrate, Early Recall Simplification, And Canon Cleanup
 
 ### Dates
 
@@ -650,15 +650,15 @@ The architecture clarified:
 
 This phase also simplified recall in an important way.
 
-Instead of requiring the full long-horizon episode-field scoring model immediately, `v1` recall became:
+Instead of requiring the full long-horizon episode-field scoring model immediately, the docs briefly moved to:
 
 - current stimulus
-- one light inference call
+- one bounded inference call
 - entity/relationship extraction
-- thin episode field
+- a thin scored episode-side field
 - retained-artifact lookup by `anchor_set` overlap
 
-That was a major simplification without discarding the larger architecture.
+That was a major simplification at the time, though later canon replaced it with the recall contract driven by heavy inference calls.
 
 ### Why this phase mattered
 
@@ -668,14 +668,14 @@ This phase answered several questions that would otherwise have blocked implemen
 - what a node's public runtime surface is
 - how routed events reach a node
 - when contracts change
-- how `v1` recall can work without overbuilding the episode field
+- how `v1` recall could first work without overbuilding the scored episode-side field
 
 It also cleaned the canon enough that the docs now mostly agree on:
 
 - node
 - episode
 - frame
-- episode field
+- the older scored episode-side field model
 - runtime execution
 - retained artifacts
 
@@ -684,8 +684,8 @@ It also cleaned the canon enough that the docs now mostly agree on:
 - node/episode/frame separation
 - kernel authority
 - contract-bounded runtime behavior
-- structural recall through retained anchors
-- the need for a richer episode field later, even though `v1` keeps it thin
+- anchor-based recall through retained anchors
+- the need for a stronger recall contract and ranking policy
 
 ## Structural Changes In The Repo
 

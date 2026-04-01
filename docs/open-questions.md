@@ -4,21 +4,22 @@
 
 This document holds the active open questions for the current data model.
 
-It is meant to track unresolved edges without reintroducing older superseded assumptions.
+It is meant to track unresolved edges without reintroducing superseded recall assumptions.
 
 ## Stable Baseline
 
 The current stable enough baseline is:
 
 - episodes are the primary bounded unit of activity
-- the frame is projected as purpose, interaction, recall, and available primitives
-- the episode field is the scored entity/relationship layer active within the episode
+- the frame is projected as purpose, interaction, recall, and available commands
+- recall is a contract driven by heavy inference calls
+- heavy inference may emit bounded recall commands against retained experience
+- recall results are written into `episode.recall`
 - runtime commands and runtime artifacts belong to in-episode runtime execution
 - learning is the write path from episodes into retained experience and structure
 - retained experience is a family of retained artifact types rather than an understandings-only layer
 - retained artifacts share an `anchor_set`
-- `retained_trace` remains distinct from derived retained artifacts
-- recall reads retained artifacts back through the scored episode field
+- `retained_trace` remains distinct from derived retained artifacts and remains recallable
 
 ## 1. Runtime Primitive Menu
 
@@ -40,16 +41,16 @@ Questions:
 - which are primitive-specific versus generic?
 - what survives only for one step versus the whole episode?
 
-## 3. Episode Field Scoring
+## 3. Recall Contract Tuning
 
-The episode field is now the main scoring surface for recall, but the scoring math is still open.
+The recall contract is now clear, but its triggering and ranking policy remain open.
 
 Questions:
 
-- how exactly should stimulus support be computed?
-- how exactly should episode support decay or reinforce?
-- how far should relational support propagate?
-- what counts as the dominant connected slice of the field?
+- when should heavy inference emit a recall command?
+- how specific should recall queries become before they overfit?
+- how should bounded ranking and admission thresholds be tuned?
+- when should inference choose another command instead of recall?
 
 ## 4. Recall Ranking
 
@@ -149,7 +150,7 @@ They are about:
 
 - primitive menus
 - runtime artifact typing
-- recall scoring
+- recall-command policy
 - trace extraction
 - provenance
 - promotion

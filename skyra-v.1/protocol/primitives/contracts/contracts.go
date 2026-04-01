@@ -1,0 +1,131 @@
+package primitives
+
+import "time"
+
+type PrimitiveName string
+
+const (
+	PrimitiveRecall   PrimitiveName = "recall"
+	PrimitiveLearn    PrimitiveName = "learn"
+	PrimitiveInteract PrimitiveName = "interact"
+)
+
+type InteractMethod string
+
+const (
+	InteractTalk                    InteractMethod = "talk"
+	InteractProbe                   InteractMethod = "probe"
+	InteractWriteDeviceRegistration InteractMethod = "write_device_registration"
+)
+
+type RetainedArtifactKind string
+
+const (
+	RetainedArtifactTrace         RetainedArtifactKind = "trace"
+	RetainedArtifactUnderstanding RetainedArtifactKind = "understanding"
+	RetainedArtifactSalience      RetainedArtifactKind = "salience"
+	RetainedArtifactTension       RetainedArtifactKind = "tension"
+)
+
+type PrimitiveInvocation struct {
+	CommandID string        `json:"command_id"`
+	NodeID    string        `json:"node_id"`
+	EpisodeID string        `json:"episode_id"`
+	IntentID  string        `json:"intent_id,omitempty"`
+	Primitive PrimitiveName `json:"primitive"`
+	Reason    string        `json:"reason"`
+	EmittedAt time.Time     `json:"emitted_at"`
+}
+
+type PrimitiveResultEvent struct {
+	CommandID   string        `json:"command_id"`
+	NodeID      string        `json:"node_id"`
+	EpisodeID   string        `json:"episode_id"`
+	IntentID    string        `json:"intent_id,omitempty"`
+	Primitive   PrimitiveName `json:"primitive"`
+	ResultKind  string        `json:"result_kind"`
+	CompletedAt time.Time     `json:"completed_at"`
+}
+
+type RecallQueryKind string
+
+const (
+	RecallQueryEntity       RecallQueryKind = "entity"
+	RecallQueryRelationship RecallQueryKind = "relationship"
+	RecallQueryBundle       RecallQueryKind = "bundle"
+)
+
+type RecallQuery struct {
+	Kind           RecallQueryKind `json:"kind"`
+	EntityID       string          `json:"entity_id,omitempty"`
+	RelationshipID string          `json:"relationship_id,omitempty"`
+	LeftEntityID   string          `json:"left_entity_id,omitempty"`
+	RightEntityID  string          `json:"right_entity_id,omitempty"`
+}
+
+type RecallArgs struct {
+	Queries []RecallQuery `json:"queries"`
+	TopK    int           `json:"top_k,omitempty"`
+}
+
+type RecalledArtifact struct {
+	ArtifactID             string               `json:"artifact_id"`
+	Kind                   RetainedArtifactKind `json:"kind"`
+	Score                  float64              `json:"score"`
+	MatchedEntityIDs       []string             `json:"matched_entity_ids,omitempty"`
+	MatchedRelationshipIDs []string             `json:"matched_relationship_ids,omitempty"`
+}
+
+type RecallPackage struct {
+	RetainedArtifactIDs []string           `json:"retained_artifact_ids"`
+	Matches             []RecalledArtifact `json:"matches"`
+}
+
+type RecallInvocation struct {
+	PrimitiveInvocation
+	Args RecallArgs `json:"args"`
+}
+
+type RecallResultEvent struct {
+	PrimitiveResultEvent
+	Result RecallPackage `json:"result"`
+}
+
+type LearnArgs struct {
+	EpisodeID string `json:"episode_id"`
+}
+
+type LearnPackage struct {
+	EpisodeID           string   `json:"episode_id"`
+	RetainedArtifactIDs []string `json:"retained_artifact_ids"`
+	StructureUpdateIDs  []string `json:"structure_update_ids,omitempty"`
+}
+
+type LearnInvocation struct {
+	PrimitiveInvocation
+	Args LearnArgs `json:"args"`
+}
+
+type LearnResultEvent struct {
+	PrimitiveResultEvent
+	Result LearnPackage `json:"result"`
+}
+
+type InteractArgs struct {
+	Method     InteractMethod `json:"method"`
+	Parameters map[string]any `json:"parameters,omitempty"`
+}
+
+type InteractResult struct {
+	Data map[string]any `json:"data,omitempty"`
+}
+
+type InteractInvocation struct {
+	PrimitiveInvocation
+	Args InteractArgs `json:"args"`
+}
+
+type InteractResultEvent struct {
+	PrimitiveResultEvent
+	Result InteractResult `json:"result"`
+}

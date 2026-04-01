@@ -34,7 +34,7 @@ skyra <node> <primitive> -<args> -reason "<why this command is being emitted>"
 Examples:
 
 ```text
-skyra jarvis interact -method respond -target human -reason "the user needs a response"
+skyra jarvis interact -method talk -target human -reason "the user needs a response"
 ```
 
 ```text
@@ -100,7 +100,7 @@ It is the retained write path.
 
 Examples include:
 
-- responding to a human
+- talking to a human
 - probing a device
 - searching the web
 - calling an external API
@@ -121,11 +121,10 @@ The current direction is that `interact` may carry method-specific specializatio
 
 Examples:
 
-- `respond`
+- `talk`
 - `probe`
 - `search`
 - `write_device_registration`
-- `use_capability`
 
 So a likely working shape is:
 

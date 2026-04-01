@@ -36,7 +36,8 @@ The system should:
 4. select an existing probe strategy when one already exists
 5. only research or synthesize a new probe strategy when the environment is novel or underspecified
 6. execute the selected probe in a bounded way
-7. publish capability contracts only for surfaces that actually passed verification
+7. shape initial capability contracts from observed probe behavior
+8. defer capability contract publication until after registration has been written
 
 This keeps probing:
 
@@ -44,6 +45,16 @@ This keeps probing:
 - evidence-driven
 - bounded
 - compatible with many device types
+
+Probe should now be understood as doing three distinct jobs:
+
+- discover candidate capabilities
+- verify them through bounded invocation
+- shape the initial contract from observed behavior
+
+That means probing is not only a labeling step.
+
+It is also the first contract-formation step for a capability surface.
 
 ## Why This Split Matters
 
@@ -138,6 +149,8 @@ type BootstrapFingerprint = {
   confidence?: number
 }
 ```
+
+At this stage, Stark should be understood as the authority that types this package into the next structural stimulus class used by the runtime.
 
 ## 3. Stark Classification
 
@@ -258,6 +271,13 @@ This means the probe result should preserve:
 - verification method
 - evidence
 - constraints
+
+Where possible, probe should also preserve enough observed invocation behavior to support the initial capability contract, such as:
+
+- what invocation surface was successfully reached
+- what operation or operation family was exercised
+- what argument shape was accepted
+- what result shape came back
 - confidence or status
 
 Conceptually:
@@ -274,7 +294,7 @@ type ProbedCapability = {
 
 ## 8. Capability Contract Publication
 
-Once the probe result is available, `Stark` may publish a capability contract.
+Once registration has been written from the probe result, `Stark` may publish capability contracts for the verified surfaces.
 
 That published contract should only include:
 
@@ -338,6 +358,7 @@ The strongest current claims are:
 - `Stark` should prefer existing probe strategies before generating new ones
 - device- or OS-specific probing should be bounded and evidence-driven
 - capability contracts should be published from verified probe results
+- publication should happen after registration write, not before it
 - daemon installation is separate from first capability revelation
 
 ## Open Questions

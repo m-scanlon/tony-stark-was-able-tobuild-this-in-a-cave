@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document captures the current direction for typed stimulus in the node runtime.
+This document captures the current direction for typed stimulus in the runtime.
 
 The main point is:
 
@@ -10,15 +10,18 @@ The main point is:
 
 ## Core Framing
 
-If nodes are going to call other nodes, the routing surface cannot remain vague.
+Typed stimulus is a runtime boundary of its own.
+
+It should not be owned by the node boundary.
 
 The system needs to know:
 
-- what a node can receive
-- what a node can emit
-- when one node's output is a valid input for another node
+- what kind of stimulus is arriving
+- where that stimulus came from
+- what payload it carries
+- which nodes accept or emit that type
 
-That means stimulus typing belongs in the contract model.
+That means stimulus typing belongs in a top-level stimulus contract family.
 
 ## Why Typed Stimulus Matters
 
@@ -26,15 +29,14 @@ Typed stimulus gives the runtime a clean basis for:
 
 - routing
 - orchestration
-- delegation
 - validation
 - composability
 
-Without typed stimulus, node-to-node execution becomes ad hoc and hard to reason about.
+Without typed stimulus, execution becomes ad hoc and hard to reason about.
 
-## Contract Surface
+## Node Contract Surface
 
-Each node contract should eventually declare:
+Each node contract should declare:
 
 - accepted stimulus types
 - emitted stimulus types
@@ -48,73 +50,97 @@ type NodeContract = {
 }
 ```
 
-The exact schema is still open.
+The node contract should name stimulus types.
 
-The current important claim is just:
+It should not own the top-level stimulus envelope.
 
-- stimulus typing is part of the contract, not an afterthought
-
-## Stimulus As Routing Surface
-
-Typed stimulus becomes the routing layer between nodes.
-
-That means one node may:
-
-1. receive typed stimulus
-2. produce a typed output or derived stimulus
-3. send that onward to another node
-
-This is the basis for orchestrator behavior.
-
-An orchestrator node therefore does not need ambient access to every node's memory.
-
-It needs:
-
-- typed inputs
-- typed outputs
-- routable contracts
-
-## Working Shape
+## Top-Level Stimulus Shape
 
 Conceptually:
 
 ```ts
+type StimulusSource = {
+  node_id?: string
+  capability_id?: string
+}
+```
+
+```ts
 type StimulusEnvelope = {
   stimulus_type: string
-  source_node_id?: string
-  target_node_id?: string
-  intent_id?: string
+  source: StimulusSource
   payload: Record<string, unknown>
 }
 ```
 
-This should be treated as directional rather than frozen.
+Rule:
 
-The important parts are:
+- exactly one source path should be set
 
-- the type is explicit
-- the payload is attached to that type
-- source and target may be preserved
+That means typed stimulus may come from:
+
+- a capability
+- a node
+
+This avoids baking node-to-node routing assumptions into every stimulus.
+
+## Stimulus Registry
+
+The runtime should also have a structural registry of known stimulus types.
+
+Conceptually:
+
+```ts
+type StimulusType = {
+  type_id: string
+  description?: string
+  schema?: Record<string, unknown>
+}
+```
+
+```ts
+type StimulusRegistry = {
+  version?: string
+  types: StimulusType[]
+}
+```
+
+The registry is the structural record of:
+
+- what stimulus types exist
+- what schema shape they carry
+
+## Stark As Type Authority
+
+`Stark` is the structural authority over stimulus typing.
+
+That means `Stark` owns:
+
+- stimulus type creation
+- stimulus type revision
+- the live stimulus registry
+- classification of raw incoming capability output into registered stimulus types
+
+Nodes do not invent ambient unregistered stimulus kinds on their own.
+
+They consume and emit registered types under contract.
 
 ## Examples
 
-Example directions might later include stimulus types such as:
+Example stimulus types might include:
 
 - `human_request`
+- `bootstrap_fingerprint`
 - `device_probe_request`
 - `device_probe_result`
-- `recall_request`
-- `recall_result`
 - `registration_write_request`
 - `registration_write_result`
 
 These are examples only.
 
-The current point is not the exact vocabulary.
+The important point is:
 
-The current point is:
-
-- the vocabulary should exist
+- the vocabulary should exist in a registry
 
 ## Relationship To Protocol
 
@@ -122,12 +148,12 @@ Stimulus typing and protocol commands are related but not identical.
 
 The split is:
 
-- typed stimulus says what runtime event or message is being passed
+- typed stimulus says what runtime package is being passed
 - protocol commands say what operation a node is emitting under its contract
 
 This allows the system to keep:
 
-- message routing
+- message typing
 - command execution
 
 as separate but compatible layers.
@@ -138,11 +164,16 @@ The strongest current claims are:
 
 - nodes should accept typed stimulus
 - nodes should emit typed stimulus
-- typed stimulus should be declared in node contracts
-- orchestrator behavior should be built on typed routing rather than ambient shared memory
+- node contracts should declare stimulus types, not own the envelope
+- the stimulus envelope is a top-level boundary
+- `Stark` owns the live stimulus registry and stimulus typing authority
 
 ## Short Framing
 
 Stimulus should be typed up front.
 
-That typing is part of the node contract and gives the system a real routing layer for orchestration and delegation.
+The top-level stimulus contract defines the envelope, source, and registry.
+
+`Stark` owns the live registry.
+
+Nodes only declare which types they accept and emit.

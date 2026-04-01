@@ -28,7 +28,7 @@ It is organized around:
 - durable nodes under contract
 - bounded episodes
 - projected frames
-- structural recall
+- inference-driven recall
 - selective retention
 
 ## `v1` Operating Theme
@@ -80,7 +80,7 @@ The retained artifact family is:
 
 All retained artifacts share an `anchor_set` into canonical structure.
 
-That anchor surface is the bridge recall uses later.
+That anchor set is the bridge recall uses later.
 
 ### `Kernel`
 
@@ -127,7 +127,6 @@ The node owns runtime machinery such as:
 
 - mailbox handling
 - event handling behavior
-- structural projection machinery
 - recall machinery
 - frame assembly behavior
 - pending-command tracking
@@ -146,7 +145,6 @@ The current core episode sections are:
 - `purpose`
 - `interaction_history`
 - `recall`
-- `episode_field`
 - `available_commands`
 
 The episode is the bounded source of truth for runtime state inside one node's participation.
@@ -173,7 +171,7 @@ Runtime execution happens through emitted commands.
 The current working command shape is:
 
 ```text
-skyra <command_set> <command> -<args>
+skyra <node> <command> -<args> -reason "<why this command is being emitted>"
 ```
 
 Runtime commands are callable operations inside an active episode.
@@ -191,7 +189,7 @@ The strongest current boundary rules are:
 - episode owns bounded runtime state
 - frame is projected from the episode
 - kernel remains execution authority
-- recall is a read path
+- recall is a read contract
 - learning is a write path
 
 This is the current spine of the system.
@@ -254,17 +252,19 @@ The high-level runtime flow is:
 3. the node process checks the event against the active contract
 4. the node opens or reuses an episode under the current inactivity/time policy
 5. the event is written into episode-local state
-6. structural projection updates the `episode_field`
-7. recall may bring retained artifacts into scope
-8. the node projects a frame
-9. inference selects the next allowed command
-10. the node emits that command with the routing identifiers needed for completion
-11. the kernel validates and dispatches the command
-12. command execution returns typed result data
-13. the kernel routes that result back as a typed `command_result` event
-14. the node writes the result back into episode state
-15. after inactivity, the episode closes
-16. learning may be kicked off for that closed episode
+6. the node projects a frame from the current episode state
+7. heavy inference may emit a bounded recall command
+8. the kernel validates and dispatches that recall command
+9. recall may bring retained artifacts into scope
+10. the node writes those results back into episode state
+11. inference selects the next allowed command
+12. the node emits that command with the routing identifiers needed for completion
+13. the kernel validates and dispatches the command
+14. command execution returns typed result data
+15. the kernel routes that result back as a typed `command_result` event
+16. the node writes the result back into episode state
+17. after inactivity, the episode closes
+18. learning may be kicked off for that closed episode
 
 This keeps dispatch and completion separate.
 
@@ -296,54 +296,25 @@ For `v1`, episode closure is still operationally simple:
 
 This is a practical heuristic, not the final theory of episode boundaries.
 
-## Structural Projection
-
-The system needs a bridge from episode-local material into the structural layer recall can use.
-
-That bridge is the structural projection path.
-
-Its job is to read bounded episode-local source objects such as:
-
-- `interaction`
-- `recall`
-- later `runtime_artifact`
-
-and turn them into unified `episode_field` updates.
-
-The important rule is:
-
-- source objects stay separate
-- the `episode_field` stays unified
-
-So the system does not create a different recall surface for every source type.
-
 ## Recall
 
-Recall is the read path from retained experience into the current episode.
+Recall is the read contract from retained experience into the current episode.
 
-The longer-term architectural direction is:
+The active `v1` posture is:
 
-- the episode maintains a richer scored structural field over time
-- recall is driven by the dominant connected slice of that field
-
-The practical `v1` posture is intentionally thinner:
-
-1. start from the current stimulus
-2. make one light inference or extraction pass
-3. write the resulting entities and relationships into a thin `episode_field`
-4. fetch candidate retained artifacts through `anchor_set` overlap
-5. score those candidates by structural overlap
-6. admit only the top bounded matches into episode recall
-7. stop after that one bounded pass
+1. heavy inference reads current episode context
+2. heavy inference decides whether recall is needed
+3. heavy inference emits a bounded recall command
+4. candidate retained artifacts are fetched through `anchor_set` overlap
+5. bounded ranking and admission select the strongest matches
+6. the node writes those retained artifacts into `episode.recall`
 
 So for `v1`:
 
-- recall is stimulus-first
-- the field is thin
+- recall is inference-driven
 - retrieval is bounded
 - `retained_trace` is part of the recallable retained surface
-
-This preserves the larger direction without requiring the full long-horizon scoring model on day one.
+- no separate episode-side scored field object is required in the active contracts
 
 ## Learning
 
@@ -415,15 +386,15 @@ The main unresolved edges are now more behavioral than ontological.
 They include:
 
 - exact cognition budgeting and stop rules
-- exact `command_set` vocabulary and argument grammar
+- exact command vocabulary and argument grammar
 - final inference-readiness / frame projection timing
 - exact artifact lifecycle and merge policy
 - richer episode-boundary logic beyond inactivity
-- richer long-horizon `episode_field` scoring beyond the thin `v1` recall posture
+- richer recall-command generation and ranking policy
 
 ## Short Framing
 
-The system is a local-first runtime organized around durable nodes under contract, bounded episodes, projected frames, structural recall, and selective learning.
+The system is a local-first runtime organized around durable nodes under contract, bounded episodes, projected frames, inference-driven recall, and selective learning.
 
 The kernel is the execution authority.
 

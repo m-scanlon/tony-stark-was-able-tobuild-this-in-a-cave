@@ -281,8 +281,10 @@ The expected flow is:
 2. record transport-level identity
 3. select a probe strategy
 4. execute bounded probing
-5. write the registration envelope
-6. publish capability contracts for verified surfaces
+5. shape initial capability contracts from observed probe behavior
+6. write the registration envelope
+7. publish capability contracts for verified surfaces
+8. in `v1`, immediately follow successful registration with `birth_node`
 
 This keeps:
 
@@ -290,6 +292,7 @@ This keeps:
 - probing
 - registration
 - capability publication
+- node birth
 
 as separate concerns.
 

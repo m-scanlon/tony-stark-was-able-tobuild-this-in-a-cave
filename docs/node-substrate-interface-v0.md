@@ -128,9 +128,9 @@ type CommandInvocation = {
   node_id: string
   episode_id: string
   intent_id?: string
-  command_set: string
-  command: string
+  primitive: "recall" | "interact" | "learn"
   args: Record<string, unknown>
+  reason: string
   emitted_at: string
 }
 ```
@@ -150,8 +150,7 @@ type CommandResultEvent = {
   node_id: string
   episode_id: string
   intent_id?: string
-  command_set: string
-  command: string
+  primitive: "recall" | "interact" | "learn"
   result_kind: string
   result: unknown
   completed_at: string
@@ -160,10 +159,9 @@ type CommandResultEvent = {
 
 This keeps the system flexible enough to support:
 
-- `primitive` as one command set
-- later loop or other command sets
-
-without flattening everything into one global primitive menu.
+- a small explicit command set
+- method specialization under `interact`
+- later refinement of argument schemas
 
 ## Event Shape
 

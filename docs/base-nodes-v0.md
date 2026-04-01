@@ -88,6 +88,111 @@ The important current point is:
 - these are specialized worker nodes
 - not new primitives
 
+## Example: `probe`
+
+`probe` is now a strong example of a base node under `Stark`.
+
+Its job is to:
+
+- discover candidate capabilities on a system subject
+- verify them through bounded invocation
+- shape the initial capability contracts from observed behavior
+
+Its job is not to:
+
+- persist durable registration truth
+- birth runtime nodes
+- perform unconstrained exploration
+
+Conceptually, a useful current mock contract is:
+
+```ts
+type ProbeNodeContract = {
+  node_type: "probe"
+  purpose: {
+    summary: "Discover candidate capabilities on a system subject, verify them through bounded invocation, and shape initial capability contracts from observed behavior."
+    limits: [
+      "Does not persist registration truth",
+      "Does not birth nodes",
+      "Does not perform unconstrained exploration"
+    ]
+  }
+  stimulus: {
+    accepted_types: ["device_probe_request"]
+    emitted_types: ["device_probe_result"]
+  }
+  cognition: {
+    mode: "bounded_probe"
+    max_steps: 1
+  }
+  commands: {
+    allowed_commands: ["interact", "recall"]
+  }
+  learning_enabled: true
+}
+```
+
+And the emitted result should carry enough material for later registration and contract publication, such as:
+
+- discovered candidate capabilities
+- verified capabilities
+- shaped initial capability contracts
+- probe strategy id
+- confidence
+
+## Example: `registration`
+
+`registration` is now a strong companion base node under `Stark`.
+
+Its job is to:
+
+- consume probe output for a system subject
+- assemble the typed device registration envelope
+- persist that envelope through `interact -method write_device_registration`
+
+Its job is not to:
+
+- rediscover or reverify capability surfaces on its own
+- shape initial capability contracts from scratch
+- birth runtime nodes
+
+Conceptually, a useful current mock contract is:
+
+```ts
+type RegistrationNodeContract = {
+  node_type: "registration"
+  purpose: {
+    summary: "Assemble the typed registration envelope for a system subject from probe output and persist that registration through the world-facing registration write path."
+    limits: [
+      "Does not rediscover capabilities on its own",
+      "Does not shape initial capability contracts from scratch",
+      "Does not birth runtime nodes"
+    ]
+  }
+  stimulus: {
+    accepted_types: ["device_probe_result"]
+    emitted_types: ["registration_write_result"]
+  }
+  cognition: {
+    mode: "bounded_registration"
+    max_steps: 1
+  }
+  commands: {
+    allowed_commands: ["interact", "recall"]
+  }
+  learning_enabled: true
+}
+```
+
+And the registration write path should preserve enough material to recover durable truth such as:
+
+- `subject`
+- `transport`
+- `probe_strategy`
+- `verified_capabilities`
+- `registration_state`
+- `last_verified_at`
+
 ## Base Node Behavior
 
 A base node should generally:

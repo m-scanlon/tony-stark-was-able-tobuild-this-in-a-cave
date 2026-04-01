@@ -4,7 +4,7 @@
 
 An episode is the bounded runtime container for one span of activity.
 
-At runtime, it acts as the main episode-local blackboard.
+At runtime, it acts as the main episode-local state container.
 
 It is the container that holds the live state from which the frame is projected.
 
@@ -19,20 +19,19 @@ The current core episode sections are:
 - `purpose`
 - `interaction_history`
 - `recall`
-- `episode_field`
 - `available_commands`
 
 This is the current minimum useful container.
 
-## Important Correction
+## Important Clarification
 
-The entity and relationship projection layer is the `episode_field`.
+There is no canonical separate scored field object in this version.
 
-It is not the `workspace`.
+Recall is the bounded retained state currently admitted into the episode through prior recall commands.
 
 `workspace` remains a possible later layer for transient episode-local cognitive artifacts.
 
-That layer is not required in the active v0 episode contract.
+That layer is not required in the active `v0` episode contract.
 
 ## Contract
 
@@ -48,8 +47,7 @@ type Episode = {
   purpose: EpisodePurpose
   interaction_history: InteractionHistory
   recall: EpisodeRecall
-  episode_field: EpisodeField
-  available_commands: AvailableCommand[]
+  available_commands: ("recall" | "interact" | "learn")[]
 
   opened_at: string
   updated_at: string
@@ -95,21 +93,7 @@ It may contain mixed retained artifact families such as:
 - `salience`
 - `tension`
 
-## Episode Field
-
-`episode_field` is the scored entity and relationship layer active inside the episode.
-
-It is:
-
-- the structural projection of what is active right now
-- the main query surface for recall
-- updated from interaction, recall, and later other episode-local sources
-
-It is not the same thing as interaction history.
-
-It is not the same thing as retained recall.
-
-It is the structural layer that sits behind both.
+In `v1`, this section is written by bounded recall command results chosen through heavy inference.
 
 ## Available Commands
 
@@ -117,8 +101,8 @@ It is the structural layer that sits behind both.
 
 The current first-class command examples are:
 
-- `primitive recall`
-- `primitive interact`
+- `recall`
+- `interact`
 
 This menu belongs in the episode because it helps define what the frame may expose to inference at that moment.
 
@@ -142,13 +126,6 @@ type EpisodeRecall = {
 }
 ```
 
-```ts
-type AvailableCommand = {
-  command_set: string
-  command: string
-}
-```
-
 ## Frame Projection
 
 The current frame can be projected from the episode as:
@@ -161,7 +138,7 @@ type Frame = {
     recent_interaction_history: InteractionEvent[]
   }
   recall: EpisodeRecall
-  available_commands: AvailableCommand[]
+  available_commands: ("recall" | "interact" | "learn")[]
 }
 ```
 
@@ -175,15 +152,15 @@ This means:
 The strongest current claims are:
 
 - the episode is the main bounded runtime container
-- it acts as the episode-local blackboard
-- purpose, interaction history, recall, episode field, and available commands are the current core sections
-- the entity/relationship projection belongs to `episode_field`, not `workspace`
+- it acts as the episode-local state container
+- purpose, interaction history, recall, and available commands are the current core sections
+- recall is a contract driven by heavy inference rather than by an episode-side scored field
 - the frame is projected from the episode rather than being the episode itself
 
 ## Short Framing
 
 An episode is the bounded container that holds the live state for one span of activity.
 
-Its current core sections are purpose, interaction_history, recall, episode_field, and available_commands.
+Its current core sections are purpose, interaction_history, recall, and available_commands.
 
 The frame is then projected from that episode for inference.

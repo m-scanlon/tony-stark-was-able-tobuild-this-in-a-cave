@@ -271,16 +271,15 @@ So the node process should support frame projection, but `v1` does not yet lock 
 
 ## Commands And Loop Flexibility
 
-The node process should assume the command-set-based command model.
+The node process should assume the node-first command model.
 
 That means the process is compatible with:
 
-- `skyra <command_set> <command> -<args>`
+- `skyra <node> <command> -<args> -reason "..."`
 
 The contract should explicitly allow:
 
-- command sets
-- commands within those command sets
+- commands
 
 This allows the node process to stay generic.
 

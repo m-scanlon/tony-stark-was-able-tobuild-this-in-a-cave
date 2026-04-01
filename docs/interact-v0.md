@@ -28,7 +28,7 @@ That makes `interact` the primitive for operations that leave cognition and rete
 
 The current direction is that `interact` includes actions such as:
 
-- responding to a human
+- talking to a human
 - probing a device
 - searching the web
 - calling an external service
@@ -61,7 +61,7 @@ skyra <node> interact -method <method> ... -reason "<why this command is being e
 Examples:
 
 ```text
-skyra jarvis interact -method respond -target human -reason "the user needs a response"
+skyra jarvis interact -method talk -target human -reason "the user needs a response"
 ```
 
 ```text
@@ -82,12 +82,11 @@ The method slot is where world-facing specialization should live.
 
 Current plausible methods include:
 
-- `respond`
+- `talk`
 - `probe`
 - `search`
 - `call_api`
 - `write_device_registration`
-- `use_capability`
 
 The exact taxonomy is not frozen.
 
@@ -95,6 +94,68 @@ The important current point is:
 
 - `interact` is broad at the primitive level
 - methods carry the operational specialization
+
+For `v1`, the current preferred narrower set is:
+
+- `talk`
+- `probe`
+- `write_device_registration`
+
+Within that set, `talk` should initially be restricted to `Jarvis`.
+
+That means:
+
+- `Jarvis` is the only node allowed to emit `interact -method talk` in `v1`
+- system-facing nodes should not emit human-facing talk directly
+- system-facing interaction should remain focused on probing and registration
+
+## Jarvis vs Stark
+
+The top-level primitive stays shared:
+
+- `interact`
+
+What differs between major node roles is the allowed method subset.
+
+### Jarvis
+
+For `v1`, `Jarvis` should primarily own:
+
+- `talk`
+
+`Jarvis` may later gain additional user-facing interaction methods, but the important current boundary is:
+
+- outward human talk belongs to `Jarvis`
+
+### Stark
+
+For `v1`, `Stark` should primarily own:
+
+- `probe`
+- `write_device_registration`
+
+This keeps `Stark` focused on structural and system-facing interaction rather than user-facing talk.
+
+`birth_node` should not be treated as an `interact` method.
+
+It belongs to Stark's structural command surface rather than to the world-facing `interact` primitive.
+
+## Same Primitive, Different Allowances
+
+This should be understood as:
+
+- one shared world-facing primitive
+- different node-specific method allowances under contract
+
+So the differentiation is not:
+
+- `Jarvis` gets one primitive
+- `Stark` gets another primitive
+
+It is:
+
+- both use `interact`
+- their allowed sub-primitives differ by role
 
 ## `channel` Is Still Open
 
@@ -135,13 +196,43 @@ The same is true for:
 
 - probing
 - search
-- human response
+- human talk
 
 This does not trivialize them.
 
 It groups them under one shared primitive boundary:
 
 - external interaction
+
+## Relevant Memory Clarifications
+
+While defining `interact`, the current memory posture became clearer:
+
+- subject-scoped memory domains are not separate nodes
+- subject-scoped memory domains are not external capabilities
+- registration and capability facts are not memory domains
+
+The current useful subject-scoped retained domains are:
+
+- human subject:
+  - `identity`
+  - `preferences`
+  - `boundaries`
+  - `interaction_style`
+- system subject:
+  - `identity`
+  - `constraints`
+  - `health`
+  - `surface_behavior`
+
+These clarifications matter to `interact` because many `interact` results may later contribute to retained experience inside those domains, but the domains themselves are not part of the `interact` method taxonomy.
+
+For `v1`, learning should still remain episode-bounded.
+
+That means:
+
+- `interact` results may be learned from the local closed episode
+- deep orchestration ancestry or stack-trace learning is not required for `v1`
 
 ## Current Design Posture
 

@@ -1,5 +1,7 @@
 # Structural Extraction Pipeline v0
 
+Archived as superseded.
+
 This document defines the handoff contracts for:
 
 `tokens stream in -> bulk processing -> entity and relationship representation`
@@ -7,6 +9,8 @@ This document defines the handoff contracts for:
 It is only about new natural-language stimulus.
 
 It does not define recall projection or frame assembly.
+
+It should not be treated as active canon for the current version.
 
 ## Pipeline
 

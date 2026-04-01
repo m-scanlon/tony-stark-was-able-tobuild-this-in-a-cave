@@ -51,8 +51,8 @@ It informs interpretation but does not by itself finalize meaning.
 
 The current first-class command examples are:
 
-- `primitive recall`
-- `primitive interact`
+- `recall`
+- `interact`
 
 ## Current Framing
 

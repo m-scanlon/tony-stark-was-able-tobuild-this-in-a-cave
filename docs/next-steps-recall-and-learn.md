@@ -5,7 +5,7 @@ This is the immediate focus for the next stretch of work.
 The goal is to harden the runtime model around:
 
 - `node` — the durable runtime operator
-- `recall` — the read path that brings retained experience into the current episode frame
+- `recall` — the contract that brings retained experience into the current episode frame
 - `learn` — the write path that turns completed episode activity into retained artifacts
 
 This work should happen before going deeper on device capability manifests or probe interfaces.
@@ -16,7 +16,7 @@ Lock only these layers:
 
 - node birth and node process
 - node vs episode ownership
-- episode field
+- recall contract
 - runtime artifacts
 - retained artifacts
 - recall flow
@@ -72,8 +72,8 @@ This should not block moving to recall.
 
 Define:
 
-- what inputs recall reads from the current episode
-- how the scored episode field becomes a cue surface
+- what current episode context heavy inference reads
+- when heavy inference should emit a bounded recall command
 - how candidate artifacts are fetched through `anchor_set`
 - how `trace`, `understanding`, `salience`, and `tension` are admitted into frame
 - what recall returns to cognition

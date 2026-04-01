@@ -35,7 +35,7 @@ Jarvis uses the same broad data model as other nodes.
 That means Jarvis still participates through:
 
 - bounded episodes
-- episode fields
+- recall
 - runtime execution
 - retained experience
 
@@ -73,6 +73,12 @@ Instead, Jarvis helps shape:
 - how typed outputs from other nodes should be merged back into the user-facing flow
 
 The kernel remains the authority over execution and frame transition.
+
+For `v1`, the important current `interact` boundary is:
+
+- `Jarvis` is the only node allowed to emit `interact -method talk`
+
+This keeps outward human communication anchored to the user-facing orchestrator role rather than spreading it across system-facing nodes.
 
 ## Design Principles
 

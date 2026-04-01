@@ -65,6 +65,7 @@ Recall captures:
 
 - retained artifacts activated into scope from retained experience
 - a selected bounded set, not a full dump
+- the writeback result of prior bounded recall commands
 
 Recall may include mixed retained artifact types such as:
 
@@ -80,24 +81,10 @@ Available commands captures:
 
 The current first-class command examples are:
 
-- `primitive recall`
-- `primitive interact`
+- `recall`
+- `interact`
 
 It is projected into frame because it bounds what the node may do at that moment.
-
-## Episode Field
-
-In addition to the frame, each active episode should maintain an episode field.
-
-The episode field is:
-
-- the scored entity/relationship layer of the episode
-- the structural representation of what is currently active in that episode
-- the main scoring surface used by recall
-
-It sits just behind the current turn inside the episode.
-
-It is not a separate theme object.
 
 ## Runtime Turns
 
@@ -115,6 +102,7 @@ What is stable now is:
 
 - nodes are event-driven
 - episodes group bounded spans of runtime activity
+- heavy inference may emit bounded recall commands during the episode
 - events may lead to recall, inference, command dispatch, interaction, and command-result writeback
 
 A node episode contains one or more such bounded runtime turns.
@@ -160,7 +148,7 @@ The strongest current claims are:
 - node episodes are the primary local record of participation
 - intent episodes are reconstructed across nodes
 - the frame is projected from the episode as purpose, interaction, recall, and available commands
-- the episode field is the scored structural layer active inside the episode
+- recall is a contract driven by heavy inference calls rather than an episode-side scored field
 
 ## Short Framing
 
@@ -168,6 +156,6 @@ An episode is a bounded scoped unit of activity.
 
 Its frame is projected from episode state.
 
-Its episode field maintains the scored structural context active during that episode.
+Its recall section holds the retained artifacts currently brought into scope.
 
 History is reconstructed from episodes over time rather than stored as one mutable object.

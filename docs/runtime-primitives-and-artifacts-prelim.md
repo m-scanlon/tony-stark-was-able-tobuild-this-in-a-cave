@@ -33,7 +33,7 @@ A runtime command is a callable operation that the node may issue during an acti
 Conceptually:
 
 ```text
-skyra <command_set> <command> -<args>
+skyra <node> <command> -<args> -reason "<why this command is being emitted>"
 ```
 
 The command is emitted by the node.

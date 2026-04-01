@@ -27,7 +27,7 @@ against the just-closed episode.
 Learning may draw from:
 
 - completed episodes
-- the episode field
+- bounded recall results already written into the episode
 - interaction records
 - runtime artifacts produced during runtime execution
 - previously active retained artifacts present in recall

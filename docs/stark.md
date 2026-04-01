@@ -22,6 +22,7 @@ This includes:
 
 - node topology
 - node registry
+- stimulus registry
 - node contracts
 - node contract publication
 - capability attachment
@@ -37,7 +38,7 @@ Stark uses the same broad data model as other nodes.
 That means Stark still participates through:
 
 - bounded episodes
-- episode fields
+- recall
 - runtime execution
 - retained experience
 
@@ -61,13 +62,21 @@ Typical stimuli include:
 - requests for structural revision
 - typed structural results returned from other nodes
 
+For device/bootstrap flows, Stark should also be understood as the node that creates or selects the structural type of incoming device-side stimuli.
+
+That means Stark is not only a later classifier.
+
+It is the structural authority that turns raw or generic device/bootstrap packages into typed structural stimuli the rest of the system can route and act on.
+
+It should also be understood as the owner of the live stimulus registry for the runtime.
+
 ## Outputs
 
 Stark does not directly mutate the system.
 
 It coordinates structural work and emits valid structural commands that the kernel can apply, such as:
 
-- create node
+- `birth_node`
 - revise contract
 - attach capability
 - restrict scope
@@ -81,6 +90,17 @@ Stark should also be understood as the structural owner of the node registry.
 That registry is the live structural record of which nodes exist and where routed packages addressed by `node_id` should go.
 
 The kernel remains the authority that applies those changes.
+
+For `v1`, the important current `interact` boundary is that Stark should remain system-facing.
+
+That means Stark should primarily own methods such as:
+
+- `probe`
+- `write_device_registration`
+
+Stark should not emit `interact -method talk` in `v1`.
+
+By contrast, `birth_node` belongs to Stark's structural command surface rather than to `interact`.
 
 ## Bootstrap Role
 

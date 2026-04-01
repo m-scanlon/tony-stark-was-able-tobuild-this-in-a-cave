@@ -120,7 +120,6 @@ That may include creating or coordinating nodes such as:
 
 - `probe`
 - `registration`
-- `node_creator`
 - later other startup or coordination nodes
 
 The important current idea is:
@@ -140,14 +139,14 @@ Bootstrap and substrate own:
 - mailbox/router
 - kernel
 - node registry storage
-- first-node creation
+- bootstrap-time node birth
 
 ### Nodes
 
 Nodes own higher-level runtime behavior such as:
 
 - startup orchestration
-- node creation requests
+- `birth_node` requests
 - probing
 - registration
 - permissions or readiness workflows
@@ -193,6 +192,7 @@ The current `v0` startup sequence is:
    any later required nodes
 8. node-level startup work begins
 9. probing / registration / onboarding can then start
+10. in `v1`, successful registration should be followed immediately by `birth_node`
 
 ## Still Open
 
@@ -202,7 +202,7 @@ The following remain open:
 - exact first startup stimulus shape
 - exact startup node set after `Stark`
 - exact node responsible for cross-device communication readiness
-- exact relation between `node_creator`, `registration`, and later infra-management nodes
+- exact relation between `registration`, later infra-management nodes, and node-birth follow-on policy beyond the default `v1` path
 
 ## Current Design Posture
 

@@ -12,7 +12,6 @@ The contract defines:
 - what typed stimuli it may emit
 - what cognition envelope it may operate under
 - what commands it may emit
-- what recall boundary it exposes
 
 A node does not act directly on the user, an API, or the runtime.
 
@@ -25,7 +24,6 @@ At the contract level, the active boundary is:
 - `stimulus`
 - `cognition`
 - `commands`
-- `recall_exposure`
 
 ## 1. Purpose
 
@@ -109,7 +107,7 @@ It is one primitive inside the contract-allowed command surface.
 For example:
 
 ```text
-skyra jarvis interact -method respond -target human -reason "the current frame requires an outward response"
+skyra jarvis interact -method talk -target human -reason "the current frame requires an outward response"
 ```
 
 `reason` should be treated as mandatory.
@@ -123,24 +121,6 @@ That means:
 - `reason` explains why the node emitted the command
 - `reason` does not replace later execution validation or evidence
 
-## 6. Recall Exposure
-
-The node contract should also bound what recall boundary the node exposes.
-
-This matters because the current direction is:
-
-- no ambient global experience store
-- node-local retained experience by default
-- cross-node access only through explicit boundaries
-
-That means a node contract should eventually define:
-
-- whether other nodes may request recall from it
-- what stimulus types may trigger that
-- what shape of recall package may be returned
-
-This is still early, but the boundary belongs at the contract level.
-
 ## Contract Level vs Runtime Level
 
 The contract says:
@@ -151,7 +131,6 @@ The contract says:
 - what typed stimuli it may emit
 - how cognition is bounded
 - what commands it may emit
-- what recall boundary it exposes
 
 Runtime execution then handles:
 
@@ -209,7 +188,7 @@ See also:
 
 ## Short Framing
 
-The node contract defines why a node exists, what capabilities and typed stimuli it may operate on, how cognition is bounded, what commands it may emit, and what recall boundary it exposes.
+The node contract defines why a node exists, what capabilities and typed stimuli it may operate on, how cognition is bounded, and what commands it may emit.
 
 It is the node's durable boundary.
 

@@ -40,7 +40,7 @@ That makes a node-first protocol read more naturally than the earlier `command_s
 Examples might later look like:
 
 ```text
-skyra jarvis interact -method respond -target human -reason "the current frame requires a user-facing response"
+skyra jarvis interact -method talk -target human -reason "the current frame requires a user-facing response"
 skyra jarvis recall -reason "the current stimulus introduced structural cues worth recall lookup"
 skyra stark interact -method probe -subject_id laptop -reason "the device needs capability discovery"
 skyra stark learn -episode_id ep_123 -reason "the episode should be consolidated into retained experience"
