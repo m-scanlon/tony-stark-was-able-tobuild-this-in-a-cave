@@ -33,18 +33,34 @@ A runtime command is a callable operation that the node may issue during an acti
 Conceptually:
 
 ```text
-skyra <node> <command> -<args> -reason "<why this command is being emitted>"
+skyra <node> <primitive> -<args> -reason "<why this command is being emitted>"
 ```
 
 The command is emitted by the node.
 
-The kernel receives that command and remains the authority over what happens next.
+The kernel receives that command inside a minimal envelope carrying:
+
+- `calling_actor`
+- `command`
+
+The kernel remains the authority over what happens next.
 
 That includes:
 
 - user-facing output commands
 - capability or API commands
 - commands that request another reasoning step
+
+For the current world-facing primitive, the active shape is now `act`:
+
+```text
+skyra <node> act \
+  -target <target> \
+  -content <content> \
+  -modality <modality> \
+  -timestamp <timestamp> \
+  -reason "<why this command is being emitted>"
+```
 
 ## Kernel Role
 
@@ -54,8 +70,8 @@ At a high level, the flow is:
 
 1. the node sees the current frame
 2. inference selects an allowed runtime command
-3. the node emits that command
-4. the kernel validates and dispatches it
+3. the node emits a minimal kernel envelope containing `calling_actor` and `command`
+4. the kernel validates the caller contract, target actor, primitive, and args, then dispatches if valid
 5. the command executes
 6. the resulting runtime artifact or interaction-relevant output is written back into episode state
 7. the node may later project another frame and choose the next command
@@ -132,7 +148,7 @@ Its role would be:
 A good current working shape is:
 
 ```text
-skyra primitive learn -episode_id <episode_id>
+skyra <node> learn -episode_id <episode_id>
 ```
 
 This command should be understood as the kickoff into the learning path after episode closure rather than as ordinary in-episode state mutation.

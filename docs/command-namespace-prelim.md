@@ -31,7 +31,8 @@ The current primitive split is:
 
 - `recall`
 - `learn`
-- `interact`
+- `observe`
+- `act`
 
 That makes a node-first protocol read more naturally than the earlier `command_set` framing.
 
@@ -40,9 +41,10 @@ That makes a node-first protocol read more naturally than the earlier `command_s
 Examples might later look like:
 
 ```text
-skyra jarvis interact -method talk -target human -reason "the current frame requires a user-facing response"
+skyra jarvis act -target human -content "the current frame requires a user-facing response" -modality text -timestamp now -reason "the current frame requires a user-facing response"
+skyra jarvis observe -target screen -reason "the current frame requires fresh world intake before responding"
 skyra jarvis recall -reason "the current stimulus introduced structural cues worth recall lookup"
-skyra stark interact -method probe -subject_id laptop -reason "the device needs capability discovery"
+skyra stark act -target laptop -content "discover capability surface" -modality probe -timestamp now -reason "the device needs capability discovery"
 skyra stark learn -episode_id ep_123 -reason "the episode should be consolidated into retained experience"
 ```
 
@@ -96,7 +98,8 @@ The active node contract should define:
 
 - which primitives are allowed
 - what stimulus types are accepted and emitted
-- what interaction methods are allowed inside `interact`
+- what `act` modalities are allowed
+- how `target`, `content`, `modality`, and `timestamp` are constrained inside `act`
 - what loop or execution envelopes are permitted
 
 This means:
@@ -116,8 +119,9 @@ It does not yet define:
 
 - the final node vocabulary
 - the final primitive grammar
-- the final `interact` method taxonomy
-- whether `channel` becomes canonical
+- the final `act` modality vocabulary
+- the final `content` encoding rules for `act`
+- the final timestamp conventions for `act`
 
 It does define one important audit rule:
 

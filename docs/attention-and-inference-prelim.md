@@ -1,6 +1,6 @@
 # Attention and Inference
 
-This document defines the relationship between continuous experience, attention, inference, interaction, and learning.
+This document defines the relationship between continuous experience, attention, inference, act, and learning.
 
 ## Core Principle
 
@@ -12,7 +12,7 @@ Attention determines which part of current experience gets cognitive priority.
 
 Inference operates on what attention selects.
 
-Interaction is one possible outcome of inference, not its definition.
+Act is one possible outcome of inference, not its definition.
 
 Learning is the later retention process that extracts lasting artifacts from experience.
 
@@ -27,7 +27,7 @@ The system may be:
 - observing itself
 - undergoing internal runtime changes
 
-All of this belongs to experience, whether or not there is an outward interaction.
+All of this belongs to experience, whether or not there is any outward act.
 
 ## Attention
 
@@ -48,7 +48,7 @@ Attention may be influenced by:
 
 Inference is attended cognition.
 
-Inference does not require interaction.
+Inference does not require act.
 
 Inference may:
 
@@ -59,17 +59,17 @@ Inference may:
 - decide
 - update runtime artifacts
 
-Interaction is only one possible result of inference.
+Act is only one possible result of inference.
 
-## Interaction
+## Act
 
-Interaction is outward action or response.
+Act is outward action or response.
 
 It is not the same thing as inference.
 
-The system may infer without interacting.
+The system may infer without acting.
 
-The system may also interact after inference when outward response is appropriate.
+The system may also act after inference when outward response is appropriate.
 
 ## Learning
 
@@ -89,7 +89,7 @@ Other ongoing experience may continue, but with lower priority unless something 
 
 If the user is absent, the system may attend more freely to internal, environmental, or system-facing experience.
 
-Inference may still occur without any outward interaction.
+Inference may still occur without any outward act.
 
 ## Relationship to Recall
 
@@ -102,5 +102,5 @@ That representation helps drive background recall and explicit recall.
 - experience is continuous
 - attention is selective
 - inference is attended cognition
-- interaction is optional
+- act is optional
 - learning is delayed retention

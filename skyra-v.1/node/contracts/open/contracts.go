@@ -9,15 +9,12 @@ const (
 )
 
 type OpenNodeContract struct {
-	NodeType        string             `json:"node_type,omitempty"`
-	Purpose         node.NodePurpose   `json:"purpose"`
-	Stimulus        node.NodeStimulus  `json:"stimulus"`
-	Cognition       node.NodeCognition `json:"cognition"`
-	Commands        node.NodeCommands  `json:"commands"`
-	LearningEnabled bool               `json:"learning_enabled,omitempty"`
-	Status          OpenContractStatus `json:"status"`
-	OpenReason      string             `json:"open_reason,omitempty"`
-	OpenEdges       []string           `json:"open_edges"`
+	Purpose      node.NodePurpose      `json:"purpose"`
+	Capabilities node.NodeCapabilities `json:"capabilities"`
+	Stimulus     node.NodeStimulus     `json:"stimulus"`
+	Status       OpenContractStatus    `json:"status"`
+	OpenReason   string                `json:"open_reason,omitempty"`
+	OpenEdges    []string              `json:"open_edges"`
 }
 
 // JarvisNodeContract remains intentionally open until the root-manager

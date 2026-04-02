@@ -47,7 +47,7 @@ type NodeSubstrate = {
 
   ingest_event(event: NodeEvent): NodeUpdateResult
   project_frame(): Frame | null
-  dispatch_command(invocation: CommandInvocation): CommandDispatchResult
+  dispatch_command(envelope: CommandEnvelope): CommandDispatchResult
   write_command_result(result: CommandResultEvent): NodeUpdateResult
   receive_published_contract(contract: NodeContractSnapshot): ContractPublicationResult
 }
@@ -120,25 +120,21 @@ The point is:
 
 ## Command Shape
 
-The substrate should assume the runtime command surface is:
+The substrate should assume the runtime dispatch surface is a minimal kernel envelope:
 
 ```ts
-type CommandInvocation = {
-  command_id: string
-  node_id: string
-  episode_id: string
-  intent_id?: string
-  primitive: "recall" | "interact" | "learn"
-  args: Record<string, unknown>
-  reason: string
-  emitted_at: string
+type CommandEnvelope = {
+  calling_actor: string
+  command: string
 }
 ```
 
 The important point is:
 
 - the node chooses the command
-- the emitted invocation carries the correlation and routing identifiers needed for completion
+- the emitted envelope stays intentionally small
+- the kernel loads the caller contract from `calling_actor`
+- the kernel parses `command` to determine the target actor, primitive, and args
 - the primitive does its own work
 - the shared kernel result-routing path handles completion formatting and return
 
@@ -147,10 +143,11 @@ Conceptually, command completion should come back as:
 ```ts
 type CommandResultEvent = {
   command_id: string
-  node_id: string
-  episode_id: string
+  calling_actor?: string
+  target_actor: string
+  episode_id?: string
   intent_id?: string
-  primitive: "recall" | "interact" | "learn"
+  primitive: "recall" | "act" | "learn"
   result_kind: string
   result: unknown
   completed_at: string
@@ -160,7 +157,7 @@ type CommandResultEvent = {
 This keeps the system flexible enough to support:
 
 - a small explicit command set
-- method specialization under `interact`
+- modality specialization under `act`
 - later refinement of argument schemas
 
 ## Event Shape
@@ -238,7 +235,7 @@ The strongest current claims are:
 - event intake and command writeback should remain separate
 - the runtime should be event-driven
 - the substrate should support multiple loop styles without hardcoding one
-- command execution should already assume the command-set-based command surface
+- command execution should already assume the node-first primitive surface
 
 ## Short Framing
 

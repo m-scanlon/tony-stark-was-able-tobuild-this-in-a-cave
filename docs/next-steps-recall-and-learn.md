@@ -158,4 +158,6 @@ The next useful canon is:
 - `node`
 - `recall`
 - `learn`
+- `observe`
+- `act`
 - the retained artifact lifecycle between them

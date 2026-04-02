@@ -5,7 +5,7 @@
 For `v1`, the system should stay oriented around three main concerns:
 
 - experiencing
-- interacting
+- acting
 - learning
 
 This is not the full ontology of the runtime.
@@ -27,9 +27,9 @@ Experience is the live intake side of the runtime.
 
 It is what gives the node and episode something real to operate over.
 
-## 2. Interacting
+## 2. Acting
 
-Interaction is the system's outward participation.
+Action is the system's outward participation.
 
 That includes:
 
@@ -37,7 +37,7 @@ That includes:
 - external action
 - emitted command effects that matter in the world
 
-Interaction is not the same thing as inference.
+Action is not the same thing as inference.
 
 It is the outward consequence side of the runtime.
 
@@ -68,7 +68,7 @@ That includes:
 - structural projection
 - runtime command execution
 
-These are the mechanisms that make experiencing, interacting, and learning possible.
+These are the mechanisms that make experiencing, acting, and learning possible.
 
 They are not the highest-level `v1` emphasis.
 
@@ -93,7 +93,7 @@ before the base runtime behavior is real.
 For `v1`, the main theme is:
 
 - experience continuously
-- interact when needed
+- act when needed
 - learn selectively
 
 Everything else is supporting runtime machinery around those three concerns.

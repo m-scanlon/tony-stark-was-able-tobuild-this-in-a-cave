@@ -386,7 +386,7 @@ This phase asked some of the right questions even if the answers changed:
 - should context be kept warm?
 - can memory be predictive?
 - should retrieval happen before full inference?
-- how do weights, recency, and structure interact?
+- how do weights, recency, and structure act?
 
 ### What changed later
 
@@ -646,7 +646,7 @@ The architecture clarified:
 - the kernel owns the global priority heap
 - each node owns a lightweight mailbox for already-routed events
 - the node substrate exposes a small explicit runtime surface
-- command execution is command-set-based rather than flat primitive-only
+- command execution is node-first and primitive-based rather than command-set-based
 
 This phase also simplified recall in an important way.
 

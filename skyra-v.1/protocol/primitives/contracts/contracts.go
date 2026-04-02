@@ -27,24 +27,28 @@ const (
 	RetainedArtifactTension       RetainedArtifactKind = "tension"
 )
 
+// PrimitiveInvocation is an internal parsed execution record produced after the
+// kernel validates a minimal protocol.CommandEnvelope and resolves caller/target.
 type PrimitiveInvocation struct {
-	CommandID string        `json:"command_id"`
-	NodeID    string        `json:"node_id"`
-	EpisodeID string        `json:"episode_id"`
-	IntentID  string        `json:"intent_id,omitempty"`
-	Primitive PrimitiveName `json:"primitive"`
-	Reason    string        `json:"reason"`
-	EmittedAt time.Time     `json:"emitted_at"`
+	CommandID    string        `json:"command_id"`
+	CallingActor string        `json:"calling_actor,omitempty"`
+	TargetActor  string        `json:"target_actor"`
+	EpisodeID    string        `json:"episode_id,omitempty"`
+	IntentID     string        `json:"intent_id,omitempty"`
+	Primitive    PrimitiveName `json:"primitive"`
+	Reason       string        `json:"reason"`
+	EmittedAt    time.Time     `json:"emitted_at"`
 }
 
 type PrimitiveResultEvent struct {
-	CommandID   string        `json:"command_id"`
-	NodeID      string        `json:"node_id"`
-	EpisodeID   string        `json:"episode_id"`
-	IntentID    string        `json:"intent_id,omitempty"`
-	Primitive   PrimitiveName `json:"primitive"`
-	ResultKind  string        `json:"result_kind"`
-	CompletedAt time.Time     `json:"completed_at"`
+	CommandID    string        `json:"command_id"`
+	CallingActor string        `json:"calling_actor,omitempty"`
+	TargetActor  string        `json:"target_actor"`
+	EpisodeID    string        `json:"episode_id,omitempty"`
+	IntentID     string        `json:"intent_id,omitempty"`
+	Primitive    PrimitiveName `json:"primitive"`
+	ResultKind   string        `json:"result_kind"`
+	CompletedAt  time.Time     `json:"completed_at"`
 }
 
 type RecallQueryKind string

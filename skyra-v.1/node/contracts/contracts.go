@@ -5,17 +5,15 @@ import (
 
 	episode "../../episode/contracts"
 	protocol "../../protocol/contracts"
-	primitives "../../protocol/primitives/contracts"
 	stimulus "../../stimulus/contracts"
 )
 
 type NodePurpose struct {
-	Summary string   `json:"summary"`
-	Limits  []string `json:"limits,omitempty"`
+	Summary string `json:"summary"`
 }
 
 type NodeCapabilities struct {
-	AllowedCapabilitySurfaces []string `json:"allowed_capability_surfaces"`
+	CapabilityIDs []string `json:"capability_ids,omitempty"`
 }
 
 type NodeStimulus struct {
@@ -23,24 +21,10 @@ type NodeStimulus struct {
 	EmittedTypes  []string `json:"emitted_types"`
 }
 
-type NodeCognition struct {
-	Mode           string   `json:"mode"`
-	MaxSteps       int      `json:"max_steps,omitempty"`
-	StopConditions []string `json:"stop_conditions,omitempty"`
-}
-
-type NodeCommands struct {
-	AllowedCommands []primitives.PrimitiveName `json:"allowed_commands,omitempty"`
-}
-
 type NodeContract struct {
-	NodeType        string            `json:"node_type,omitempty"`
-	Purpose         NodePurpose       `json:"purpose"`
-	Capabilities    *NodeCapabilities `json:"capabilities,omitempty"`
-	Stimulus        NodeStimulus      `json:"stimulus"`
-	Cognition       NodeCognition     `json:"cognition"`
-	Commands        NodeCommands      `json:"commands"`
-	LearningEnabled bool              `json:"learning_enabled,omitempty"`
+	Purpose      NodePurpose      `json:"purpose"`
+	Capabilities NodeCapabilities `json:"capabilities"`
+	Stimulus     NodeStimulus     `json:"stimulus"`
 }
 
 type ContractPublicationEvent struct {
@@ -65,7 +49,7 @@ type NodeSubstrate interface {
 	ActiveEpisodeID() string
 	IngestEvent(event NodeEvent) NodeUpdateResult
 	ProjectFrame() *episode.Frame
-	DispatchCommand(invocation protocol.CommandInvocation) CommandDispatchResult
+	DispatchCommand(envelope protocol.CommandEnvelope) CommandDispatchResult
 	WriteCommandResult(result protocol.CommandResultEvent) NodeUpdateResult
 	ReceivePublishedContract(contract NodeContract) ContractPublicationResult
 }

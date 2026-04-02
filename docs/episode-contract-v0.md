@@ -47,7 +47,7 @@ type Episode = {
   purpose: EpisodePurpose
   interaction_history: InteractionHistory
   recall: EpisodeRecall
-  available_commands: ("recall" | "interact" | "learn")[]
+  available_commands: ("recall" | "act" | "learn")[]
 
   opened_at: string
   updated_at: string
@@ -102,7 +102,8 @@ In `v1`, this section is written by bounded recall command results chosen throug
 The current first-class command examples are:
 
 - `recall`
-- `interact`
+- `observe`
+- `act`
 
 This menu belongs in the episode because it helps define what the frame may expose to inference at that moment.
 
@@ -138,7 +139,7 @@ type Frame = {
     recent_interaction_history: InteractionEvent[]
   }
   recall: EpisodeRecall
-  available_commands: ("recall" | "interact" | "learn")[]
+  available_commands: ("recall" | "act" | "learn")[]
 }
 ```
 

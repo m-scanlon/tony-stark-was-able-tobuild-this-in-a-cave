@@ -31,18 +31,31 @@ The current working shape is:
 skyra <node> <primitive> -<args> -reason "<why this command is being emitted>"
 ```
 
+This command string names the target actor.
+
+It does not by itself carry command authorship.
+
+Command authorship should instead travel in the surrounding kernel envelope as a separate `calling_actor` field.
+
+The minimal kernel envelope is therefore:
+
+```text
+calling_actor: <actor>
+command: skyra <node> <primitive> -<args> -reason "<why this command is being emitted>"
+```
+
 Examples:
 
 ```text
-skyra jarvis interact -method talk -target human -reason "the user needs a response"
+skyra jarvis act -target human -content "the user needs a response" -modality text -timestamp now -reason "the user needs a response"
 ```
 
 ```text
-skyra stark interact -method probe -subject_id laptop -reason "the device needs capability discovery"
+skyra stark act -target laptop -content "discover capability surface" -modality probe -timestamp now -reason "the device needs capability discovery"
 ```
 
 ```text
-skyra stark interact -method write_device_registration -subject_id laptop -reason "verified capability state must be persisted"
+skyra stark act -target laptop -content "write verified device registration" -modality registration_write -timestamp now -reason "verified capability state must be persisted"
 ```
 
 ```text
@@ -55,16 +68,18 @@ skyra stark learn -episode_id ep_123 -reason "the just-closed episode should be 
 
 ## Why `node` Is Explicit
 
-The protocol should make authorship visible.
+The protocol should make the target actor visible.
 
 That matters because:
 
 - node contracts are real runtime boundaries
 - different nodes have different purposes and permissions
-- orchestration depends on knowing which node emitted the command
-- audit trails should preserve actor identity
+- the kernel must know which actor should execute the command
+- audit trails should preserve both caller identity and target identity
 
-The protocol should therefore not pretend commands are emitted from nowhere.
+The protocol should therefore not pretend commands are targetless.
+
+Authorship is still visible, but it belongs in the kernel envelope rather than in the command string itself.
 
 ## Why `primitive` Is Explicit
 
@@ -74,7 +89,8 @@ The current working split is:
 
 - `recall`
 - `learn`
-- `interact`
+- `observe`
+- `act`
 
 These are not identical operations.
 
@@ -94,13 +110,26 @@ It is the retained read path.
 
 It is the retained write path.
 
-### 3. `interact`
+### 3. `observe`
 
-`interact` crosses a world boundary.
+`observe` takes something in from the world.
+
+It is the world-facing intake path.
 
 Examples include:
 
-- talking to a human
+- reading a screen
+- listening to a human
+- inspecting device state
+- checking an external result surface
+
+### 4. `act`
+
+`act` is any intentional boundary engagement that produces an effect or signal.
+
+Examples include:
+
+- responding to a human
 - probing a device
 - searching the web
 - calling an external API
@@ -115,38 +144,26 @@ It is better understood as:
 
 - a node issuing one of a small number of primitives
 
-## Relationship To Methods
+## Relationship To The `act` Shape
 
-The current direction is that `interact` may carry method-specific specialization.
-
-Examples:
-
-- `talk`
-- `probe`
-- `search`
-- `write_device_registration`
-
-So a likely working shape is:
+The current locked `act` shape is:
 
 ```text
-skyra <node> interact -method <method> ... -reason "..."
+skyra <node> act \
+  -target <target> \
+  -content <content> \
+  -modality <modality> \
+  -timestamp <timestamp> \
+  -reason "<why this command is being emitted>"
 ```
 
-This gives the system one world-facing primitive without flattening every external action into one opaque blob.
-
-## `channel` Remains Open
-
-Whether `interact` should also carry a first-class `-channel` field remains open.
-
-`channel` may turn out to be useful.
-
-But the current design should not freeze it too early.
+This gives the system one shared world-facing primitive without flattening every external action into one opaque blob.
 
 For now, the strongest stable claims are:
 
 - `node` should be explicit
 - `primitive` should be explicit
-- `interact` should carry world-facing methods
+- `act` should carry `target`, `content`, `modality`, `timestamp`, and `reason`
 - every emitted command must include `-reason`
 
 ## Relationship To Typed Stimuli
@@ -163,14 +180,60 @@ Instead:
 
 This makes the protocol part of a typed runtime rather than a flat tool-call surface.
 
+## Kernel Envelope
+
+The command string is only one half of command dispatch.
+
+The other half is the minimal kernel envelope surrounding it.
+
+For `v1`, the useful current shape is:
+
+- `calling_actor`
+- `command`
+
+The kernel should use `calling_actor` to load the caller contract from the database.
+
+The kernel should then parse the command to determine:
+
+- the target actor
+- the primitive
+- the primitive arguments
+
+This keeps the transport envelope small while preserving an explicit authorization boundary.
+
+## Delegation
+
+Actors may invoke other actors.
+
+That is valid behavior when:
+
+- the target actor is explicitly allowed by the caller contract
+- the requested primitive is allowed on that delegation edge
+- the selected `modality`, when present, is allowed on that delegation edge
+
+The kernel should not reject actor-to-actor invocation merely because the caller and target differ.
+
+It should reject only unauthorized invocation.
+
+The important split is:
+
+- `calling_actor` = who is asking for the operation
+- `<node>` in the command = which actor should execute the operation
+
+This keeps delegation auditable without forcing the command grammar itself to grow a separate caller slot.
+
 ## Current Design Posture
 
 The strongest current claims are:
 
 - the protocol should be node-first
 - the protocol should be primitive-first
-- the main primitive split is `recall`, `learn`, and `interact`
-- `interact` should absorb world-facing action while `recall` and `learn` remain separate
+- the main primitive split is `recall`, `learn`, `observe`, and `act`
+- `observe` should absorb world-facing intake while `recall` and `learn` remain separate
+- `act` should absorb world-facing action while `recall`, `learn`, and `observe` remain separate
+- `act` should use the shape `target`, `content`, `modality`, `timestamp`, `reason`
+- `calling_actor` should live in the surrounding kernel envelope rather than in the command string
+- the node slot in the command should name the target actor
 - `-reason` remains mandatory
 
 ## Still Open
@@ -179,8 +242,9 @@ The following remain open:
 
 - the final node vocabulary
 - the final primitive argument grammar
-- whether `channel` becomes canonical inside `interact`
-- the final method taxonomy for `interact`
+- the final `modality` vocabulary for `act`
+- the final encoding shape for `content`
+- the final timestamp conventions for `act`
 - the exact command-result and writeback grammar
 
 ## Short Framing

@@ -8,12 +8,20 @@ It is meant to make the active model easy to grasp before dropping into the more
 
 It is not the place for final schema detail.
 
+## Current Source Of Truth
+
+For current design work:
+
+- `docs/` is canonical for active design language
+- `skyra-v.1` is canonical for the current implementation surface
+- older code outside `skyra-v.1` is non-canonical unless explicitly stated otherwise
+
 ## Core Framing
 
 The system is a local-first runtime for:
 
 - experiencing
-- interacting
+- acting
 - learning
 
 It is not primarily:
@@ -36,7 +44,7 @@ It is organized around:
 For `v1`, the main practical orientation is:
 
 - experience continuously
-- interact when needed
+- act when needed
 - learn selectively
 
 Most of the architecture exists to support those three concerns.
@@ -171,7 +179,7 @@ Runtime execution happens through emitted commands.
 The current working command shape is:
 
 ```text
-skyra <node> <command> -<args> -reason "<why this command is being emitted>"
+skyra <node> <primitive> -<args> -reason "<why this command is being emitted>"
 ```
 
 Runtime commands are callable operations inside an active episode.
@@ -258,8 +266,8 @@ The high-level runtime flow is:
 9. recall may bring retained artifacts into scope
 10. the node writes those results back into episode state
 11. inference selects the next allowed command
-12. the node emits that command with the routing identifiers needed for completion
-13. the kernel validates and dispatches the command
+12. the node emits a minimal kernel envelope containing `calling_actor` and `command`
+13. the kernel validates the caller contract and dispatches the command if valid
 14. command execution returns typed result data
 15. the kernel routes that result back as a typed `command_result` event
 16. the node writes the result back into episode state
@@ -330,7 +338,7 @@ The current high-level direction is:
 The current working kickoff shape is:
 
 ```text
-skyra primitive learn -episode_id <episode_id>
+skyra <node> learn -episode_id <episode_id>
 ```
 
 Learning is not ordinary in-episode runtime mutation.

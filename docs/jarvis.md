@@ -68,15 +68,15 @@ Instead, Jarvis helps shape:
 - what should be attended to
 - what should be brought into recall
 - what user-facing interpretation should guide the current episode
-- what outward interaction should be prioritized
+- what outward act should be prioritized
 - which other nodes should participate in user-facing work
 - how typed outputs from other nodes should be merged back into the user-facing flow
 
 The kernel remains the authority over execution and frame transition.
 
-For `v1`, the important current `interact` boundary is:
+For `v1`, the important current `act` boundary is:
 
-- `Jarvis` is the only node allowed to emit `interact -method talk`
+- `Jarvis` is the only node allowed to emit outward human-facing `act` in `v1`
 
 This keeps outward human communication anchored to the user-facing orchestrator role rather than spreading it across system-facing nodes.
 
@@ -106,7 +106,7 @@ It does not define:
 - the full Stark/Jarvis collaboration contract
 - the exact node-routing policy Jarvis should use
 - the exact runtime primitive menu Jarvis may call
-- the final policy for how Jarvis influences recall versus interact
+- the final policy for how Jarvis influences recall versus act
 
 ## Short Framing
 

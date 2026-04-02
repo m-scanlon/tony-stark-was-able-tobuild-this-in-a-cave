@@ -4,144 +4,108 @@
 
 Every node exists under a contract.
 
-The contract defines:
-
-- why the node exists
-- what capabilities it may rely on
-- what typed stimuli it may respond to
-- what typed stimuli it may emit
-- what cognition envelope it may operate under
-- what commands it may emit
-
-A node does not act directly on the user, an API, or the runtime.
-
-It emits commands that the system validates and executes.
-
-At the contract level, the active boundary is:
+For the current `v1` direction, the active node contract boundary is:
 
 - `purpose`
 - `capabilities`
 - `stimulus`
-- `cognition`
-- `commands`
+
+A node does not directly bypass runtime validation.
+
+It emits callable capability-bound actions that the system validates and executes.
+
+## Locked Shape
+
+The current locked shape is:
+
+```text
+NodeContract
+- Purpose
+  - Summary
+- Capabilities
+  - CapabilityIDs
+- Stimulus
+  - AcceptedTypes
+  - EmittedTypes
+```
+
+This matches the current implementation surface in
+`skyra-v.1/node/contracts/contracts.go`.
 
 ## 1. Purpose
 
-A node must have a defined reason for existing.
+`purpose` answers why the node exists.
 
-Purpose bounds:
+For `v1`, the locked purpose shape is:
 
-- its role
-- its responsibilities
-- its limits
+- `Summary`
 
-Purpose belongs to the node definition, not to the episode.
+`Limits` is not a first-class field in the current `v1` node contract.
 
 ## 2. Capabilities
 
-A node contract should name what capability surfaces the node is allowed to rely on.
+`capabilities` is the node's callable action surface.
 
-This does not replace the capability contract itself.
+This absorbs the older `commands` framing.
 
-It is the node-side allowance boundary over those capability surfaces.
+In other words:
 
-## 3. Stimulus
+- commands are capabilities
+- capability use is how the node expresses what it may emit
 
-A node may only be invoked by valid stimulus.
+The current locked field is:
 
-If incoming stimulus does not match the node's accepted form, the node is not eligible to act.
+- `CapabilityIDs`
 
-Stimulus therefore defines the node's input boundary.
+Those ids point at capability contracts / callable surfaces.
 
-The important current direction is:
-
-- stimulus should be typed up front
-
-That means a node contract should eventually define:
-
-- accepted stimulus types
-- emitted stimulus types
-
-This is part of what makes node-to-node routing composable.
-
-## 4. Cognition
-
-Cognition is not free-standing inner autonomy.
-
-It is the contract-bounded envelope within which the node may continue reasoning and choose the next command.
-
-A node may emit a command that causes another inference or prompt step.
-
-The exact budgeting and stop rules are not fully locked yet, but that envelope belongs to the contract.
-
-## 5. Commands
-
-A node does not interact directly.
-
-A node emits commands.
-
-That includes:
-
-- user-facing output
-- capability or API use
-- commands that request another reasoning step
-
-The current working protocol shape is:
-
-```text
-skyra <node> <primitive> -<args> -reason "<why this command is being emitted>"
-```
-
-The explicit node slot matters because command authorship is part of the runtime boundary.
-
-The current primitive split is:
+The current top-level primitive family remains:
 
 - `recall`
 - `learn`
-- `interact`
+- `observe`
+- `act`
 
-`interact` is therefore not a separate direct action path outside the command surface.
+That means the node contract no longer needs a separate `commands` field to name them.
 
-It is one primitive inside the contract-allowed command surface.
+## 3. Stimulus
 
-For example:
+`stimulus` defines the node's typed input and typed output boundary.
 
-```text
-skyra jarvis interact -method talk -target human -reason "the current frame requires an outward response"
-```
+The current locked fields are:
 
-`reason` should be treated as mandatory.
+- `AcceptedTypes`
+- `EmittedTypes`
 
-The node's emitted command surface is part of the system's audit trail.
+If incoming stimulus does not match the contract's accepted types, the node is not eligible to act.
 
-That means:
+## Not In The Current v1 Contract
 
-- every emitted command must include an explicit rationale
-- runtime should reject commands that omit `reason`
-- `reason` explains why the node emitted the command
-- `reason` does not replace later execution validation or evidence
+The following are intentionally not part of the current `v1` node contract shape:
+
+- `NodeType`
+- `Purpose.Limits`
+- `Cognition`
+- `Commands`
+- `LearningEnabled`
+
+`cognition` may still matter as a later runtime or policy layer, but it is not part of the current locked node contract shape.
 
 ## Contract Level vs Runtime Level
 
 The contract says:
 
-- what the node is for
-- what capabilities it may rely on
-- what can wake it up
+- why the node exists
+- what callable capabilities it may use / emit
+- what typed stimuli may wake it up
 - what typed stimuli it may emit
-- how cognition is bounded
-- what commands it may emit
 
 Runtime execution then handles:
 
-- actual command dispatch
-- pending-command state
-- command-result writeback
-- episode-local state updates
-
-So the command surface is part of the contract.
-
-Execution mechanics remain part of runtime.
+- admission and validation
+- dispatch
+- result writeback
+- episode-local state
 
 ## Same Contract Model Across Nodes
 
@@ -150,46 +114,35 @@ This contract model applies across node roles.
 That includes:
 
 - user-facing or task-facing nodes
-- `Jarvis` as the user-facing meaning node
-- `Stark` as the structural node
+- `Jarvis`
+- `Stark`
+- bounded worker nodes such as `probe` and `registration`
 
-What differs between nodes is role and allowed behavior, not the existence of a separate ontology.
-
-## Episode Relation
-
-A node contract bounds what may happen inside a node episode.
-
-The contract does not store the episode itself.
-
-Instead:
-
-- the node contract is durable
-- the node episode is bounded runtime participation under that contract
+What differs between nodes is the contract content, not the existence of a separate node ontology.
 
 ## Still Open
 
-The following remain open even with the command surface inside the active contract:
+The following remain open:
 
-- exact stimulus type vocabulary
-- exact primitive argument grammar
-- exact cognition budgeting and stop rules
-- recall policy or recall defaults
-- the final `interact` method taxonomy
-- whether `channel` becomes canonical inside `interact`
-
-Device-facing capability surfaces should be treated as capability contracts rather than as node contracts.
+- the exact storage schema for node contracts in the database
+- the exact shape of the capability contract ids used by node contracts
+- actor-to-actor delegation edges
+- actor-to-capability invocation edges
+- exact `observe` schema
+- exact `act` content, modality, and timestamp encoding
 
 See also:
 
 - [capability-contract-prelim.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/capability-contract-prelim.md)
 - [protocol-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/protocol-v0.md)
 - [stimulus-types-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/stimulus-types-v0.md)
-- [node-memory-boundary-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/docs/node-memory-boundary-v0.md)
 
 ## Short Framing
 
-The node contract defines why a node exists, what capabilities and typed stimuli it may operate on, how cognition is bounded, and what commands it may emit.
+The current `v1` node contract is:
 
-It is the node's durable boundary.
+- purpose
+- capabilities
+- stimulus
 
-Runtime execution happens inside episodes under that boundary.
+That is the durable node boundary.

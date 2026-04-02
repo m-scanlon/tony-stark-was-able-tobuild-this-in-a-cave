@@ -13,14 +13,21 @@ Episode closure is the current natural kickoff point for learning.
 The owning node may emit:
 
 ```text
-skyra primitive learn -episode_id <episode_id>
+skyra <node> learn -episode_id <episode_id>
 ```
 
 against the just-closed episode.
 
 `episode_id` is the minimal primitive arg for now.
 
-`node_id` and `intent_id`, when present, should travel on the surrounding command invocation metadata rather than being repeated inside the primitive args.
+The surrounding kernel envelope should stay minimal.
+
+For `v1`, the useful current rule is:
+
+- `calling_actor` travels in the kernel envelope
+- `episode_id` stays in the learn command args
+
+The kernel can derive caller contract and authorization from `calling_actor` rather than requiring extra caller metadata inside the command itself.
 
 ## Inputs
 
@@ -42,7 +49,7 @@ These inputs give learning both:
 If learning is kicked off as an emitted runtime command, a good current working shape is:
 
 ```text
-skyra primitive learn -episode_id <episode_id>
+skyra <node> learn -episode_id <episode_id>
 ```
 
 Conceptually:
@@ -238,4 +245,4 @@ It should preserve factual retained traces first and derive other retained artif
 
 Runtime artifacts may inform learning, but they are not retained by default.
 
-For `v1`, the natural kickoff is `skyra primitive learn -episode_id <episode_id>` after episode closure.
+For `v1`, the natural kickoff is `skyra <node> learn -episode_id <episode_id>` after episode closure.

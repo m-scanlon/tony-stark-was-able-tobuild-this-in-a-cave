@@ -72,7 +72,7 @@ class CognitionRun {
   constructor(policy: CognitionPolicy) {}
 
   addObservation(event: NodeEvent) {}
-  addCommand(cmd: CommandInvocation) {}
+  addCommand(cmd: CommandEnvelope) {}
   addResult(result: CommandResultEvent) {}
 
   shouldStop(): boolean {}
@@ -83,9 +83,8 @@ And a command added by cognition might look like:
 
 ```ts
 cog.addCommand({
-  command_set: "primitive",
-  command: "interact",
-  args: {}
+  calling_actor: "jarvis",
+  command: 'skyra jarvis act -target human -content "the current frame requires a user-facing response" -modality text -timestamp now -reason "the current frame requires a user-facing response"'
 })
 ```
 

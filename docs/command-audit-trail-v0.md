@@ -28,7 +28,8 @@ The command surface is the system's execution boundary.
 
 If commands are the boundary, then the system needs an inspectable record of:
 
-- what node emitted the command
+- what actor called for the command
+- what actor the command targeted
 - what command was emitted
 - what arguments it carried
 - why the node believed that command should happen
@@ -72,6 +73,8 @@ At minimum, kernel validation should treat missing rationale as an invalid comma
 The split is:
 
 - `reason` = why the node emitted the command
+- `calling_actor` = who requested the operation
+- `<node>` in the command = who should execute the operation
 - validation = whether the command is allowed
 - execution result = what actually happened
 
@@ -82,7 +85,7 @@ The node must state its reason, but the system does not confuse that reason with
 ## Examples
 
 ```text
-skyra jarvis interact -method talk -target human -reason "the current frame requires a user-facing response"
+skyra jarvis act -target human -content "the current frame requires a user-facing response" -modality text -timestamp now -reason "the current frame requires a user-facing response"
 ```
 
 ```text
@@ -90,7 +93,7 @@ skyra jarvis recall -entity terraform -top_k 8 -reason "the stimulus explicitly 
 ```
 
 ```text
-skyra stark interact -method write_device_registration -subject_id Michaels-MacBook-Pro-10.local -reason "verified capability state must be persisted for this subject"
+skyra stark act -target Michaels-MacBook-Pro-10.local -content "write verified device registration" -modality registration_write -timestamp now -reason "verified capability state must be persisted for this subject"
 ```
 
 ## Current Design Posture

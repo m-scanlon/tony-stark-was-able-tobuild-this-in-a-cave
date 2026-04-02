@@ -19,7 +19,7 @@ Canonical structure still matters, but it is the substrate these other layers re
 For `v1`, the highest-level operating theme is:
 
 - experiencing
-- interacting
+- acting
 - learning
 
 The current runtime machinery exists mainly to support those three concerns.
@@ -139,10 +139,10 @@ The current key split is:
 - runtime commands are callable in-episode operations
 - runtime artifacts are transient outputs of those operations
 
-Runtime execution should assume the node-first command surface:
+Runtime execution should assume the node-first primitive surface:
 
 ```text
-skyra <node> <command> -<args> -reason "<why this command is being emitted>"
+skyra <node> <primitive> -<args> -reason "<why this command is being emitted>"
 ```
 
 This keeps runtime execution aligned with the explicit node-first protocol without falling back to an older `command_set` taxonomy.

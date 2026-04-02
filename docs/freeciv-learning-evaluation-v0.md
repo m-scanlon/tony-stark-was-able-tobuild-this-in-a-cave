@@ -92,7 +92,7 @@ Its job is to:
 
 - receive typed game stimulus
 - perform recall when useful
-- choose bounded game-facing commands through `interact`
+- choose bounded game-facing commands through `act`
 - react to command results
 - continue play across turns
 
@@ -292,7 +292,7 @@ The first useful proof is:
 The following should remain open until implementation pressure resolves them:
 
 - what exact typed stimulus package should represent one game turn
-- what exact `interact` methods are needed for game moves
+- what exact `act` modalities are needed for game moves
 - whether the observer node should write notes every turn or only on thresholded
   changes
 - whether observer notes should become retained traces, understandings, or both

@@ -22,7 +22,8 @@ Under this model, primitives stay small:
 
 - `recall`
 - `learn`
-- `interact`
+- `observe`
+- `act`
 
 Specialization should mostly happen at the node layer rather than by endlessly growing the primitive set.
 
@@ -63,7 +64,8 @@ They use primitives.
 
 Conceptually:
 
-- a base node may call `interact`
+- a base node may call `act`
+- a base node may call `observe`
 - a base node may call `recall`
 - a base node may call `learn`
 
@@ -126,7 +128,7 @@ type ProbeNodeContract = {
     max_steps: 1
   }
   commands: {
-    allowed_commands: ["interact", "recall"]
+    allowed_commands: ["act", "recall"]
   }
   learning_enabled: true
 }
@@ -148,7 +150,7 @@ Its job is to:
 
 - consume probe output for a system subject
 - assemble the typed device registration envelope
-- persist that envelope through `interact -method write_device_registration`
+- persist that envelope through `act` with `modality = registration_write`
 
 Its job is not to:
 
@@ -178,7 +180,7 @@ type RegistrationNodeContract = {
     max_steps: 1
   }
   commands: {
-    allowed_commands: ["interact", "recall"]
+    allowed_commands: ["act", "recall"]
   }
   learning_enabled: true
 }

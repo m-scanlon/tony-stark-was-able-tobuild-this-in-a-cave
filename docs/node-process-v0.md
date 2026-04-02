@@ -103,8 +103,10 @@ The current high-level process is:
 7. any relevant background node machinery may update episode-local artifacts
 8. when the node is inference-ready, it projects a frame
 9. inference selects the next allowed command
-10. the node emits that command with `command_id`, `node_id`, `episode_id`, and optional `intent_id`
-11. the kernel validates and dispatches it
+10. the node emits a minimal kernel envelope containing:
+    - `calling_actor`
+    - `command`
+11. the kernel loads the caller contract from `calling_actor`, validates the target actor and primitive against that contract, and dispatches the command if valid
 12. primitive-specific execution returns typed result data
 13. the shared kernel result-routing/writeback path formats that result into a routed `command_result` event
 14. the node writes that result back into episode state
@@ -163,7 +165,7 @@ Episode closure is also the natural learning handoff point.
 For `v1`, the owning node may emit:
 
 ```text
-skyra primitive learn -episode_id <episode_id>
+skyra <node> learn -episode_id <episode_id>
 ```
 
 against the just-closed episode.
@@ -210,7 +212,7 @@ The important split is:
 - in-flight command/result events remain part of the current episode's scheduled runtime flow
 - those results are written back under the currently active contract
 - shared kernel result routing happens after primitive execution rather than inside each primitive's own logic
-- command/result correlation should be driven by `command_id`, with `node_id` and `episode_id` carrying the return path
+- command/result correlation should be driven by runtime-managed command state rather than by stuffing extra caller metadata into the emitted kernel envelope
 
 ### `contract_publication`
 
@@ -271,11 +273,11 @@ So the node process should support frame projection, but `v1` does not yet lock 
 
 ## Commands And Loop Flexibility
 
-The node process should assume the node-first command model.
+The node process should assume the node-first primitive model.
 
 That means the process is compatible with:
 
-- `skyra <node> <command> -<args> -reason "..."`
+- `skyra <node> <primitive> -<args> -reason "..."`
 
 The contract should explicitly allow:
 
@@ -283,7 +285,7 @@ The contract should explicitly allow:
 
 This allows the node process to stay generic.
 
-The node does not interact with users or APIs directly.
+The node does not act with users or APIs directly.
 
 Those effects happen only through emitted commands that the system validates and executes.
 

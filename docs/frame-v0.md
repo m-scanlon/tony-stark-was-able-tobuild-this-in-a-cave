@@ -52,7 +52,8 @@ It informs interpretation but does not by itself finalize meaning.
 The current first-class command examples are:
 
 - `recall`
-- `interact`
+- `observe`
+- `act`
 
 ## Current Framing
 

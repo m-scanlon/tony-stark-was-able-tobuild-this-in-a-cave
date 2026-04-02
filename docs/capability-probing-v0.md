@@ -274,7 +274,7 @@ This means the probe result should preserve:
 
 Where possible, probe should also preserve enough observed invocation behavior to support the initial capability contract, such as:
 
-- what invocation surface was successfully reached
+- what execution surface was successfully reached
 - what operation or operation family was exercised
 - what argument shape was accepted
 - what result shape came back

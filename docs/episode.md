@@ -55,7 +55,7 @@ The episode remains the bounded runtime container.
 Interaction captures:
 
 - incoming stimulus
-- outgoing interact
+- outgoing act
 - external actions
 - timestamps
 
@@ -82,7 +82,8 @@ Available commands captures:
 The current first-class command examples are:
 
 - `recall`
-- `interact`
+- `observe`
+- `act`
 
 It is projected into frame because it bounds what the node may do at that moment.
 
@@ -93,7 +94,7 @@ The exact atomic runtime turn is not fully locked yet.
 Earlier shorthand such as:
 
 ```text
-stimulus -> recall -> cognition -> interact
+stimulus -> recall -> cognition -> act
 ```
 
 was useful, but should not be treated as the final canonical runtime loop.

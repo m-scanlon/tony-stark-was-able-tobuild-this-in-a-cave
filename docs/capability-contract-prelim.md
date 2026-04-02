@@ -28,16 +28,22 @@ A node contract is about bounded runtime participation.
 
 A capability contract governs an external capability surface.
 
-It defines:
+The canonical shape matches `skyra-v.1/capability/contracts/contracts.go`.
 
-- what invocation surface that capability exposes
-- what operations on that surface may be invoked
-- what inputs those operations accept
-- what outputs or result types they may return
-- what verification or probe established that the capability is real
-- what limits or constraints apply to using it
+The current locked shape is:
+
+- `CapabilityID`
+- `Name`
+- `ExecutionSurface`
+- `Schema`
 
 A capability contract is about callable external ability, not node identity.
+
+At this stage:
+
+- verification basis is not a first-class capability contract field
+- constraints are not first-class capability contract fields
+- those live outside the capability contract for now
 
 ## Why This Matters
 
@@ -79,16 +85,14 @@ That means:
 
 1. a candidate capability is discovered
 2. bounded invocation is attempted
-3. observed behavior shapes the initial invocation surface
+3. observed behavior shapes the initial execution surface
 4. Stark publishes the resulting capability contract
-
-Later use and learning may refine that contract over time.
 
 ## Relationship To Runtime Commands
 
 A capability contract should not itself become a node command surface.
 
-Instead, it should define the router-facing invocation surface that runtime commands can target.
+Instead, it should define the router-facing execution surface that runtime commands can target.
 
 That means device abilities become:
 
@@ -103,7 +107,7 @@ This fits the current runtime direction better:
 
 - node-first
 - primitive-first
-- invocation-surface-based
+- execution-surface-based
 
 ## Short Framing
 

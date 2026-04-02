@@ -76,7 +76,8 @@ Orchestrator nodes still use the same primitive substrate as other nodes:
 
 - `recall`
 - `learn`
-- `interact`
+- `observe`
+- `act`
 
 The difference is that much of their work consists of:
 

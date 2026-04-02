@@ -32,7 +32,7 @@ Why it matters:
 
 - this shapes `ingest_event(...)`
 - this affects runtime simplicity
-- this affects how writeback and stimulus timing interact
+- this affects how writeback and stimulus timing act
 
 Current candidate event families:
 
@@ -203,14 +203,14 @@ Resolution:
 
 - the active node contract should include the command surface
 - `v1` should use a simple explicit command allowlist
-- one working protocol shape is `skyra <node> <command> -<args> -reason "..."`
+- one working protocol shape is `skyra <node> <primitive> -<args> -reason "..."`
 
 Current posture:
 
 - the contract should name the allowed commands
 - avoid wildcard or pattern matching in `v1`
 - keep the command allowance surface explicit and inspectable
-- `skyra jarvis interact` is one valid example inside that surface
+- `skyra jarvis act` is one valid example inside that surface
 - exact command argument schemas remain open for now
 
 Why this is the right `v1` move:
@@ -218,7 +218,7 @@ Why this is the right `v1` move:
 - simple
 - auditable
 - easy to validate at runtime
-- flexible enough for the command-set-based model
+- flexible enough for the node-first primitive model
 
 ## Current Design Posture
 

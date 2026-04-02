@@ -29,7 +29,7 @@ What is currently stable is:
 Older shorthand such as:
 
 ```text
-stimulus -> recall -> cognition -> interact
+stimulus -> recall -> cognition -> act
 ```
 
 was useful, but should not be treated as the final canonical runtime loop.

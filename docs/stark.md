@@ -91,16 +91,16 @@ That registry is the live structural record of which nodes exist and where route
 
 The kernel remains the authority that applies those changes.
 
-For `v1`, the important current `interact` boundary is that Stark should remain system-facing.
+For `v1`, the important current `act` boundary is that Stark should remain system-facing.
 
-That means Stark should primarily own methods such as:
+That means Stark should primarily own modalities such as:
 
 - `probe`
-- `write_device_registration`
+- `registration_write`
 
-Stark should not emit `interact -method talk` in `v1`.
+Stark should not emit outward human-facing `act` in `v1`.
 
-By contrast, `birth_node` belongs to Stark's structural command surface rather than to `interact`.
+By contrast, `birth_node` belongs to Stark's structural command surface rather than to `act`.
 
 ## Bootstrap Role
 
