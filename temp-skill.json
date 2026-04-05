@@ -24,7 +24,7 @@
       }
     ],
     "boundary_rules": {
-      "allowed": ["search", "write_node", "write_edge"],
+      "allowed": ["search", "write_actor", "write_edge"],
       "gated": ["propose_commit"],
       "denied": ["run_shell", "delete_memory"]
     },

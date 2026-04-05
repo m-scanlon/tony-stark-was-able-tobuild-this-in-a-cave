@@ -6,7 +6,7 @@
     <title>Skyra</title>
     <meta
       name="description"
-      content="Skyra is a local-first runtime built around nodes, contracts, episodes, recall, and learning."
+      content="Skyra is a local-first runtime built around actors, contracts, episodes, recall, and learning."
     />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -36,7 +36,7 @@
             <p class="eyebrow">Local-First Runtime System</p>
             <h1>Build memory, structure, and action into one bounded runtime.</h1>
             <p class="hero-text">
-              Skyra is an experimental personal runtime organized around durable nodes, bounded episodes, projected frames,
+              Skyra is an experimental personal runtime organized around durable actors, bounded episodes, projected frames,
               structural recall, and selective learning. The system stays local-first, contract-bounded, and explicit about what it
               knows, what it is doing, and what it keeps.
             </p>
@@ -49,7 +49,7 @@
             <ul class="hero-stats" aria-label="Key product traits">
               <li>
                 <strong>Runtime-first</strong>
-                <span>nodes, contracts, episodes, frames</span>
+                <span>actors, contracts, episodes, frames</span>
               </li>
               <li>
                 <strong>Memory-aware</strong>
@@ -65,7 +65,7 @@
           <div class="hero-panel" aria-label="Skyra runtime preview">
             <div class="panel-surface">
               <div class="surface-head">
-                <span class="surface-pill">Node Contract</span>
+                <span class="surface-pill">Actor Contract</span>
                 <span class="surface-pill">Episode Active</span>
               </div>
 
@@ -89,7 +89,7 @@
 
                 <section class="preview-grid">
                   <article class="preview-card">
-                    <p class="preview-label">Node</p>
+                    <p class="preview-label">Actor</p>
                     <h3>Durable operator</h3>
                     <p>Owns machinery, mailbox, projection, recall, and command lifecycle.</p>
                   </article>
@@ -129,7 +129,7 @@
               <span class="feature-index">01</span>
               <h3>Contracts bound behavior</h3>
               <p>
-                Each node operates under a durable contract that defines purpose, capabilities, stimulus, cognition envelope, and
+                Each actor operates under a durable contract that defines purpose, capabilities, stimulus, cognition envelope, and
                 allowed commands.
               </p>
             </article>
@@ -138,7 +138,7 @@
               <span class="feature-index">02</span>
               <h3>Episodes bound runtime state</h3>
               <p>
-                The node is durable. The episode is not. Active state stays scoped to one bounded span of activity with a frame
+                The actor is durable. The episode is not. Active state stays scoped to one bounded span of activity with a frame
                 projected from it for inference.
               </p>
             </article>
@@ -177,11 +177,11 @@
           <ol class="timeline">
             <li>
               <strong>Stimulus enters</strong>
-              <span>External input is normalized into a typed event and routed to the target node mailbox.</span>
+              <span>External input is normalized into a typed event and routed to the target actor mailbox.</span>
             </li>
             <li>
               <strong>Episode updates</strong>
-              <span>The node opens or reuses an episode, writes the event, updates structural cues, and projects a frame.</span>
+              <span>The actor opens or reuses an episode, writes the event, updates structural cues, and projects a frame.</span>
             </li>
             <li>
               <strong>Command executes</strong>
@@ -207,7 +207,7 @@
           <div class="role-grid">
             <article class="role-card">
               <p class="role-tag">Jarvis</p>
-              <h3>User-facing meaning node</h3>
+              <h3>User-facing meaning actor</h3>
               <p>
                 Tracks what matters in the current user context, shapes attention, and guides interpretation on the user-facing side
                 of the runtime.
@@ -221,9 +221,9 @@
 
             <article class="role-card role-card-accent">
               <p class="role-tag">Stark</p>
-              <h3>Structural node</h3>
+              <h3>Structural actor</h3>
               <p>
-                Governs topology, contracts, capability attachment, and structural revision. Stark publishes later node contracts, but
+                Governs topology, contracts, capability attachment, and structural revision. Stark publishes later actor contracts, but
                 the kernel still controls instantiation and execution authority.
               </p>
               <ul>
@@ -249,17 +249,17 @@
             <a class="doc-card" href="../docs/architecture-overview-v0.md">
               <span class="doc-kicker">Overview</span>
               <strong>Architecture Overview</strong>
-              <p>High-level map of the active runtime, memory, and node model.</p>
+              <p>High-level map of the active runtime, memory, and actor model.</p>
             </a>
             <a class="doc-card" href="../docs/data-model-prelim.md">
               <span class="doc-kicker">Model</span>
               <strong>Data Model Overview</strong>
-              <p>How structure, nodes, episodes, frames, retention, recall, and learning fit together.</p>
+              <p>How structure, actors, episodes, frames, retention, recall, and learning fit together.</p>
             </a>
-            <a class="doc-card" href="../docs/node-process-v0.md">
+            <a class="doc-card" href="../docs/actor-process-v0.md">
               <span class="doc-kicker">Runtime</span>
-              <strong>Node Process</strong>
-              <p>Event-driven node behavior, mailbox handling, command writeback, and contract adoption timing.</p>
+              <strong>Actor Process</strong>
+              <p>Event-driven actor behavior, mailbox handling, command writeback, and contract adoption timing.</p>
             </a>
             <a class="doc-card" href="../docs/recall-v0.md">
               <span class="doc-kicker">Memory</span>

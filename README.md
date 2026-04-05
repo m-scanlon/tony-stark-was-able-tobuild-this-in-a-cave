@@ -5,10 +5,10 @@ Skyra is an experimental runtime for autonomous programmable cognition.
 The project is moving toward a typed cognitive substrate built around:
 
 - small fixed primitives
-- extensible nodes
+- extensible actors
 - typed stimulus
 - contract-bounded orchestration
-- node-local retained experience
+- actor-local retained experience
 - world interaction as a first-class runtime concern
 
 This repository combines runtime code, architecture documentation, protocol work, product notes, and exploratory system-model design.
@@ -20,10 +20,10 @@ The current direction is to treat Skyra less like a single agent and more like a
 The emerging model is:
 
 - primitives provide the fixed substrate
-- nodes are the extensible unit
-- base nodes form the shipped standard library
-- orchestrator nodes coordinate other nodes
-- workflows emerge from typed node composition rather than one hardcoded loop
+- actors are the extensible unit
+- base actors form the shipped standard library
+- orchestrator actors coordinate other actors
+- workflows emerge from typed actor composition rather than one hardcoded loop
 
 This is still early-stage architecture work.
 
@@ -43,10 +43,10 @@ Some parts of the repo are active implementation, while others are preliminary d
 The current work is centered on stabilizing the core runtime shape:
 
 - protocol and primitive boundaries
-- typed stimulus and node contracts
-- node-local memory and bounded recall
+- typed stimulus and actor contracts
+- actor-local memory and bounded recall
 - world-facing interaction
-- base nodes and orchestrator nodes
+- base actors and orchestrator actors
 - device registration and onboarding
 
 ## Notes

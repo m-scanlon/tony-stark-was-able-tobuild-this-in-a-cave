@@ -105,7 +105,7 @@ These are good candidates for `compute_requirements`:
 
 - a class is not a skill
 - a skill is a function
-- a class emerges when a set of prompts repeatedly operates on the same state nodes
+- a class emerges when a set of prompts repeatedly operates on the same state actors
 - a skill with no execution history has unbounded predicted complexity
 - until history exists, the router should not pretend it has a stable cost profile hence should be routed to the highest model
 
