@@ -46,6 +46,12 @@ That would bypass the relationship.
 If another being's experience is relevant, the legitimate path is to relate to
 that being.
 
+## Family Shape
+
+The retained artifact family and the locked meaning of `trust_at_formation`
+live in
+[19-retained-artifact-family-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/19-retained-artifact-family-v0.md).
+
 ## Privacy Is Structural
 
 This is not a bolt-on security rule.

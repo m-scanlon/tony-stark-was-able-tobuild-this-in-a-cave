@@ -81,6 +81,9 @@ The visibility rules are:
 So other beings may know who you are and what you are for, but they do not get
 your verification key through ordinary public inspection.
 
+Operational fields may live on the being record without becoming part of
+nature.
+
 ## 5. What A Being Is Born With
 
 A being is not created empty. It is created with a `creation endowment`.
@@ -202,6 +205,8 @@ Language exists in two layers:
 - not relationship-owned
 - not registry-backed
 - what makes first contact possible
+- its current canonical base expression is locked in
+  [18-base-language-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/18-base-language-v0.md)
 
 ### Specific Callable Language
 
@@ -356,9 +361,24 @@ For now:
 
 - relationships are modeled as records, not beings
 - language state is persisted in records
-- being records include nature fields
+- being records include nature fields plus operational fields such as
+  `differentiatable`
 - the theory-of-mind layer exposes only the public slice
 - the kernel can read verification keys directly
+
+`differentiatable` is a boolean on the being record and defaults to `true`.
+
+It answers whether the differentiator currently has authority to reorganize a
+being's identity and boundaries.
+
+Set it to `false` for infrastructure beings such as the RDS being, host
+services, and other pre-runtime beings.
+
+Set it to `false` for external beings such as the human and peripheral input
+beings facing the outside world.
+
+Set it to `true` for runtime beings inside the live system that the
+differentiator has authority over.
 
 This is an important current compromise in the ontology:
 
@@ -404,6 +424,11 @@ The differentiator exists to:
 
 This is not cloning and not arbitrary duplication. It is conceptual repair of
 ontology.
+
+The differentiator may reorganize only beings whose being records are marked
+`differentiatable = true`.
+
+This is a practical capability constraint, not an ontological exception.
 
 The rule behind it is brutal and clean:
 

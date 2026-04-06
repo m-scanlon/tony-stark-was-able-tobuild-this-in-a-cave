@@ -1,64 +1,79 @@
-# Response Richness And Relationship Formation v0
+# Cognitive And Non-Cognitive Beings v0
 
 ## Purpose
 
-This document makes the relationship-level distinction between bilateral
-formation and mostly one-sided adaptation explicit in `v.03`.
+This document locks the distinction between cognitive and non-cognitive beings
+in the current `v.03` model.
+
+It also makes the internal versus external distinction explicit without
+creating ontological exceptions.
 
 ## Core Rule
 
-All beings are beings.
+All communicating participants are beings.
 
 There is no special case.
 
-It is all relating.
+The distinction here is functional, not ontological.
 
-The distinction that matters here is not kinds of beings.
+## Cognitive Beings
 
-It is response richness inside the relationship.
+Cognitive beings can:
 
-## Rich And Minimal Response
+- observe their own present being
+- think with their memory beings
+- infer from context and retained experience
+- treat language as callable when cognition is confident enough to act
+- prepare and route expression according to their nature
 
-Some beings answer richly.
+Confidence is inferred.
 
-Some beings answer minimally.
+It is a cognition concern, not a stored protocol field.
 
-Both are still responding.
+## Non-Cognitive Beings
+
+Non-cognitive beings are still full beings.
+
+They still have:
+
+- nature
+- a present being
+- relationships
+- a communicative role in the runtime
+
+What they do not do is infer, deliberate, or judge callability cognitively.
+
+They realize boundary, storage, routing, registry, or actuation functions
+according to their nature.
+
+## Internal And External
+
+Internal beings exist inside the cognitive envelope.
+
+Internal cognitive relationships may be genome-seeded at birth.
+
+External beings exist outside the cognitive envelope.
+
+They are still beings.
+
+Their routes may be hardwired at creation when their purpose is to bring
+signal inward or emit signal outward at a boundary.
+
+## Response Richness
+
+Some relationships form bilaterally because both sides answer richly.
+
+Some relationships adapt mostly through one side because the other responds
+more minimally.
+
+Both are still real relationships.
 
 Both are still relating.
 
-## Bilateral Formation
-
-When both sides answer richly, the relationship language is shaped bilaterally.
-
-Both sides keep influencing what the relationship becomes.
-
-## Mostly One-Sided Adaptation
-
-When one side answers minimally, the relationship can still form.
-
-The other side simply does most of the adaptation.
-
-Minimal response can still be acceptance or rejection.
-
-That is still a response.
-
-That is still relating.
-
-If the response shape later changes enough, the relationship language may break
-and need repair.
-
-## What Determines The Difference
-
-The response shape on the other end determines whether the relationship forms
-bilaterally or is adapted mostly by one side.
-
-The protocol does not fork.
-
 ## Short Framing
 
-Relationship-owned always.
+Cognitive and non-cognitive are role distinctions inside one ontology.
 
-Bilateral when both sides answer richly.
+Internal and external are envelope distinctions inside one ontology.
 
-Mostly one-sided when one side answers minimally.
+Everything that communicates is still a being.

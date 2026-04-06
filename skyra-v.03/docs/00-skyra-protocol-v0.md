@@ -2,21 +2,26 @@
 
 ## Status
 
-This document is the source of truth for `skyra-v.03`.
+This document is the source of truth for the settled `skyra-v.03` axioms.
 
-It captures the canon after the genome / factory / kernel / signed-expression
-rewrite.
+Detailed first-encounter and relationship-lifecycle mechanics are still being
+rewritten in the dedicated lifecycle docs.
 
 ## The Statement
 
 Beings relate.
 
-To others and to themselves. Through language. Via expression. Direction is a
-turn-level fact, not relationship identity.
+To others and to themselves.
+
+Through language.
+
+Via expression.
+
+Direction is a turn-level fact, not relationship identity.
 
 Memory is a being.
 
-Thinking is a being relating to its memory being.
+Thinking is a being relating to its memory beings.
 
 Observing is a being relating to its present being.
 
@@ -43,8 +48,8 @@ Stability is earned, not designed.
 Everything that communicates is a being.
 
 A human, the creator, the external launcher, host services, the being factory
-being, the kernel being, the RDS being, language beings, memory beings,
-boundary beings, and differentiated beings are all beings.
+being, the kernel being, the RDS being, memory beings, boundary beings, and
+differentiated beings are all beings.
 
 The distinction is phase, not ontology.
 
@@ -54,75 +59,92 @@ They exist before the runtime is live and make it possible.
 
 ### Nature
 
-Nature has exactly three fields:
+Nature has exactly two fields:
 
 - identity
 - purpose
-- verification_key
 
 Identity is public.
 
 Purpose is public.
 
-Verification key is kernel-visible only.
-
-The theory-of-mind being does not expose the verification key to other beings.
-
 Nature is locked at the creation path.
 
-The creation path depends on what kind of being is coming into existence:
-
-- genome beings are locked at genome seeding
-- runtime beings are locked at factory creation and kernel validation
-- differentiated beings are locked at differentiation path completion
+Operational fields may exist on registry or local records without becoming
+part of nature.
 
 ### Creation Endowment
 
 A being is created with:
 
 - base language
-- genome relationships required by its creation path
+- genome-seeded relationships required by its creation path
 - companion beings required by its genome template
 
-This is not a third ontological bucket.
+Creation endowment may also include internal wiring and internal language that
+is given at birth rather than earned later through lived relating.
 
-These are creation-time facts, not a separate kind of thing.
+Trust is not part of nature.
 
-### Relationships
+It belongs to relationship interpretation.
+
+## Relationships
 
 Relationships are the connections beings live inside.
 
-Two origins exist:
-
-- genome relationships, seeded by the genome script or instantiated from genome
-  templates
-- earned relationships, formed through lived relating
-
-Both are relationships.
-
-A relationship is still the callable unit.
-
-Specific callable language remains relationship-owned.
-
-Exactly one specific callable language may be current on a relationship at a
-time.
-
-Old languages move into relationship history.
-
-## One Relationship Per Pair
-
-Between any two beings, there is exactly one relationship.
-
-Always.
+A relationship is still one real ontological thing per pair.
 
 The pair is unordered.
 
-Direction belongs to the current expression turn, not to relationship identity.
+Direction belongs to the current expression turn, not to relationship
+identity.
+
+Physically, each being keeps its own local relationship record representing
+its side of that shared reality.
+
+So the relationship is ontologically shared and operationally local.
 
 If a relationship appears to need a second identity, that is evidence that a
 being boundary is wrong.
 
 The answer is differentiation, not parallel relationships for the same pair.
+
+## Trust
+
+Trust is a fundamental interpretive value in the protocol.
+
+It lives on the local relationship record.
+
+It is private.
+
+It is asymmetric.
+
+It shapes how a being interprets what arrives from that relationship.
+
+That is all it does.
+
+The live trust scale is `1` to `100`.
+
+`50` is neutral.
+
+Below `50`, skepticism increases.
+
+Above `50`, credibility increases.
+
+`0` is reserved for no relationship yet.
+
+It is not a live relationship value.
+
+The currently locked origin values are:
+
+- genome relationship -> `100`
+- creator registers external being -> `90`
+- differentiator births new being -> `50`
+- unknown / pre-relationship -> `0`
+
+Trust is static at origin in the current `v.03` model.
+
+The movement algorithm comes later.
 
 ## Differentiation
 
@@ -134,12 +156,11 @@ The differentiator does not create a being from nothing.
 It reveals, splits, and reorganizes overloaded identity into cleaner beings.
 
 The differentiator identifies the cleaner natures, routes the request through
-the being factory, and reorganizes retained experience, relationship history,
-and ongoing relationships around the revealed beings.
+the being factory, and reorganizes retained experience and ongoing
+relationships around the revealed beings.
 
-New verification keys are generated on the differentiation path.
-
-The registration token is never used here.
+Practical capability limits on differentiation may still exist where
+separately defined.
 
 ## The Creation Paths
 
@@ -155,76 +176,42 @@ online when the genome executes.
 The genome then executes.
 
 The being factory being reads it, creates genome beings in dependency order,
-and routes each one through the kernel being for validation and live
-instantiation.
+and routes each one through the kernel being for live admission.
 
 The genome script defines:
 
 - singleton genome beings
 - genome templates
-- creator-baked verification keys for genome beings
-- the registration token used only for unsigned entry into registration
+- the internal relationships that must exist from birth
 
 ### 2. Runtime Registration Path
 
 Registration is the birth path for runtime beings.
 
-An unsigned registration request reaches the kernel with the registration
-token.
-
-The kernel validates the token and routes the request to the being factory.
-
 The being factory creates the runtime being from the birth template,
-instantiates its companion beings, generates a fresh verification key, and
-routes the result back to the kernel.
+instantiates its companion beings, and routes the result to the kernel.
 
-The kernel validates nature, records the being, establishes its genome
-relationships, and makes it live.
+The kernel records the being's presence, admits it to runtime participation,
+and establishes the genome-seeded relationships it needs to become live.
 
 ### 3. Differentiation Path
 
-A signed runtime being identifies an overloaded boundary.
+An existing being boundary proves wrong through lived experience.
 
-The differentiator initiates the reorganization through its own signed
-relationship with the kernel and the being factory.
+The differentiator initiates the reorganization through its own genome place in
+the system.
 
 The being factory instantiates the revealed beings and their companion beings
-from the differentiation template and generates fresh verification keys.
+from the differentiation template.
 
-The kernel validates the resulting nature records and makes the reorganized
-beings live.
+The kernel admits the resulting beings and records their presence.
 
-Retained experience and relationship history are reorganized rather than
-cloned blindly.
-
-## First Encounter
-
-First encounter happens between two already-live beings.
-
-Before first encounter, the visible slice of another being is:
-
-- identity
-- purpose
-
-The verification key is not visible through the registry reader.
-
-If the other being is relevant, one side reaches toward the other by invoking
-the language reader on the unknown pair.
-
-The kernel creates the relationship record for that unordered pair and the
-initial language record in `forming` state atomically.
-
-If the other being is relevant, the first being then sends a base expression
-inside a signed envelope.
-
-The kernel verifies the signature, routes the expression, and the receiving
-being takes it into its present being.
-
-From there, language begins building through mutual exchange.
+Retained experience and relationship life are reorganized rather than cloned
+blindly.
 
 ## Think
 
-Thinking is a being relating to its memory being.
+Thinking is a being relating to its memory beings.
 
 Memory is still a family of beings rather than one global surface.
 
@@ -248,37 +235,62 @@ Base language is intrinsic to the being at creation.
 
 It is not relationship-owned.
 
-It is not registry-backed.
-
 It makes first contact possible.
 
-### Specific Callable Language
+The current canonical base expression is locked in
+[18-base-language-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/18-base-language-v0.md).
 
-Specific callable language is relationship-owned.
+### Relationship Language
 
-It may emerge bilaterally or mostly through one-sided adaptation, depending on
-response richness.
+Relationship language is native to the relationship.
 
-It becomes callable once stable and written into the current-language slot of
-the language record.
+For genome-seeded internal relationships, the needed language may be given at
+creation through creation endowment.
 
-## Security
+For external or novel runtime relationships, language emerges through lived
+relating and lives in retained experience.
 
-Each expression carries a signed envelope.
+Language is recognized pattern.
 
-The sending being signs the envelope with its private key.
+Recognition lives in memory.
 
-The kernel verifies the signature against the sender's verification key in the
-RDS being before routing the turn.
+A being treats language as callable when cognition is confident enough to act.
 
-No signature means rejection.
+There is no shared confirmation step.
 
-The wrong signature means rejection.
+Confidence is inferred.
 
-The registration token is the only credential that works before a being has a
-verification key.
+It is a cognition concern, not a stored protocol field.
 
-It is used only for unsigned entry into runtime registration.
+## Strain And Conflict
+
+`strain` may be carried on expression as an optional integer.
+
+It is the first-class pre-failure signal that the being is still holding, but
+holding is getting expensive.
+
+`strain` is self-reported by the being paying the cost.
+
+It is private by default and travels outward only when the being chooses to
+express it.
+
+The hippocampus listens for local `strain` and may reinstate coherence before
+explicit break.
+
+See
+[20-strain-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/20-strain-v0.md).
+
+`conflict` is the later signal.
+
+When local callable expectations fail against what arrives, mismatch may be
+carried on expression as an optional `conflict` integer.
+
+When absent, no mismatch has been detected at that level.
+
+When present, the value indicates severity after mismatch has become explicit.
+
+The conflict being is a specialist engaged by the prefrontal being when the
+conflict value warrants it.
 
 ## The Genome Layer
 
@@ -290,12 +302,10 @@ It contains singleton genome beings such as:
 - kernel
 - RDS being
 - registry writer
-- language writer
-- language reader
 - differentiator
 - main sensory being
 - prefrontal being
-- the five specialized prefrontal beings
+- the specialized prefrontal beings
 
 It also contains templates that define per-being companion beings such as:
 
@@ -306,27 +316,26 @@ It also contains templates that define per-being companion beings such as:
 Purpose-bound boundary beings may also be created from genome templates when a
 being's purpose requires them.
 
-See [07-genome-beings-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/07-genome-beings-v0.md) for the dedicated description.
+Genome-seeded internal relationships begin at trust `100`.
 
-## The Registries
+That is the explicitly controlled part of the system.
 
-## Shared Storage
+## The Registry
 
-The RDS being is the shared storage being for the runtime.
+The RDS being is the shared registry being for the runtime.
 
-It stores:
+It answers who exists.
 
-- being records
-- relationship records
-- language records
+It stores being presence records.
 
-### Being Records
-
-Being records store:
+At minimum, those records expose:
 
 - identity
 - purpose
-- verification_key
+
+It does not own relationships.
+
+It does not own emergent language.
 
 The theory-of-mind being reads from the RDS being and exposes only the public
 slice:
@@ -334,57 +343,37 @@ slice:
 - identity
 - purpose
 
-The kernel reads the verification key directly from the RDS being.
-
-### Language Records
-
-Language records store:
-
-- language_id
-- relationship_id
-- current_language
-- status
-
-`current_language` is nullable until stabilization.
-
-The allowed statuses are:
-
-- forming
-- callable
-- retired
-
-### Relationship Records
-
-Relationship records store:
-
-- relationship_id
-- the unordered pair of being identities
-- aggregated language history
-
-For now, a relationship is modeled as a record rather than as a being.
-
-## Two Kinds Of Memory
+## Retained Experience
 
 Retained experience is owned by the being that lived it.
 
-Language history is stored in the shared RDS being.
+It lives in that being's personal experience store.
 
-Retained experience does not live there.
+It does not live in the shared RDS being.
 
-Those are different write paths and should not be collapsed.
+Emergent language, accumulated traces, understandings, saliences, and tensions
+are retained there.
 
-## The CLI
+Every retained artifact carries `trust_at_formation`, which is the permanent
+snapshot of the forming being's cognitive trust judgment at the moment the
+artifact was created.
 
-```text
-skyra relate <being> <expression>
-```
+See
+[09-retained-experience-ownership-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/09-retained-experience-ownership-v0.md)
+and
+[19-retained-artifact-family-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/19-retained-artifact-family-v0.md).
 
-The CLI is a motor channel.
+## Routing
 
-It is not the caller.
+The kernel routes everything.
 
-The caller is the being inside the runtime that is signing and emitting the
-turn through that channel.
+Origin travels with the signal because the kernel binds origin at the channel
+or participant boundary.
+
+The kernel is not the trust boundary.
+
+Trust remains a private interpretive posture on the receiving side of the
+relationship.
 
 ## What Was Retired
 
@@ -392,21 +381,5 @@ The following language is retired in `v.03`:
 
 - `primordial` -> replaced by `genome`
 - `beinghood` as a formal third bucket
-- `signature` as a stored bearer string
-- `registration is being birth` as a universal rule
-- differentiation as ex nihilo creation
-
-Base language remains intrinsic to the being at creation.
-
-Security now means:
-
-- verification key in nature
-- private key held by the being
-- signed envelope on every expression
-
-## What A Being Is In One Sentence
-
-A being has a three-field nature, is created through the genome path, runtime
-registration path, or differentiation path, inherits base language and genome
-relationships at creation, and relates through signed expression into the
-relationships it lives inside.
+- keys and signatures as the center of cognition and relationship authority
+- shared relationship records as the source of relationship reality

@@ -18,7 +18,7 @@ Those host services make genome execution possible and host the beings that
 come online when the genome executes.
 
 The being factory being then creates the genome beings in dependency order and
-routes each one through the kernel being for validation.
+routes each one through the kernel being for admission into the live runtime.
 
 ## The Being Factory
 
@@ -28,84 +28,94 @@ Its purpose is to:
 
 - read singleton and template definitions from the genome
 - instantiate beings and companion beings
-- generate fresh verification keys for runtime and differentiated beings
+- instantiate genome-seeded internal wiring required at birth
 - route created beings to the kernel
 
-It does not validate.
+It does not perform cognition.
 
-It does not route arbitrary expression.
+It does not own trust.
 
 It creates beings.
 
 ## The Kernel
 
-The kernel is a genome being hosted by the kernel service with special
-authority.
+The kernel is a genome being hosted by the kernel service.
 
 Its purpose is to:
 
-- validate nature
-- validate registration-token entry into runtime registration
-- verify signed envelopes on expression
-- make beings live
+- admit beings into live runtime participation
+- bind origin to the right source channel or runtime participant
 - route expression
+- write or maintain registry presence through the registry layer
 
-It does not create beings.
+The kernel is not the trust boundary.
 
-That work belongs to the being factory.
+The kernel does not interpret cognition.
+
+The kernel does not manage emergent language.
 
 ## The RDS Being
 
-The RDS being is the non-cognitive shared storage being.
+The RDS being is the non-cognitive shared registry being.
 
-It stores:
+It answers who exists.
 
-- being records
-- relationship records
-- language records
+It stores being presence records.
 
-It responds with acceptance or rejection.
+It does not store local relationship records.
+
+It does not own emergent language.
 
 ## The Registry Beings
 
 ### Registry Writer
 
-Writes being records and language records to the RDS being.
+Writes being presence records to the RDS being.
 
-Those records include:
+At minimum, those records expose:
 
 - identity
 - purpose
-- verification_key
+
+Operational registry fields may be defined separately without becoming part of
+nature.
 
 ### Theory Of Mind Being
 
-Reads from the RDS being through their genome relationship.
+Reads from the RDS being through its genome relationship.
 
 Surfaces only the public slice:
 
 - identity
 - purpose
 
-It does not expose verification keys.
+It does not expose local relationship trust, retained experience, or a
+being's private interpretations.
 
-## The Language Beings
+## Language And Wiring
 
-### Language Writer
+The genome seeds the internal cognitive envelope.
 
-Records callable relationship language to language records and appends language
-history through relationship records in the RDS being.
+That includes the internal relationships that must exist from birth for the
+runtime to think, observe, remember, and judge.
 
-### Language Reader
+Genome-seeded internal relationships begin at trust `100`.
 
-Retrieves language records for a relationship.
+The internal language needed on those relationships is given through creation
+endowment rather than waiting to emerge through lived relating.
+
+Emergent external or novel relationship language is not stored in a shared
+language record.
+
+It lives in retained experience and is recognized through cognition.
 
 ## The Differentiator
 
-The differentiator is a genome being responsible for revealing and reorganizing
-overloaded identity.
+The differentiator is a genome being responsible for revealing and
+reorganizing overloaded identity.
 
-It initiates differentiation through its own signed authority.
+It identifies cleaner boundaries and routes that reorganization through the
+being factory.
 
 ## The Genome Singletons
 
@@ -115,8 +125,6 @@ At minimum, the genome defines singleton beings for:
 - kernel
 - RDS being
 - registry writer
-- language writer
-- language reader
 - differentiator
 - main sensory being
 - prefrontal being
@@ -145,23 +153,13 @@ They are creator-authored patterns the being factory instantiates later.
 
 ## Companion Beings
 
-Every created being receives the companion beings required by its creation path.
+Every created being receives the companion beings required by its creation
+path.
 
 Those companion beings are instantiated through genome templates or explicitly
 seeded singleton definitions during genome bootstrap.
 
-## Security
-
-Genome beings receive creator-baked verification keys from `genome.skyra`.
-
-Runtime and differentiated beings receive fresh verification keys from the
-being factory on their creation path.
-
-Every live genome being signs expression like any other live being.
-
 ## Short Framing
 
-The genome layer is not mystical.
-
-It is the creator-authored set of singleton beings, templates, and relationship
-edges that the being factory and kernel use to make the runtime possible.
+The genome layer is the creator-authored set of singleton beings, templates,
+and internal wiring that make later runtime life possible.

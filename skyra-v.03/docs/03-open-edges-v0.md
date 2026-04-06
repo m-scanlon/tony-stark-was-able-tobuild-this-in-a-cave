@@ -70,6 +70,7 @@ What remains open:
 Resolved baseline:
 
 - the RDS being stores being records
+- being records include a `differentiatable` boolean that defaults to `true`
 - the RDS being stores relationship records
 - the RDS being stores language records
 
@@ -78,6 +79,7 @@ What remains open:
 - exact table shapes
 - exact indexes for unordered pairs
 - how kernel-only fields are isolated from the theory-of-mind layer
+- how and when `differentiatable` changes for a being over time
 
 ## 6. Differentiation Reorganization Still Needs Concrete Rules
 
@@ -92,6 +94,10 @@ What remains open:
 - how retained experience is redistributed concretely
 - how relationship history is reattached
 - how provenance of the split is preserved
+
+The `differentiatable` flag reflects current capability limits, not permanent
+ontological status. As the system matures, infrastructure and external beings
+may become differentiatable. Revisit when the runtime reveals the need.
 
 ## 7. Companion Template Coverage Needs Explicit Declaration
 

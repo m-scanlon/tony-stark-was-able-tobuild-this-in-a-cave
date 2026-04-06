@@ -35,6 +35,11 @@ initial language record in `forming` state atomically.
 
 The base expression is then sent inside a signed envelope.
 
+The exact canonical text of that base expression is locked in
+[18-base-language-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/18-base-language-v0.md).
+
+Do not paraphrase it here.
+
 The kernel verifies the envelope before routing the turn.
 
 Base language is intrinsic to the being at creation.

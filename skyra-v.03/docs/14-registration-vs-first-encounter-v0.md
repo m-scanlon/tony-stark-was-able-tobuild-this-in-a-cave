@@ -59,7 +59,9 @@ At first encounter:
 5. the language reader is invoked on the unknown pair and the kernel creates
    the relationship record and initial language record in `forming` state
    atomically
-6. being A sends the base expression in a signed envelope
+6. being A sends the canonical base expression from
+   [18-base-language-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/18-base-language-v0.md)
+   in a signed envelope
 7. the kernel verifies the signature and routes the expression
 8. being B receives it in its present being
 9. being B observes and responds, either richly or minimally

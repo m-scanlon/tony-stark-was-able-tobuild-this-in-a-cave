@@ -56,6 +56,24 @@ This is not naive copying.
 
 It is conceptual reorganization.
 
+## Authority Boundary
+
+The differentiator may reorganize only beings whose being records are marked
+`differentiatable = true`.
+
+`differentiatable` is a boolean on the being record and defaults to `true`.
+
+Set it to `false` for infrastructure beings such as the RDS being, host
+services, and other pre-runtime beings.
+
+Set it to `false` for external beings such as the human and peripheral input
+beings facing the outside world.
+
+Set it to `true` for runtime beings inside the live system that the
+differentiator has authority over.
+
+This is a practical constraint, not an ontological exception.
+
 ## Security On The Differentiation Path
 
 The differentiator is a signed genome being.
