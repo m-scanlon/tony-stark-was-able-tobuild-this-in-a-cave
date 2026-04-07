@@ -20,11 +20,11 @@ The distinction here is functional, not ontological.
 
 Cognitive beings can:
 
-- observe their own present being
+- operate from their present
 - think with their memory beings
 - infer from context and retained experience
 - treat language as callable when cognition is confident enough to act
-- prepare and route expression according to their nature
+- fire expression from their present according to their nature
 
 Confidence is inferred.
 
@@ -37,14 +37,14 @@ Non-cognitive beings are still full beings.
 They still have:
 
 - nature
-- a present being
+- a present
 - relationships
 - a communicative role in the runtime
 
 What they do not do is infer, deliberate, or judge callability cognitively.
 
-They realize boundary, storage, routing, registry, or actuation functions
-according to their nature.
+They realize boundary, storage, routing, relationship-graph maintenance, or
+actuation functions according to their nature.
 
 ## Internal And External
 

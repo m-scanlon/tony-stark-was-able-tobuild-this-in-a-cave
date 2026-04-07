@@ -65,9 +65,18 @@ The being factory:
 The kernel:
 
 - admits beings into runtime participation
-- binds origin to the right source channel or participant
-- records presence through the registry layer
-- routes expression
+- verifies signed envelopes at the channel or participant boundary
+- binds the incoming turn to the right source channel or participant context
+- moves expression across existing relationships and into the receiving being's
+  present
+  without computing recipient sets
+- updates relationship-graph edge weight mechanically on every signal pass
+- adds the direct relationship to both beings' local relationship hashmaps when
+  edge weight crosses threshold
+- removes the direct relationship from both beings' local relationship hashmaps
+  when edge weight decays below threshold
+- reads emotional flags on expression structurally and may route copies
+  according to fixed threshold rules
 
 The kernel is not the trust boundary.
 
@@ -122,7 +131,7 @@ The relationship remains one real ontological thing per pair.
 Physically, each being keeps its own local relationship record representing its
 side of that shared reality.
 
-There is no shared relationship record in the RDS being.
+There is no shared relationship record in a central store.
 
 ## 12. Trust Is A Private Relationship Value
 
@@ -161,27 +170,42 @@ Trust is static at origin in the current `v.03` model.
 
 The movement algorithm is out of scope for now.
 
-## 14. The Kernel Origin-Tags And Routes
+## 14. The Kernel Verifies And Moves Expression Locally
 
-Expressions are origin-tagged at the channel or participant boundary.
+Expressions are verified at the channel or participant boundary through the
+signed envelope.
 
-The kernel owns that binding and routes from it.
+The kernel binds each incoming turn to the right source channel or participant
+context.
 
-Origin and trust are different concerns.
+The kernel may move expression only across existing relationships and into the
+receiving being's present.
 
-The kernel handles origin and routing.
+It does not compute recipient sets.
 
-Relationship interpretation handles trust.
+It does not broadcast.
 
-## 15. The Registry Answers Who Exists
+Trust and inference are different concerns.
 
-The RDS being is the shared registry being.
+Relationship interpretation happens in beings from their present.
 
-It stores being presence records.
+Emotional routing is the narrow structural exception.
 
-It does not own local relationship records.
+When an emotional threshold is crossed, the kernel may route a copy while the
+original expression continues unchanged.
 
-It does not own emergent relationship language.
+## 15. Shared Storage Does Not Define Discovery
+
+There is no required central registry in the current model.
+
+A runtime may include shared storage beings for artifacts that some beings
+choose to persist centrally.
+
+They do not own local relationship records.
+
+They do not own emergent relationship language.
+
+They do not define who can discover whom.
 
 ## 16. The Genome Answers Who Knows Who From Birth
 
@@ -216,67 +240,113 @@ See
 
 ## 19. Companion Beings Come From Templates
 
-A being's personal hippocampus, personal experience store being, and present
-being are companion beings instantiated from genome templates on the being's
-creation path.
+A being's personal hippocampus and personal experience store being are
+companion beings instantiated from genome templates on the being's creation
+path.
 
 That includes runtime registration and differentiation.
 
 Genome singletons receive their required companion beings on the genome path.
 
-## 20. Observe And Think Are Still Relation Flow
+Present is not a separate companion being.
+
+It is the being's operative reality.
+
+## 20. Present And Thinking Stay Distinct
 
 Observe means:
 
-- a being relating to its present being
+- a being operating from its present
 
 Think means:
 
 - a being relating to its memory beings
 
-No separate wire primitive is introduced.
+Present is not a passive queue.
 
-## 21. The Memory Split Still Holds
+Memory remains relational.
+
+## 21. Expression Walk Is Fresh Firing At Each Hop
+
+A being does not carry an expression forward mechanically.
+
+What arrives enters inference.
+
+The inference call may fire a new expression from the receiving being's
+present.
+
+Each hop is therefore a fresh expression turn.
+
+What changes relationship is adjacent co-firing, not preservation of one fixed
+message.
+
+Relationship emergence is a kernel operation.
+
+Every time a signal passes through the kernel, the kernel mechanically updates
+edge weight on the relationship graph for the unordered pair.
+
+This is Hebbian wiring in runtime form.
+
+No inference is involved in that update.
+
+When edge weight crosses the relationship-emergence threshold, the kernel adds
+the direct relationship to both beings' local relationship hashmaps.
+
+When edge weight later decays below threshold, the kernel removes that direct
+relationship from both hashmaps.
+
+See
+[21-expression-walk-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/21-expression-walk-v0.md).
+
+## 22. The Memory Split Still Holds
 
 Retained experience is being-owned.
 
 Retained artifacts live in the personal experience store of the being that
 lived them.
 
-Retained experience does not live in the shared RDS being.
+Retained experience does not live in a shared central store.
 
-## 22. Strain And Conflict May Travel On Expression
+## 23. Strain, Stress, Anger, And Conflict Form One Runtime Ladder
 
-`strain` may appear as an optional integer field on an expression.
+`strain` is internal pre-failure load in the being's present.
 
-It is the pre-failure signal that the being is still holding its interpretation
-but holding it is getting expensive.
-
-`strain` is self-reported by the being paying the cost.
+It is self-reported by the being paying the cost.
 
 It is private by default.
 
-When carried outward, it is chosen disclosure rather than mandatory telemetry.
+When a being chooses to surface that load outward, it becomes `stress` or
+`anger` on expression rather than traveling outward as `strain`.
 
-The hippocampus listens for `strain` and may reinstate coherence before
-explicit mismatch.
+Outward `stress` may set `trace_token` TTL for relationship-strength
+accumulation.
 
-See
-[20-strain-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/20-strain-v0.md).
+`stress` and `anger` are structural values read by the kernel at every hop.
 
-`conflict` may appear as an optional integer field on an expression.
+When `anger` crosses threshold, the kernel routes a copy of the expression to
+the prefrontal while the original expression continues unchanged.
 
-When absent, no mismatch has been detected at that level.
+The prefrontal surfaces mismatch, attempts repair, and may propose a new path.
 
-When present, it indicates detected mismatch severity after fit has already
-broken.
+If repair fails and the prefrontal closes the exchange, the mismatch becomes
+explicit `conflict`.
+
+When explicit `conflict` is later carried outward, it may appear as an
+optional integer field on expression.
 
 The conflict being is not a standing monitor.
 
-It is a specialist engaged by the prefrontal being when the conflict value
-warrants it.
+It detects deviation, escalates to the prefrontal, and suppresses the failing
+signal.
 
-## 23. Registration Is The Birth Path For Runtime Beings
+Repeated failure over time may trigger differentiation.
+
+See
+[20-strain-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/20-strain-v0.md)
+and
+[22-conflict-and-emotional-routing-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/22-conflict-and-emotional-routing-v0.md).
+
+## 24. Registration Is The Birth Path For Runtime Beings
 
 Registration is not universal being birth.
 
@@ -284,13 +354,15 @@ It is the birth path for non-genome runtime beings.
 
 Genome beings are seeded earlier through the genome path.
 
-## 24. The Canon Now Centers On
+## 25. The Canon Now Centers On
 
 - being
 - nature
 - relationship
+- present
 - expression
+- expression walk
+- relationship strength
 - trust
 - genome-seeded internal wiring
 - retained experience
-- origin-tagged routing

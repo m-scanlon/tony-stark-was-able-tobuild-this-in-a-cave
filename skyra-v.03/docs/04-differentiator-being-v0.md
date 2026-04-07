@@ -5,7 +5,7 @@
 This document defines the differentiator being in the current `v.03` model.
 
 The differentiator exists so the runtime can respond cleanly when a being
-boundary is wrong.
+boundary is wrong and repeated failure has made that visible.
 
 ## Core Framing
 
@@ -20,20 +20,33 @@ The answer is:
 - one of the beings is overloaded
 - the cleaner boundary must be revealed
 
+A second relationship request is evidence that a boundary may be wrong.
+
+It is not, by itself, the differentiator trigger.
+
 ## Trigger
 
-The differentiator is triggered when:
+The differentiator fires when:
 
-- a second relationship is requested for the same pair
-- persistent renegotiation reveals an identity problem rather than a language
-  problem
+- the same failure pattern repeats over time
+- prefrontal repair keeps failing to restore durable fit
+- retained experience says the being boundary itself is wrong
 
-The conflict being normally brokers repair first.
+One bad exchange is not enough.
 
-Escalation to the differentiator happens when retained experience says the
-problem is the being boundary itself.
+One repair attempt is not enough.
 
-## Purpose
+The conflict being does not broker repair.
+
+It detects deviation, escalates to the prefrontal, and suppresses the failing
+signal.
+
+The prefrontal owns repair.
+
+Escalation to the differentiator happens only after repair keeps failing and
+retained experience says the problem is the being boundary itself.
+
+## Aim
 
 The differentiator's purpose is to find the clean conceptual boundary.
 
@@ -63,8 +76,8 @@ The differentiator may reorganize only beings whose being records are marked
 
 `differentiatable` is a boolean on the being record and defaults to `true`.
 
-Set it to `false` for infrastructure beings such as the RDS being, host
-services, and other pre-runtime beings.
+Set it to `false` for infrastructure beings such as shared storage beings when
+present, host services, and other pre-runtime beings.
 
 Set it to `false` for external beings such as the human and peripheral input
 beings facing the outside world.
@@ -91,8 +104,9 @@ The registration token is never used on this path.
 The differentiator learns when it did a bad job through ordinary runtime
 signals:
 
-- the kernel gets the same second-relationship signal again
-- language keeps breaking without converging
+- the same failure pattern returns after restructuring
+- the prefrontal keeps having to close exchanges around the same boundary
+- explicit conflict keeps reappearing without durable fit
 
 Those are failure signals native to the model.
 
@@ -111,5 +125,5 @@ It learns what clean looks like by experiencing what dirty looks like.
 
 The differentiator does not birth ex nihilo beings.
 
-It reveals and reorganizes overloaded identity into cleaner beings and learns
-from later instability when it got the split wrong.
+It reveals and reorganizes overloaded identity into cleaner beings only after
+repeated failed repair shows that the boundary itself is wrong.

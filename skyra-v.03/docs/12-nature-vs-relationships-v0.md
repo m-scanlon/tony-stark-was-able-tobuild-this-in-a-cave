@@ -6,19 +6,20 @@ This document locks the canonical buckets in the current `v.03` model.
 
 ## Nature
 
-Nature has exactly three fields:
+Nature has exactly two fields:
 
 - identity
 - purpose
-- verification_key
 
 Identity is public.
 
 Purpose is public.
 
-Verification key is kernel-visible only.
-
 Nature is locked at the creation path.
+
+`verification_key` is real, but it is not part of nature.
+
+It is a kernel-visible operational field used for signed expression.
 
 ## Creation Endowment
 
@@ -50,19 +51,19 @@ Before specific callable language exists, the visible slice is:
 - identity
 - purpose
 
-Verification key is not visible through the registry reader.
+`verification_key` is not visible through the discovery path.
 
-## Registry Reader
+## Public Discovery Slice
 
-The registry reader surfaces identity and purpose only.
+Discovery surfaces identity and purpose only.
 
 That is the correct and complete public slice before first contact.
 
 ## Short Framing
 
-Nature is identity, purpose, and verification key.
+Nature is identity and purpose.
 
 Relationships may be genome-seeded or earned.
 
-Base language and companion beings belong to the creation path, not to a formal
-third bucket.
+`verification_key`, base language, and companion beings are real but they do
+not make nature larger than identity and purpose.

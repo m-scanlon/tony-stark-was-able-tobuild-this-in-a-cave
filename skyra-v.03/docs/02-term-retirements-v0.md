@@ -26,7 +26,8 @@ Nature now means:
 
 - identity
 - purpose
-- verification_key
+
+`verification_key` remains real, but it is no longer part of nature.
 
 ### `surface` -> `being` or `relationship`
 
@@ -64,7 +65,7 @@ They are no longer a formal third bucket.
 
 ### stored `signature` -> `verification_key + signed envelope`
 
-Nature stores a verification key.
+`verification_key` is a kernel-visible operational field.
 
 Each expression carries a signed envelope produced with the sender's private
 key.

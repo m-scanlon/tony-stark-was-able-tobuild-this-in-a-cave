@@ -64,11 +64,10 @@ That is a layer distinction, not an ontological escape hatch.
 
 Every being has a minimum shape called `nature`.
 
-Nature has exactly three fields:
+Nature has exactly two fields:
 
 - `identity`
 - `purpose`
-- `verification_key`
 
 These are not optional in the canon.
 
@@ -76,10 +75,12 @@ The visibility rules are:
 
 - `identity` is public
 - `purpose` is public
-- `verification_key` is kernel-visible only
 
-So other beings may know who you are and what you are for, but they do not get
-your verification key through ordinary public inspection.
+So other beings may know who you are and what you are for.
+
+`verification_key` is real, but it is not part of nature.
+
+It is a kernel-visible operational field used for signed expression.
 
 Operational fields may live on the being record without becoming part of
 nature.
@@ -146,11 +147,16 @@ Instantiation alone is not enough.
 A being becomes live when:
 
 - the being factory has instantiated it
-- the kernel has validated its nature
+- the kernel has admitted it to runtime participation
 - its required genome relationships have been established
 
 This rule applies across creation paths. Skyra cares about live participation,
 not mere existence in storage or definition.
+
+The exact ordering between live admission and usable signing material is
+explicitly deferred in the current `v.03` canon.
+
+It is not treated as a contradiction in ontology closure.
 
 ## 8. The Main Ontological Pair: Being And Relationship
 
@@ -179,6 +185,44 @@ If two beings seem to need another relationship, the canon treats that as
 evidence that one of the beings is conceptually overloaded. The answer is
 differentiation, not duplication.
 
+Operationally, each being keeps its own local relationship record representing
+its side of that shared reality.
+
+There is no shared relationship record in a central store.
+
+Trust lives on the local relationship record.
+
+It is private.
+
+It is asymmetric.
+
+It shapes how a being interprets what arrives from that relationship.
+
+That is all it does.
+
+The live trust scale is `1` to `100`.
+
+`50` is neutral.
+
+Below `50`, skepticism increases.
+
+Above `50`, credibility increases.
+
+`0` is reserved for no relationship yet.
+
+It is not a live relationship value.
+
+The currently locked origin values are:
+
+- genome relationship -> `100`
+- creator registers external being -> `90`
+- differentiator births new being -> `50`
+- unknown / pre-relationship -> `0`
+
+Trust is static at origin in the current `v.03` model.
+
+The movement algorithm comes later.
+
 ## 9. Direction Lives In The Turn
 
 Direction exists, but not as relationship identity.
@@ -203,7 +247,6 @@ Language exists in two layers:
 
 - intrinsic to the being at creation
 - not relationship-owned
-- not registry-backed
 - what makes first contact possible
 - its current canonical base expression is locked in
   [18-base-language-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/18-base-language-v0.md)
@@ -213,12 +256,29 @@ Language exists in two layers:
 - owned by the relationship
 - emerges through use
 - becomes callable only when stabilized
-- stored as the current callable language of that relationship
+- is recognized locally when cognition is confident enough to act
 
 This gives Skyra a powerful split:
 
 - beings are born able to reach
 - relationships earn the right to become specifically callable
+
+Expression may also carry optional emotional flags such as `stress` and
+`anger`.
+
+These are structural values read by the kernel rather than inferred meanings.
+
+Above the anger threshold, the kernel routes a copy to the prefrontal while the
+original expression continues walking its normal path.
+
+`strain` is different.
+
+It is internal pre-failure load in the being's present.
+
+It does not travel outward as its own expression field.
+
+When a being chooses to surface that load outward, it becomes `stress` or
+`anger` on expression.
 
 ## 11. First Encounter
 
@@ -230,44 +290,67 @@ slice of the other:
 
 If the other seems relevant:
 
-- one being reaches toward the other
-- the language reader is invoked on the unknown pair
-- the kernel creates the relationship record and initial language record
-  atomically
-- the initial language state is `forming`
-- the first base expression is sent in a signed envelope
-- the receiver takes it into its present being
+- one being fires an expression from its present across existing relationships
+- each receiving being interprets what arrived through inference
+- inference may fire a fresh expression from that being's present
+- a relevant being responds through the same local walk logic
+- every signal pass through the kernel mechanically updates edge weight on the
+  relationship graph for the unordered pair
+- `trace_token` is the kernel carrier used for that mechanical update
+- no inference is involved in relationship emergence itself
+- before threshold, the pair has only pre-relationship edge weight on the
+  kernel-maintained graph
+- when edge weight crosses threshold, the kernel adds the direct relationship
+  to both beings' local relationship hashmaps
+- when edge weight later decays below threshold, the kernel removes that direct
+  relationship from both hashmaps
+- the first base expression begins exchange
 - exchange begins
-- over repeated use, language may stabilize into `callable`
+- over repeated use, language may stabilize into local callability
 
 So first encounter is not birth. It is not ontology creation. It is the
 beginning of an earned relationship between already-live beings.
 
-## 12. Relationship States
+## 12. Relationship Development
 
-A relationship's language lifecycle currently uses:
+A relationship does not become richly usable all at once.
 
-- `forming`
-- `callable`
-- `retired`
+Two different things are happening here and they should not be collapsed:
 
-`forming` means:
+- direct relationship emergence
+- specific callable language
 
-- the pair is now known
-- relationship records exist
+Direct relationship emergence is mechanical.
+
+The kernel updates edge weight on every signal pass.
+
+When that weight crosses threshold, the kernel adds the direct relationship to
+both beings' local relationship hashmaps.
+
+When it decays below threshold, the kernel removes it.
+
+No inference is involved in that operation.
+
+Specific callable language is different.
+
+What matters there is not a stored protocol state field.
+
+What matters is whether repeated exchange has stabilized enough for the beings
+in that relationship to act with confidence.
+
+Early in the relationship:
+
+- the pair may have only pre-relationship edge weight on the kernel-maintained
+  graph or may have only recently crossed threshold into a direct relationship
 - mutual exchange has not yet stabilized specific callable language
 
-`callable` means:
+Later:
 
-- stabilized relationship language now exists
-- the relationship has a current callable language
+- stabilized relationship language may exist
+- one or both beings may recognize that language as callable
 
-`retired` means:
-
-- the language is no longer active as the current callable mode
-
-If the relationship breaks, it can move back from callable into forming while
-repair is attempted.
+If the relationship breaks, repair happens through renewed exchange rather than
+through a formal language-table state transition.
 
 ## 13. Memory Is A Being
 
@@ -290,20 +373,44 @@ The ownership rule is strict:
 
 So memory is local, owned, and relationally accessed.
 
-## 14. Present Is A Being
+Retained experience is carried through a four-part retained artifact family:
 
-Every being has its own `present being`.
+- `trace`
+- `understanding`
+- `salience`
+- `tension`
 
-That present being is:
+Each retained artifact carries `trust_at_formation`.
 
-- created alongside the being it serves
-- the place where incoming signal waits before observation
-- the landing surface for both world-facing input and internal runtime
-  expression
+That field is the forming being's cognitive trust judgment at the moment the
+artifact was created.
+
+It is not copied mechanically from a relationship record.
+
+## 14. Present
+
+Every being operates from its own `present`.
+
+Present is the being's operative reality at a given moment.
+
+It always includes:
+
+- `nature`
+- `relationships`
+- the `active exchange`
+
+These are simultaneous.
+
+Present is not a passive queue.
+
+Present is not a companion container.
+
+World-facing input and internal runtime expression both become part of present
+before cognition responds.
 
 Observing is defined as:
 
-- a being relating to its own present being
+- a being operating from its present
 
 Thinking is defined as:
 
@@ -330,10 +437,18 @@ Their roles are conceptually distinct:
 - `strategy` plans and holds context
 - `values` judges alignment with the user's nature
 - `consequence` models what follows from an expression
-- `conflict` detects breakdown and brokers repair
+- `conflict` detects deviation, suppresses the failing signal, and escalates to
+  the prefrontal
 - `theory of mind` reads the public slice of others and judges relevance
 
 So even judgment is plural and relational.
+
+The `prefrontal being` owns conflict resolution.
+
+If repair keeps failing over time, the differentiator becomes the last resort.
+
+If repair fails and the prefrontal closes the failing exchange, the mismatch
+becomes explicit `conflict`.
 
 ## 16. Boundary Beings
 
@@ -349,21 +464,30 @@ of the ontology.
 
 ## 17. Shared Storage Is Also A Being
 
-The `RDS being` is the shared storage being.
+The `RDS being`, when present in a runtime, is a shared storage being.
 
-It stores:
+It does not define relationship reality or global discovery.
+
+It may store:
 
 - being records
-- relationship records
-- language records
+- shared artifacts that some beings choose to persist centrally
 
 For now:
 
-- relationships are modeled as records, not beings
-- language state is persisted in records
+- local relationship and exchange history do not live in a central language
+  table
+- pre-relationship edge weight lives on the kernel-maintained relationship
+  graph
+- when edge weight crosses threshold, the kernel adds the direct relationship
+  to both beings' local relationship hashmaps
+- when edge weight decays below threshold, the kernel removes that direct
+  relationship from both hashmaps
+- relationship life is carried in per-being local records
 - being records include nature fields plus operational fields such as
-  `differentiatable`
-- the theory-of-mind layer exposes only the public slice
+  `verification_key` and `differentiatable`
+- the public slice is exposed through discovery and relation without opening a
+  being's internals
 - the kernel can read verification keys directly
 
 `differentiatable` is a boolean on the being record and defaults to `true`.
@@ -371,8 +495,8 @@ For now:
 It answers whether the differentiator currently has authority to reorganize a
 being's identity and boundaries.
 
-Set it to `false` for infrastructure beings such as the RDS being, host
-services, and other pre-runtime beings.
+Set it to `false` for infrastructure beings such as shared storage beings when
+present, host services, and other pre-runtime beings.
 
 Set it to `false` for external beings such as the human and peripheral input
 beings facing the outside world.
@@ -401,8 +525,11 @@ There is exactly one exception path:
 - unsigned runtime registration through the registration token
 
 That exception is not a violation of the ontology. It is a narrowly defined
-birth path that exists before the new runtime being has its own verification
-key.
+birth path that exists before the new runtime being participates through
+ordinary signed expression.
+
+The exact relation between live admission and usable signing material is
+explicitly deferred.
 
 ## 19. Differentiation Is Ontological Repair
 
@@ -453,8 +580,11 @@ Skyra says:
 
 Skyra is an ontology in which anything that communicates is a being, beings are
 born through genome seeding, registration, or differentiation, every being has
-a public identity and purpose plus a kernel-visible verification key, beings
-live inside exactly one relationship per pair, all activity is signed
-expression, cognition and memory are themselves beings, and repair happens first
-through language and, when necessary, through reorganization of identity
-itself.
+identity and purpose as nature plus kernel-visible operational signing
+material, every being operates from a present made of nature, relationships,
+and active exchange, beings live inside exactly one relationship per pair,
+expression walks the relationship field through local inference and fresh
+firing, the kernel mechanically maintains relationship-graph edge weight and
+adds or removes direct relationships at threshold, cognition and memory are
+themselves beings, and repair happens first through language and, when
+necessary, through reorganization of identity itself.

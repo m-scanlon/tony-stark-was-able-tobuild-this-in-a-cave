@@ -12,30 +12,23 @@ That relationship is the escalation escape hatch.
 
 ## Default Behavior
 
-The conflict being is optimistic by nature.
+The system is optimistic by default.
 
-Its default job is:
+Its default arc is:
 
-- detect breakdown
-- broker renegotiation
-- try to repair the language
+- mismatch is surfaced
+- a new path is proposed
+- repair is tried before reorganization
 
-It assumes the relationship is worth keeping until retained experience says
-otherwise.
+The runtime keeps trying until optimism has exhausted itself.
 
 ## Escalation Signal
 
-When renegotiation keeps failing in a pattern the conflict being's retained
-experience recognizes as a being-identity problem, not a language problem, it
-relates to the differentiator and hands off.
+The differentiator fires only on repeated failure over time.
 
-This is not a hard rule.
+It does not fire on one bad exchange.
 
-It is not a fixed number of failures.
-
-It is a judgment call that lives in the conflict being's retained experience.
-
-That judgment improves over time.
+Its trigger is pattern, not incident.
 
 ## The Distinction
 
@@ -43,9 +36,9 @@ Language problem:
 
 The relationship is worth keeping.
 
-The language needs repair.
+The prefrontal suggests a new path.
 
-The conflict being brokers.
+The failing exchange may still be closed if repair does not resolve it.
 
 Being-identity problem:
 
@@ -53,18 +46,12 @@ The relationship is breaking because the beings themselves are misaligned.
 
 The boundary was wrong.
 
-The conflict being escalates.
+Repeated failure over time triggers restructuring through the differentiator.
 
 ## Learning
 
-Because both are beings, the conflict being and differentiator develop their
-own language over time.
-
-The conflict being gets better at knowing when to escalate.
-
-The differentiator gets better at receiving the right kind of problem.
-
-The handoff itself improves through repeated relating.
+Because both are beings, the prefrontal and differentiator accumulate retained
+experience about failing patterns and bad fits over time.
 
 ## Short Framing
 

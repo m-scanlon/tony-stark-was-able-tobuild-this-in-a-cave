@@ -30,12 +30,12 @@ The main sensory being is the aggregation point.
 It is a singleton genome being.
 
 It receives from peripheral input beings and routes inward to the correct
-present being.
+present.
 
-### 3. Present Being
+### 3. Present
 
-The present being is the per-being companion where arriving signal waits before
-observation.
+The receiving being's present is where arriving boundary signal becomes part of
+its operative reality.
 
 ## Motor
 

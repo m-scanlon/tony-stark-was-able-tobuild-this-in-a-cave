@@ -22,9 +22,9 @@ If B expresses to A, that still uses the same relationship.
 
 The relationship does not split by direction.
 
-## Registry Key
+## Relationship-Graph Key
 
-The registry key is:
+The relationship-graph key is:
 
 - being_a
 - being_b
