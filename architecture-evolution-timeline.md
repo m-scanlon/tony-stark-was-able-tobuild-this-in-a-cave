@@ -1086,6 +1086,37 @@ That is the clearest sign of real architectural progress.
 As of `2026-04-07`, the live ontology is closed enough to start the build on
 `2026-04-08`.
 
+## Phase 13: First Implementation
+
+### Dates
+
+- `2026-04-08` to `2026-04-09`
+
+### What was built
+
+The first two days of implementation produced a working Go runtime in `skyra-v.03/`:
+
+- `src/domain/being.go` — `Being` struct with name, nature (identity + purpose), cognitive flag, differentiatable flag, and peers map. Full validation. Three creation-path-agnostic constructor.
+- `src/domain/impulse.go` — `Impulse` type and `ParseImpulse`. Protocol format: `skyra <being> <expression> -<flags> | <source>: <reason> ~<emotional_signals>`. Fully parsed and validated.
+- `src/domain/exchange_stack.go` — `ExchangeStack` per peer. Open/closed exchange tracking. Target swap on receive (perspective flip: target being stores the impulse with the target rewritten to the origin's name, so each side sees the exchange from its own perspective). `derivePresent` constructs the full LLM context window from runtime state.
+- `src/domain/channel.go`, `signal.go`, `kernel_state.go`, `errors.go`, `external_dispatch.go` — supporting domain types.
+- `kernel/kernel.go` — `AcceptSignal`: origin lookup → impulse parse → source and target resolution → three-way exchange writes (origin's exchange with source, origin's exchange with target, target's exchange with origin). Close handling. Present derivation on route.
+- `inference/runner.go` — Gemini inference runner. Takes a being's present, calls Gemini, returns a protocol string. The LLM output is the wire format directly — no translation layer.
+
+### What this proves
+
+The protocol round-trip is real: a being's present is constructed from runtime state, passed to inference, and the model returns a valid routing instruction. The kernel accepts that instruction and writes to the correct exchange stacks.
+
+The target swap in `ExchangeStack` is the most subtle piece — it ensures each being holds its own perspective on every exchange without requiring a shared symmetric record.
+
+### What is not yet built
+
+- `genome.skyra` — empty placeholder. The creator will write this.
+- Being factory — no implementation of the three creation paths yet.
+- Hebbian wiring — edge weight updates not yet in `AcceptSignal`.
+- Emotional routing — strain/stress/anger/conflict ladder defined in canon but not in the kernel.
+- Trust movement — static at origin values only.
+
 ## Appendix: Post-Canon Pressure Notes
 
 This appendix records same-day interpretation and stress-test material that shaped understanding after the `skyra-v.03` canon landed.
