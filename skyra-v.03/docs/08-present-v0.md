@@ -16,6 +16,9 @@ It always holds:
 - relationships
 - the active exchange
 
+Operationally, the active exchange is the top open exchange on the being's
+stack with the active peer.
+
 These are simultaneous.
 
 Present is not a passive queue.
@@ -36,8 +39,10 @@ The main sensory being routes what arrives into the receiver's present.
 
 ### Internal Runtime
 
-The kernel verifies the incoming signed envelope and moves internal expression
-into the receiving being's present.
+The kernel verifies the incoming signed envelope, sheds it, and moves only the
+internal expression into the receiving being's present.
+
+The whole envelope object does not enter the being.
 
 So whether something arrives from the world or elsewhere in the runtime, it
 becomes part of the being's present before cognition responds.

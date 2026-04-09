@@ -73,18 +73,104 @@ Each newly fired expression is its own turn.
 
 The existing signed-envelope rule still applies to that turn.
 
+The signed envelope belongs to channel-boundary verification, not to the
+inside of a being.
+
+The kernel sheds the envelope before expression enters a being's present.
+
+A being never receives the whole envelope object as part of its operative
+reality.
+
 ## Signal
 
-The infrastructure signal is lean:
+The transport signal is fixed:
 
 ```text
 Signal {
-  id
-  trace_token
+  id           // system generated
+  origin       // system assigned; kernel only, never exposed to beings
+  trace_token  // system generated; kernel only, Hebbian learning
+  raw          // the only outside-provided and user-facing value; the full protocol string
 }
 ```
 
-The signal is not the meaning of the expression.
+`raw` is the full protocol string:
+
+```text
+skyra <being> <expression> | <source>: <reason> ~<emotional_signal> <value>
+```
+
+## Protocol Zones
+
+The `|` character is the hard divider between two zones.
+
+**Left of `|`:**
+
+```text
+skyra <being> <expression>
+```
+
+The kernel parses only the protocol prefix (`skyra`) and the being name.
+
+Everything after the being name and before `|` is expression.
+
+Expression is passed through untouched to the target being.
+
+The kernel never scans the left zone for tokens beyond the being name.
+
+A `~` appearing in expression is not interpreted. It is part of expression.
+
+**Right of `|`:**
+
+```text
+<source>: <reason> ~<emotional_signal> <value>
+```
+
+The right zone is fully parsed by the kernel.
+
+`<source>` is the name of the peer the origin was in exchange with when it
+fired. It is delimited by `:`.
+
+`<reason>` is the origin being's internal record of why it fired. It runs
+until the first `~` or end of string.
+
+`~<emotional_signal> <value>` pairs follow. Each `~` token begins a new
+emotional signal. The value is the number immediately after it.
+
+## Mandatory Fields
+
+The `|` divider is mandatory on every impulse.
+
+`<source>` is mandatory. A being must name which relationship it fired from.
+
+`<reason>` is mandatory. A being must have a reason for every expression it
+fires. There are no silent mechanical hops.
+
+## Kernel Parse Targets
+
+The kernel extracts from the right zone:
+
+- source peer name — for the three-write algorithm
+- reason — stored in the origin being's exchange record
+- emotional signals and values — for structural routing decisions
+
+## Stripping
+
+The entire right zone is stripped before the expression enters the target
+being's present.
+
+The target being receives only expression.
+
+The target being interprets from its own present without the origin's framing,
+reasoning, or emotional signal values.
+
+There is no separately registered resolution method in the kernel.
+
+Response behavior is baked into the being at birth by the being creator class.
+
+The kernel just dispatches the signal.
+
+The signal is not the meaning lived by the being.
 
 It is the minimal kernel carrier that lets the walk happen and lets trace
 accumulate.
@@ -92,6 +178,12 @@ accumulate.
 `stress` and `anger` belong on expression, not on signal.
 
 `strain` remains internal to the being.
+
+`id`, `origin`, and `trace_token` are system-handled.
+
+The being does not receive them.
+
+The being receives only expression after kernel parsing and envelope shedding.
 
 ## Trace And Relationship Strength
 
@@ -110,8 +202,7 @@ Relationship emergence is a kernel operation.
 Every time a signal passes through the kernel, the kernel mechanically updates
 edge weight on the relationship graph for the unordered pair.
 
-`trace_token` is the kernel carrier that lets this update happen across the
-walk without requiring the full path to be stored.
+`trace_token` is kernel-internal. It is never visible to beings. It lets the kernel register adjacent co-firing across the walk without requiring the full path to be stored.
 
 This is Hebbian wiring in the current canon.
 
@@ -130,10 +221,10 @@ No inference is involved in this relationship-graph update.
 
 Before threshold, the pair has only pre-relationship edge weight on the
 kernel-maintained graph rather than a live direct relationship in either
-being's local relationship hashmap.
+being's relationship hashmap.
 
 When edge weight between two beings crosses the relationship-emergence
-threshold, the kernel adds the direct relationship to both beings' local
+threshold, the kernel adds the direct relationship to both beings'
 relationship hashmaps.
 
 When edge weight later decays below threshold, the kernel removes that direct
@@ -147,8 +238,8 @@ A reply is another expression.
 
 It does not mechanically retrace an earlier walk.
 
-A later expression emerges from the being's present, specifically from the
-active exchange within it.
+A later expression emerges from the being's present, specifically from the top
+open exchange on that being's stack with the active peer.
 
 The continuity is cognitive, not transport-level.
 

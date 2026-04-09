@@ -11,8 +11,8 @@ It defines the retained artifact schema and the meaning of
 
 ```ts
 type AnchorSet = {
-  being_ids: string[]         // Which beings this retained artifact is structurally anchored to.
-  relationship_ids: string[]  // Which relationships this retained artifact is structurally anchored to.
+  being_names: string[]              // Names of the beings this retained artifact is structurally anchored to.
+  relationship_pairs: [string, string][] // Relationships as unordered name pairs [being_a, being_b].
 }
 
 type RetainedArtifactKind =
@@ -22,10 +22,9 @@ type RetainedArtifactKind =
   | "tension"       // A retained unresolved conflict, question, or incompletion.
 
 type RetainedArtifactBase = {
-  id: string                      // Stable identity for this retained artifact.
   kind: RetainedArtifactKind      // Which member of the retained family this artifact is.
   anchor_set: AnchorSet           // The structural anchors used to ground and later retrieve it.
-  context_artifact_ids?: string[] // Earlier retained artifacts that shaped formation of this one.
+  context_artifacts?: AnchorSet[] // Earlier retained artifacts that shaped formation of this one, referenced by their anchor sets.
   trust_at_formation: number      // The cognitive trust judgment present at the moment this artifact was formed.
 }
 

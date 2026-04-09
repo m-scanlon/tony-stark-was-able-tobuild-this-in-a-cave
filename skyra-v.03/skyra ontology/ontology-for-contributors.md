@@ -185,12 +185,31 @@ If two beings seem to need another relationship, the canon treats that as
 evidence that one of the beings is conceptually overloaded. The answer is
 differentiation, not duplication.
 
-Operationally, each being keeps its own local relationship record representing
-its side of that shared reality.
+Operationally, the kernel holds the lived substrate as:
 
-There is no shared relationship record in a central store.
+```text
+HashMap<being_id, HashMap<peer_being_id, Stack<Exchange>>>
+```
 
-Trust lives on the local relationship record.
+The outer key is the being.
+
+The inner key is the peer being that the outer being is in relationship with.
+
+The value is that being's own stack of exchanges with that peer.
+
+The most recent exchange is on top.
+
+The kernel peeks that stack to see whether the current exchange is open or
+closed.
+
+When a new exchange opens, the kernel pushes a new exchange onto that side's
+stack.
+
+Each side of the relationship holds its own stack independently.
+
+There is no single shared symmetric exchange stack for both sides.
+
+Trust lives on the being's side of the relationship substrate.
 
 It is private.
 
@@ -240,6 +259,30 @@ So Skyra says: one relationship, many turns.
 A `turn` of relating is an `expression`.
 
 Every expression travels inside a signed envelope.
+
+That envelope belongs to kernel-visible verification at the boundary.
+
+The kernel sheds it before the expression enters a being.
+
+Beings do not receive whole envelope objects in present.
+
+At the transport layer, the signal also carries system-owned fields such as
+`id`, `origin`, and `trace_token`.
+
+`origin` is kernel-only and never exposed to beings.
+
+The only outside-provided value is `raw`, the full protocol string.
+
+The kernel parses that raw string for routing target, emotional flags, and the
+expression to pass through untouched.
+
+There is no separately registered resolution method in the kernel.
+
+Response behavior is baked into the being at birth by the being creator class.
+
+The kernel just dispatches the signal.
+
+The being sees only expression and responds because of what it is.
 
 Language exists in two layers:
 
@@ -301,7 +344,7 @@ If the other seems relevant:
 - before threshold, the pair has only pre-relationship edge weight on the
   kernel-maintained graph
 - when edge weight crosses threshold, the kernel adds the direct relationship
-  to both beings' local relationship hashmaps
+  to both beings' relationship hashmaps
 - when edge weight later decays below threshold, the kernel removes that direct
   relationship from both hashmaps
 - the first base expression begins exchange
@@ -325,7 +368,7 @@ Direct relationship emergence is mechanical.
 The kernel updates edge weight on every signal pass.
 
 When that weight crosses threshold, the kernel adds the direct relationship to
-both beings' local relationship hashmaps.
+both beings' relationship hashmaps.
 
 When it decays below threshold, the kernel removes it.
 
@@ -399,6 +442,9 @@ It always includes:
 - `relationships`
 - the `active exchange`
 
+Operationally, the active exchange is the top open exchange on the being's
+stack with the active peer.
+
 These are simultaneous.
 
 Present is not a passive queue.
@@ -462,6 +508,48 @@ Skyra's boundary with the outside world is also populated by beings.
 This means perception and action are not invisible side channels. They are part
 of the ontology.
 
+Boundary beings that face the outside world are non-cognitive.
+
+`cognitive` is a boolean on the being record.
+
+Set it to `false` for peripheral input beings, sensory beings, and motor beings
+that face the outside world and do not perform inference.
+
+Set it to `true` for beings that reason — that is, beings whose purpose
+involves operating from a full present and firing expressions through
+inference.
+
+The `cognitive` flag has a concrete runtime consequence for present derivation.
+
+A cognitive being's present renders the current open exchange with expression
+and flags together, because it reasons over both.
+
+A non-cognitive being's present renders expression only.
+
+Flags are stripped.
+
+This reflects the ontological reality that a sensory being is not interpreting
+a conversation. It is receiving a signal. Giving it flags that belong to the
+relational layer would be noise.
+
+### Peripheral Being Channel Type
+
+Peripheral input beings relate to the outside world through a channel that does
+not maintain exchange history.
+
+That channel stores only the last expression it received.
+
+Its present derivation is minimal: bare expression only.
+
+This is distinct from the `ExchangeStack` used between cognitive beings, which
+tracks the full stack of exchanges with a peer.
+
+The distinction matters because the outside world is not a peer that the system
+accumulates relational history with in the ordinary sense. The peripheral being
+is a transducer. It takes what arrives and passes it inward. It does not carry
+exchange stacks because there is no ongoing exchange with the physical world to
+model.
+
 ## 17. Shared Storage Is Also A Being
 
 The `RDS being`, when present in a runtime, is a shared storage being.
@@ -477,15 +565,23 @@ For now:
 
 - local relationship and exchange history do not live in a central language
   table
+- the kernel substrate is
+  `HashMap<being_id, HashMap<peer_being_id, Stack<Exchange>>>`
+- the outer key is the being and the inner key is the peer being
+- the value is that side's exchange stack with the peer
+- the most recent exchange is on top
+- the kernel peeks the top of the stack to see whether the current exchange is
+  open or closed
+- the kernel pushes a new exchange when a new exchange opens
+- each side of the relationship holds its own stack independently
 - pre-relationship edge weight lives on the kernel-maintained relationship
   graph
 - when edge weight crosses threshold, the kernel adds the direct relationship
-  to both beings' local relationship hashmaps
+  to both beings' relationship hashmaps
 - when edge weight decays below threshold, the kernel removes that direct
   relationship from both hashmaps
-- relationship life is carried in per-being local records
 - being records include nature fields plus operational fields such as
-  `verification_key` and `differentiatable`
+  `verification_key`, `differentiatable`, and `cognitive`
 - the public slice is exposed through discovery and relation without opening a
   being's internals
 - the kernel can read verification keys directly

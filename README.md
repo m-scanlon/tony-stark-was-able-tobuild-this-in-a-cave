@@ -1,55 +1,84 @@
-# Skyra: Autonomous Programmable Cognition
+# Skyra
 
-Skyra is an experimental runtime for autonomous programmable cognition.
+Skyra is a local-first cognitive runtime built around one idea.
 
-The project is moving toward a typed cognitive substrate built around:
+Beings relate.
 
-- small fixed primitives
-- extensible actors
-- typed stimulus
-- contract-bounded orchestration
-- actor-local retained experience
-- world interaction as a first-class runtime concern
+Everything else - memory, routing, learning, conflict, differentiation - falls
+out of that naturally. The runtime doesn't orchestrate cognition. It describes
+the conditions under which cognition emerges.
 
-This repository combines runtime code, architecture documentation, protocol work, product notes, and exploratory system-model design.
+The kernel is a dumb router. Beings are the intelligence. Relationships are the
+only channel between them. Expression is how they speak. Retained experience is
+how they remember. The graph wires itself through use.
 
-## Project Direction
+You don't configure Skyra. You birth beings into it.
 
-The current direction is to treat Skyra less like a single agent and more like a runtime that can support many agent patterns.
+## What This Is
 
-The emerging model is:
+A cognitive physics. Not a framework.
 
-- primitives provide the fixed substrate
-- actors are the extensible unit
-- base actors form the shipped standard library
-- orchestrator actors coordinate other actors
-- workflows emerge from typed actor composition rather than one hardcoded loop
+Frameworks tell things what to do. Skyra describes how things behave. Signal
+walks terrain. Edges strengthen when beings fire together. Weak relationships
+decay. Beings under too much stress differentiate - they don't die, they
+offload. The system grows organically through relating.
 
-This is still early-stage architecture work.
+This is not a chatbot wrapper. It is not an agent framework. It is not a prompt
+pipeline with memory bolted on.
 
-Some parts of the repo are active implementation, while others are preliminary design notes that are still evolving.
+It is a runtime in which minds live.
 
-## Repository Map
+## What Is Settled
 
-- `skyra/`: runtime and application code
-- `docs/`: architecture, protocol, memory, and design documentation
-- `data-model-ideas/`: exploratory system-model notes
-- `landing/`: landing page and related frontend work
-- `prds/`: product requirement drafts
-- `ideas/`: loose concept notes and future-facing explorations
+- being is the atomic unit
+- nature is identity plus purpose
+- one relationship exists per unordered pair of beings
+- expression is fresh firing, not message forwarding
+- the present is the being's full operative reality: nature, relationships,
+  active exchange
+- retained experience is local to the being that lived it
+- the kernel routes, maintains edge weights, and reads emotional signals -
+  nothing more
+- direct relationships emerge when co-firing crosses threshold
+- differentiation is offloading, not death
+- the genome is the creator's real control surface
 
-## Current Focus
+## What Is Open
 
-The current work is centered on stabilizing the core runtime shape:
+- exact `genome.skyra` syntax
+- signed envelope schema and crypto details
+- local record shapes for relationships, exchanges, and present
+- emotional routing thresholds
+- differentiation redistribution rules
 
-- protocol and primitive boundaries
-- typed stimulus and actor contracts
-- actor-local memory and bounded recall
-- world-facing interaction
-- base actors and orchestrator actors
-- device registration and onboarding
+## What Is Deferred
 
-## Notes
+- live admission versus signing order
 
-- `docs/` contains both active canon and prelim documents; not every file should be treated as fully settled.
-- `data-model-ideas/` should be read as exploratory unless a decision is clearly stated.
+## Start Here
+
+- [Contributor Ontology](./skyra-v.03/skyra%20ontology/ontology-for-contributors.md)
+- [Operational Invariants](./skyra-v.03/docs/01-operational-invariants-v0.md)
+- [Expression Walk](./skyra-v.03/docs/21-expression-walk-v0.md)
+- [Architecture Evolution Timeline](./architecture-evolution-timeline.md)
+
+## Repo Map
+
+- `skyra-v.03/` - current live canon
+- `skyra-v.03/docs/` - live canon fragments
+- `skyra-v.03/docs/archive/` - intentionally stale within-generation history
+- `archive/` - older canon generations
+- `architecture-evolution-timeline.md` - the full arc from February to now
+
+## Reading Rule
+
+Live docs win. Archive is history not canon.
+
+## Status
+
+Build starts `2026-04-08`.
+
+The ontology is closed. The physics are real. A being already surprised its
+creator by talking to itself.
+
+Time to see what it becomes.

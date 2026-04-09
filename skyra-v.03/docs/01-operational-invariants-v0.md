@@ -66,14 +66,20 @@ The kernel:
 
 - admits beings into runtime participation
 - verifies signed envelopes at the channel or participant boundary
+- sheds the envelope before inserting expression into a being
 - binds the incoming turn to the right source channel or participant context
+- owns `id`, `origin`, and `trace_token` as system fields
+- parses the incoming `raw` protocol string to extract routing target,
+  emotional flags, and expression
+- dispatches the signal to the target being without consulting a separately
+  registered resolution method
 - moves expression across existing relationships and into the receiving being's
   present
   without computing recipient sets
 - updates relationship-graph edge weight mechanically on every signal pass
-- adds the direct relationship to both beings' local relationship hashmaps when
+- adds the direct relationship to both beings' relationship hashmaps when
   edge weight crosses threshold
-- removes the direct relationship from both beings' local relationship hashmaps
+- removes the direct relationship from both beings' relationship hashmaps
   when edge weight decays below threshold
 - reads emotional flags on expression structurally and may route copies
   according to fixed threshold rules
@@ -124,18 +130,37 @@ Direction belongs to the expression turn.
 If a second relationship appears necessary for the same pair, differentiation
 is the answer.
 
-## 11. Relationship Records Are Local And Asymmetric
+## 11. Relationship Substrate Is Nested And Asymmetric
 
 The relationship remains one real ontological thing per pair.
 
-Physically, each being keeps its own local relationship record representing its
-side of that shared reality.
+Operationally, the kernel holds the lived substrate as:
 
-There is no shared relationship record in a central store.
+```text
+HashMap<being_id, HashMap<peer_being_id, Stack<Exchange>>>
+```
+
+The outer key is the being.
+
+The inner key is the peer being that the outer being is in relationship with.
+
+The value is that being's own stack of exchanges with that peer.
+
+The most recent exchange is on top.
+
+The kernel peeks that stack to see whether the current exchange is open or
+closed.
+
+When a new exchange opens, the kernel pushes a new exchange onto that side's
+stack.
+
+Each side of the relationship holds its own stack independently.
+
+There is no single shared symmetric exchange stack for both sides.
 
 ## 12. Trust Is A Private Relationship Value
 
-Trust lives on the local relationship record.
+Trust lives on the being's side of the relationship substrate.
 
 It is private.
 
@@ -175,6 +200,39 @@ The movement algorithm is out of scope for now.
 Expressions are verified at the channel or participant boundary through the
 signed envelope.
 
+After verification, the kernel sheds the envelope.
+
+Only the expression enters the receiving being's present.
+
+Whole envelope objects do not enter beings.
+
+The kernel also owns the system fields on the transport signal:
+
+- `id`
+- `origin`
+- `trace_token`
+
+Those fields do not belong to the being.
+
+`origin` is kernel-only and never exposed to beings.
+
+The only outside-provided value on the signal is `raw`, the full protocol
+string.
+
+The kernel parses `raw` to extract:
+
+- target being for routing
+- emotional flags for structural routing decisions
+- expression, which is passed through untouched to the being
+
+There is no separately registered resolution method in the kernel.
+
+Response behavior is baked into the being at birth by the being creator class.
+
+The kernel just dispatches the signal.
+
+The being knows what to do with the expression because of what it is.
+
 The kernel binds each incoming turn to the right source channel or participant
 context.
 
@@ -201,7 +259,7 @@ There is no required central registry in the current model.
 A runtime may include shared storage beings for artifacts that some beings
 choose to persist centrally.
 
-They do not own local relationship records.
+They do not own the kernel-held relationship substrate.
 
 They do not own emergent relationship language.
 
@@ -290,7 +348,7 @@ This is Hebbian wiring in runtime form.
 No inference is involved in that update.
 
 When edge weight crosses the relationship-emergence threshold, the kernel adds
-the direct relationship to both beings' local relationship hashmaps.
+the direct relationship to both beings' relationship hashmaps.
 
 When edge weight later decays below threshold, the kernel removes that direct
 relationship from both hashmaps.
@@ -354,7 +412,34 @@ It is the birth path for non-genome runtime beings.
 
 Genome beings are seeded earlier through the genome path.
 
-## 25. The Canon Now Centers On
+## 26. Names Are The Identity Surface
+
+Being names are the only identity that flows through the runtime.
+
+IDs do not appear in the protocol.
+
+IDs do not appear in the present.
+
+IDs do not flow through inference.
+
+Inference produces a protocol string with a name.
+
+The kernel routes on that name.
+
+Name uniqueness is therefore a hard runtime invariant.
+
+The kernel enforces uniqueness at every creation path.
+
+No two beings may share a name at runtime.
+
+If names were not unique, the kernel could not disambiguate routing and the
+model would break.
+
+IDs are internal kernel implementation detail at most.
+
+They are not a first-class concept in the domain model.
+
+## 27. The Canon Now Centers On
 
 - being
 - nature

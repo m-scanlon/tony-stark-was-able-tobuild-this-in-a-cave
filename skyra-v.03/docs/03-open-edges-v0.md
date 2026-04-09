@@ -86,31 +86,36 @@ What remains open:
 - how the creator rotates it
 - whether multiple registration tokens may coexist
 
-## 6. Local Relationship Storage Needs Formal Schemas
+## 6. Relationship Substrate Shape Is Locked
 
 Resolved baseline:
 
 - being presence, relationship history, and exchange history are no longer
   modeled through a central language table
-- each being keeps local records for the relationships and exchanges it lives
-  through
+- the kernel substrate is
+  `HashMap<being_id, HashMap<peer_being_id, Stack<Exchange>>>`
+- the outer key is the being and the inner key is the peer being
+- the value is that side's exchange stack with the peer
+- the most recent exchange is on top
+- the kernel peeks the top of the stack to see whether the current exchange is
+  open or closed
+- the kernel pushes a new exchange when a new exchange opens
+- each side of the relationship holds its own stack independently
 - being records still include a `differentiatable` boolean that defaults to
   `true`
 - before a direct relationship appears in a being's present, pre-relationship
   edge weight lives on the kernel-maintained relationship graph
 - when edge weight crosses threshold, the kernel adds the direct relationship
-  to both beings' local relationship hashmaps
+  to both beings' relationship hashmaps
 - when edge weight decays below threshold, the kernel removes that direct
   relationship from both hashmaps
 
 What remains open:
 
-- exact local record shapes for relationships, exchange records, and present
-  state
+- exact `Exchange` record field schema
+- exact present-state shape around relationships and the active exchange
 - how a single ontological `relationship_id` is represented across two local
   perspectives
-- how exchange identity, ordering, and deduplication work when each hop is a
-  fresh expression
 - how and when `differentiatable` changes for a being over time
 
 ## 7. Differentiation Reorganization Still Needs Concrete Rules
@@ -156,17 +161,19 @@ Resolved baseline:
 - `trace_token` is the kernel carrier used for that mechanical update
 - no inference is involved in relationship emergence
 - when edge weight crosses threshold, the kernel adds the direct relationship
-  to both beings' local relationship hashmaps
+  to both beings' relationship hashmaps
 - when edge weight decays below threshold, the kernel removes that direct
   relationship from both hashmaps
+- there is no separately registered resolution method in the kernel
+- response behavior is baked into the being at birth by the being creator
+  class
+- the kernel just dispatches the signal
 - each hop is a fresh expression fired from the receiving being's present
   after inference
 - base language remains the first bootstrap expression for first contact
 
 What remains open:
 
-- how local relationship and exchange records are created on each side at first
-  encounter
 - how callable language is recognized locally without a formal language table
 
 ## 10. Retrieval And Reasoning Separation Still Needs A Hard Boundary
@@ -246,6 +253,6 @@ edges:
 - exact genome syntax
 - exact crypto envelopes
 - deferred live-status versus signing order
-- exact storage shapes
+- exact exchange and present schemas
 - exact emotional-routing thresholds
 - exact reorganization rules

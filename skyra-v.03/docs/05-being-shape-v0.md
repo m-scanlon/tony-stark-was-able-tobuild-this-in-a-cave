@@ -9,19 +9,22 @@ status.
 
 ## Minimum Shape
 
-The minimum shape of a being is its nature:
+The minimum shape of a being is:
 
-- identity
-- purpose
+- name — the only identity surface; unique in the runtime
+- nature (identity + purpose) — locked at creation, public
+- cognitive flag — true if the being reasons through inference; false if it is a non-cognitive object
+- differentiatable flag — true if the being is eligible for restructuring through the differentiator
+- peers — the relationship hashmap; keyed by name, holds direct relationships to other beings
 
 Identity is public.
 
 Purpose is public.
 
-Nature is locked at the creation path.
+Nature is locked at creation.
 
-Operational fields may exist on being records or local records without
-becoming part of nature.
+Operational fields may exist on being records or the kernel-held relationship
+substrate without becoming part of nature.
 
 ## Creation Paths
 
@@ -57,6 +60,9 @@ Present is the being's full operative reality:
 - nature
 - relationships
 - the active exchange
+
+Operationally, the active exchange is the top open exchange on the being's
+stack with the active peer.
 
 It is not a separate companion being.
 
@@ -97,8 +103,8 @@ See
 
 ## Short Framing
 
-A being minimally has identity and purpose.
+A being has a name, a nature, a cognitive flag, a differentiatable flag, and a peers map.
 
-It is born on one of three creation paths, receives a creation endowment, and
-becomes live when the runtime admits it and establishes the relationships it
-needs to exist.
+Name is the only identity surface. Nature is locked at creation. The flags determine how the runtime treats the being. The peers map is where all relationship state lives.
+
+It is born through the kernel, receives a creation endowment, and becomes live when the runtime admits it and establishes the relationships it needs to exist.

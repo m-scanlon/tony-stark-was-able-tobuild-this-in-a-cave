@@ -7,18 +7,18 @@ This is a high-level but fairly detailed timeline of how the architecture change
 It is based on the git history from:
 
 - first commit: `2026-02-08`
-- latest reviewed state in this pass: `2026-04-05`
+- latest reviewed state in this pass: `2026-04-07`
 
 Recent pace reference:
 
-- `169` commits on `HEAD`
+- `172` commits on `HEAD`
 - the most recent `20` commits span about `25` days
 
 This is not a full changelog.
 
 This pass is still grounded in git history.
 
-Same-day post-canon pressure and interpretive material is preserved in the appendix rather than folded into the main timeline as settled source of truth.
+Same-day post-canon pressure and interpretive material that did not settle into live canon is preserved in the appendix rather than folded into the main timeline as settled source of truth.
 
 It is an architectural timeline:
 
@@ -42,6 +42,7 @@ The architecture changed in a few major waves:
 9. actor substrate + early recall cleanup
 10. stimulus-first cleanup, capability registration, and bootstrap tightening
 11. ontology rewrite into beings, relationships, genome bootstrap, and signed expression
+12. live canon closure and pre-build lock
 
 The biggest long-term shift was:
 
@@ -782,12 +783,14 @@ The later `skyra-v.03` rewrite kept some of the boundary discipline but replaced
 
 ### Representative docs
 
-- [00-skyra-protocol-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/00-skyra-protocol-v0.md)
+- [00-skyra-protocol-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/archive/00-skyra-protocol-v0.md)
 - [ontology-for-contributors.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/skyra ontology/ontology-for-contributors.md)
 - [02-term-retirements-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/02-term-retirements-v0.md)
-- [07-genome-beings-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/07-genome-beings-v0.md)
+- [07-genome-beings-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/archive/07-genome-beings-v0.md)
+- [01-operational-invariants-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/01-operational-invariants-v0.md)
+- [05-being-shape-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/05-being-shape-v0.md)
 - [13-relationship-lifecycle-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/13-relationship-lifecycle-v0.md)
-- [14-registration-vs-first-encounter-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/14-registration-vs-first-encounter-v0.md)
+- [14-registration-vs-first-encounter-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/archive/14-registration-vs-first-encounter-v0.md)
 - [19-retained-artifact-family-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/19-retained-artifact-family-v0.md)
 
 ### Main model
@@ -797,13 +800,13 @@ This was a genuine ontology rewrite rather than a cleanup pass.
 The architecture became centered on:
 
 - beings as the atomic unit
-- nature as `identity`, `purpose`, and `verification_key`
+- nature as `identity` and `purpose`
 - one relationship per unordered pair
 - expression as the turn-level unit
 - base language at creation and relationship-owned callable language
 - three creation paths: genome, runtime registration, and differentiation
-- signed envelopes and kernel-visible verification
-- companion beings for present and retained experience
+- signed envelopes with kernel-visible operational verification
+- companion beings for retained experience rather than a generic shared memory
 - no ontological special cases
 
 The system no longer primarily described itself in terms of actors, episodes, frames, surfaces, and typed stimulus.
@@ -837,6 +840,79 @@ The current answer is the being in relationship.
 - structural concern for bootstrap and world boundary
 - the pressure toward a real runtime rather than a loose assistant shell
 
+## Phase 12: Live Canon Closure And Pre-Build Lock
+
+### Dates
+
+- `2026-04-05` to `2026-04-07`
+
+### Representative commits
+
+- `34ddfa6` `Add first retained artifact seed`
+- `90c8255` `Update Skyra canon and retained artifacts`
+- `d5c4f1c` `Update Skyra ontology canon docs`
+
+### Representative docs
+
+- [01-operational-invariants-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/01-operational-invariants-v0.md)
+- [03-open-edges-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/03-open-edges-v0.md)
+- [08-present-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/08-present-v0.md)
+- [19-retained-artifact-family-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/19-retained-artifact-family-v0.md)
+- [20-strain-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/20-strain-v0.md)
+- [21-expression-walk-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/21-expression-walk-v0.md)
+- [22-conflict-and-emotional-routing-v0.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/22-conflict-and-emotional-routing-v0.md)
+- [ontology-for-contributors.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/skyra ontology/ontology-for-contributors.md)
+
+### Main model
+
+This phase did not replace the ontology.
+
+It closed the remaining live-canon ambiguities around it.
+
+The architecture now explicitly locked:
+
+- present as operative reality rather than a companion being
+- trust as local, private, asymmetric relationship interpretation
+- fixed trust origins instead of a still-moving live trust algorithm
+- retained artifacts and `trust_at_formation` as first-class canon
+- the `strain` -> `stress` / `anger` -> `conflict` ladder
+- relationship emergence as a kernel operation rather than a cognitive one
+
+The most important closure in this phase was relationship emergence:
+
+- every signal pass through the kernel mechanically updates edge weight on the
+  relationship graph for the unordered pair
+- `trace_token` is the kernel carrier used for that update
+- no inference is involved in the graph update
+- when edge weight crosses threshold, the kernel adds the direct relationship
+  to both beings' local relationship hashmaps
+- when edge weight decays below threshold, the kernel removes that direct
+  relationship from both hashmaps
+
+This phase also made an important boundary explicit:
+
+- live-admission versus signing order is deferred
+- deferred does not mean contradictory
+
+### Why this phase mattered
+
+This is the phase where the live docs stopped reading like a canon still arguing
+with itself.
+
+The ontology became much closer to build-ready:
+
+- ontology-level questions were separated from implementation-detail questions
+- archive drift stopped mattering for live-canon coherence
+- mechanical graph emergence was separated from cognitive language callability
+- contributor-facing ontology and live runtime docs were brought back into sync
+
+### Immediate consequence
+
+As of `2026-04-07`, the live ontology is closed enough to begin
+implementation.
+
+Build starts tomorrow: `2026-04-08`.
+
 ## Structural Changes In The Repo
 
 The repository structure also tells the story.
@@ -866,6 +942,7 @@ The repository structure also tells the story.
 - [archive/docs-archived-v.01](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/archive/docs-archived-v.01) preserves the older `arch/v1` worldview
 - current docs are versioned by canon generation rather than kept in one rolling `docs/` tree
 - [skyra-v.03/docs](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs) holds the current canon fragments
+- [skyra-v.03/docs/archive](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/docs/archive) preserves intentionally stale within-generation historical docs
 - [ontology-for-contributors.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.03/skyra ontology/ontology-for-contributors.md) is the contributor-facing ontology summary
 
 That structural change mirrors the architectural change:
@@ -896,6 +973,7 @@ Current work asks:
 - what is a being?
 - how do beings come into existence?
 - what is a relationship?
+- how does a direct relationship emerge mechanically?
 - how does first contact become callable language?
 
 ### 2. Graph Truth -> Episode Truth -> Being/Relationship Truth
@@ -955,7 +1033,7 @@ The current model absorbs that concern into:
 - boundary beings
 - peripheral input beings
 - motor beings
-- present beings
+- present as operative reality
 
 The boundary problem did not disappear.
 
@@ -1004,6 +1082,9 @@ The biggest maturation was the shift from broad future-system diagrams to versio
 - retained experience
 
 That is the clearest sign of real architectural progress.
+
+As of `2026-04-07`, the live ontology is closed enough to start the build on
+`2026-04-08`.
 
 ## Appendix: Post-Canon Pressure Notes
 
