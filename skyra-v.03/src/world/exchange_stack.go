@@ -1,13 +1,16 @@
-package domain
+package world
 
 import (
 	"fmt"
 	"sort"
 	"strings"
 	"unicode"
+
+	being "skyra-v03/src/primitives/being"
+	"skyra-v03/src/primitives/nature"
 )
 
-type Exchange []Impulse
+type Exchange []being.Impulse
 
 func (e Exchange) IsClosed() bool {
 	if len(e) == 0 {
@@ -16,17 +19,18 @@ func (e Exchange) IsClosed() bool {
 	return e[len(e)-1].IsClose()
 }
 
-func (e Exchange) Impulses() []Impulse {
-	return append([]Impulse(nil), e...)
+func (e Exchange) Impulses() []being.Impulse {
+	return append([]being.Impulse(nil), e...)
 }
 
 type ExchangeStack struct {
-	peerName   string
-	peerNature Nature
-	stack      []Exchange
+	peerName         string
+	peerNature       nature.Nature
+	stack            []Exchange
+	callableLanguage string
 }
 
-func NewExchangeStack(peerName string, peerNature Nature) (*ExchangeStack, error) {
+func NewExchangeStack(peerName string, peerNature nature.Nature) (*ExchangeStack, error) {
 	if strings.TrimSpace(peerName) == "" {
 		return nil, fmt.Errorf("%w: peer name is required", ErrUnknownPeer)
 	}
@@ -47,19 +51,33 @@ func (c *ExchangeStack) Name() string {
 	return c.peerName
 }
 
-func (c *ExchangeStack) PeerNature() Nature {
+func (c *ExchangeStack) PeerNature() nature.Nature {
 	if c == nil {
-		return Nature{}
+		return nature.Nature{}
 	}
 	return c.peerNature
 }
 
-func (c *ExchangeStack) Send(delivery DeliveredImpulse) ChannelResult {
+func (c *ExchangeStack) CallableLanguage() string {
 	if c == nil {
-		return ChannelResult{DropReason: ErrUnknownPeer.Error()}
+		return ""
+	}
+	return c.callableLanguage
+}
+
+func (c *ExchangeStack) SetCallableLanguage(language string) {
+	if c == nil {
+		return
+	}
+	c.callableLanguage = language
+}
+
+func (c *ExchangeStack) Send(delivery being.DeliveredImpulse) being.ChannelResult {
+	if c == nil {
+		return being.ChannelResult{DropReason: ErrUnknownPeer.Error()}
 	}
 	if delivery.Raw == "" {
-		return ChannelResult{DropReason: ErrInvalidImpulse.Error()}
+		return being.ChannelResult{DropReason: ErrInvalidImpulse.Error()}
 	}
 
 	stored := delivery.Raw
@@ -69,38 +87,28 @@ func (c *ExchangeStack) Send(delivery DeliveredImpulse) ChannelResult {
 
 	if delivery.Parsed.IsClose() {
 		if !c.HasOpenExchange() {
-			return ChannelResult{DropReason: "cannot close without an open exchange"}
+			return being.ChannelResult{DropReason: "cannot close without an open exchange"}
 		}
 
 		top := len(c.stack) - 1
 		c.stack[top] = append(c.stack[top], stored)
-		return ChannelResult{
-			Routed:      true,
-			NewExchange: false,
-		}
+		return being.ChannelResult{Routed: true}
 	}
 
 	if c.HasOpenExchange() {
 		top := len(c.stack) - 1
 		c.stack[top] = append(c.stack[top], stored)
-		return ChannelResult{
-			Routed:      true,
-			NewExchange: false,
-		}
+		return being.ChannelResult{Routed: true}
 	}
 
 	c.stack = append(c.stack, Exchange{stored})
-	return ChannelResult{
-		Routed:      true,
-		NewExchange: true,
-	}
+	return being.ChannelResult{Routed: true, NewExchange: true}
 }
 
 func (c *ExchangeStack) Exchanges() []Exchange {
 	if c == nil {
 		return nil
 	}
-
 	exchanges := make([]Exchange, len(c.stack))
 	for i, exchange := range c.stack {
 		exchanges[i] = Exchange(exchange.Impulses())
@@ -122,25 +130,25 @@ func (c *ExchangeStack) CurrentOpenExchange() Exchange {
 	return Exchange(c.stack[len(c.stack)-1].Impulses())
 }
 
-func (c *ExchangeStack) derivePresent(receiver *Being, sender *Being) string {
+func (c *ExchangeStack) DerivePresent(receiver *being.Being, sender *being.Being) string {
 	var builder strings.Builder
 	builder.WriteString("name: ")
 	builder.WriteString(receiver.Name)
 	builder.WriteString("\nidentity: ")
-	builder.WriteString(receiver.Nature.Identity)
+	builder.WriteString(receiver.Nature.Identity.Value)
 	builder.WriteString("\npurpose: ")
-	builder.WriteString(receiver.Nature.Purpose)
+	builder.WriteString(receiver.Nature.Purpose.Value)
 
 	builder.WriteString("\n\nYou are in an exchange with: ")
 	builder.WriteString(sender.Name)
 	builder.WriteString("\nthe identity of ")
 	builder.WriteString(sender.Name)
 	builder.WriteString(" is: ")
-	builder.WriteString(sender.Nature.Identity)
+	builder.WriteString(sender.Nature.Identity.Value)
 	builder.WriteString("\nthe purpose of ")
 	builder.WriteString(sender.Name)
 	builder.WriteString(" is: ")
-	builder.WriteString(sender.Nature.Purpose)
+	builder.WriteString(sender.Nature.Purpose.Value)
 
 	open := c.CurrentOpenExchange()
 	for _, impulse := range open {
@@ -160,15 +168,21 @@ func (c *ExchangeStack) derivePresent(receiver *Being, sender *Being) string {
 	builder.WriteString("\n________________")
 	for _, peer := range sortedPeers(receiver.Peers) {
 		builder.WriteString("\n")
-		builder.WriteString(peer.PeerNature().Identity)
+		builder.WriteString(peer.PeerNature().Identity.Value)
 		builder.WriteString(" - ")
-		builder.WriteString(peer.PeerNature().Purpose)
+		builder.WriteString(peer.PeerNature().Purpose.Value)
+		if lang := peer.CallableLanguage(); lang != "" {
+			builder.WriteString("\n")
+			builder.WriteString(peer.Name())
+			builder.WriteString(" ")
+			builder.WriteString(lang)
+		}
 	}
 	return builder.String()
 }
 
-func sortedPeers(peers map[string]RelationshipChannel) []RelationshipChannel {
-	channels := make([]RelationshipChannel, 0, len(peers))
+func sortedPeers(peers map[string]being.RelationshipChannel) []being.RelationshipChannel {
+	channels := make([]being.RelationshipChannel, 0, len(peers))
 	for _, peer := range peers {
 		channels = append(channels, peer)
 	}
@@ -178,7 +192,7 @@ func sortedPeers(peers map[string]RelationshipChannel) []RelationshipChannel {
 	return channels
 }
 
-func formatPresentImpulse(receiver *Being, impulse Impulse) string {
+func formatPresentImpulse(receiver *being.Being, impulse being.Impulse) string {
 	parsed, err := impulse.Parse()
 	if err != nil {
 		return impulse.Raw()
@@ -201,7 +215,7 @@ func formatPresentImpulse(receiver *Being, impulse Impulse) string {
 	return strings.Join(parts, " ")
 }
 
-func formatFlags(flags []Flag) string {
+func formatFlags(flags []being.Flag) string {
 	parts := make([]string, 0, len(flags))
 	for _, flag := range flags {
 		if flag == "" {
@@ -212,7 +226,7 @@ func formatFlags(flags []Flag) string {
 	return strings.Join(parts, " ")
 }
 
-func shouldSwapTargetToOrigin(delivery DeliveredImpulse, peerName string) bool {
+func shouldSwapTargetToOrigin(delivery being.DeliveredImpulse, peerName string) bool {
 	if delivery.Parsed.IsClose() {
 		return false
 	}
@@ -222,7 +236,7 @@ func shouldSwapTargetToOrigin(delivery DeliveredImpulse, peerName string) bool {
 	return delivery.Parsed.TargetName != peerName
 }
 
-func rewriteImpulseTarget(raw Impulse, newTarget string) Impulse {
+func rewriteImpulseTarget(raw being.Impulse, newTarget string) being.Impulse {
 	s := raw.Raw()
 	if s == "" || newTarget == "" {
 		return raw
@@ -238,7 +252,7 @@ func rewriteImpulseTarget(raw Impulse, newTarget string) Impulse {
 		return raw
 	}
 
-	return Impulse(s[:targetStart] + newTarget + s[idx:])
+	return being.Impulse(s[:targetStart] + newTarget + s[idx:])
 }
 
 func skipWhitespace(s string, idx int) int {

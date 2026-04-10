@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"skyra-v03/src/domain"
+	"skyra-v03/src/metaxu"
 )
 
 const (
@@ -66,13 +66,13 @@ type candidate struct {
 	Content content `json:"content"`
 }
 
-func (r *Runner) Run(present string, originName string) (domain.Signal, error) {
+func (r *Runner) Run(present string, originName string) (metaxu.Signal, error) {
 	protocol, err := r.callGemini(present)
 	if err != nil {
-		return domain.Signal{}, fmt.Errorf("inference: %w", err)
+		return metaxu.Signal{}, fmt.Errorf("inference: %w", err)
 	}
 
-	return domain.Signal{
+	return metaxu.Signal{
 		Origin:  originName,
 		Impulse: protocol,
 	}, nil

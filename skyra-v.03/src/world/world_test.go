@@ -1,13 +1,62 @@
-package domain
+package world
 
-import "testing"
+import (
+	"testing"
+
+	being "skyra-v03/src/primitives/being"
+	"skyra-v03/src/primitives/identity"
+	"skyra-v03/src/primitives/language"
+	"skyra-v03/src/primitives/nature"
+	"skyra-v03/src/primitives/purpose"
+)
+
+// helpers
+
+func makeNature(id, p string) nature.Nature {
+	return nature.Nature{
+		Identity: identity.Identity{Value: id},
+		Purpose:  purpose.Purpose{Value: p},
+	}
+}
+
+func makeLang(v string) language.Language {
+	return language.Language{Value: v}
+}
+
+func newBeing(t *testing.T, name, id, p string, cognitive bool) *being.Being {
+	t.Helper()
+	b, err := being.NewBeing(name, makeNature(id, p), makeLang("skyra being"), cognitive)
+	if err != nil {
+		t.Fatalf("NewBeing(%q) error = %v", name, err)
+	}
+	return b
+}
+
+func mustImpulse(t *testing.T, raw string) being.Impulse {
+	t.Helper()
+	i, err := being.NewImpulse(raw)
+	if err != nil {
+		t.Fatalf("NewImpulse(%q) error = %v", raw, err)
+	}
+	return i
+}
+
+func mustParse(t *testing.T, i being.Impulse) being.ParsedImpulse {
+	t.Helper()
+	p, err := i.Parse()
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	return p
+}
+
+// impulse parsing
 
 func TestParseImpulseWithExpressionAndFlags(t *testing.T) {
-	impulse, err := ParseImpulse("skyra bob hello there -close -custom | bob: testing expression and flags")
+	impulse, err := being.ParseImpulse("skyra bob hello there -close -custom | bob: testing expression and flags")
 	if err != nil {
 		t.Fatalf("ParseImpulse() error = %v", err)
 	}
-
 	if impulse.TargetName != "bob" {
 		t.Fatalf("TargetName = %q, want %q", impulse.TargetName, "bob")
 	}
@@ -29,11 +78,10 @@ func TestParseImpulseWithExpressionAndFlags(t *testing.T) {
 }
 
 func TestParseImpulseAllowsCloseWithoutExpression(t *testing.T) {
-	impulse, err := ParseImpulse("skyra bob -close | bob: closing exchange")
+	impulse, err := being.ParseImpulse("skyra bob -close | bob: closing exchange")
 	if err != nil {
 		t.Fatalf("ParseImpulse() error = %v", err)
 	}
-
 	if impulse.Expression != "" {
 		t.Fatalf("Expression = %q, want empty", impulse.Expression)
 	}
@@ -42,23 +90,29 @@ func TestParseImpulseAllowsCloseWithoutExpression(t *testing.T) {
 	}
 }
 
+// ExchangeStack
+
 func TestExchangeStackStoresExplicitExchanges(t *testing.T) {
-	channel, err := NewExchangeStack("bob", Nature{Identity: "friend", Purpose: "relate"})
+	channel, err := NewExchangeStack("bob", makeNature("friend", "relate"))
 	if err != nil {
 		t.Fatalf("NewExchangeStack() error = %v", err)
 	}
 
-	first, _ := NewImpulse("skyra bob hello | bob: opening")
-	close, _ := NewImpulse("skyra bob -close | bob: done")
-	second, _ := NewImpulse("skyra bob new run | bob: resuming")
+	first := mustImpulse(t, "skyra bob hello | bob: opening")
+	close := mustImpulse(t, "skyra bob -close | bob: done")
+	second := mustImpulse(t, "skyra bob new run | bob: resuming")
 
-	if result := channel.Send(DeliveredImpulse{Raw: first, Parsed: mustParseImpulse(t, first)}); !result.Routed {
+	deliver := func(i being.Impulse) being.DeliveredImpulse {
+		return being.DeliveredImpulse{Raw: i, Parsed: mustParse(t, i)}
+	}
+
+	if result := channel.Send(deliver(first)); !result.Routed {
 		t.Fatalf("Send(first) Routed = false, want true")
 	}
-	if result := channel.Send(DeliveredImpulse{Raw: close, Parsed: mustParseImpulse(t, close)}); !result.Routed {
+	if result := channel.Send(deliver(close)); !result.Routed {
 		t.Fatalf("Send(close) Routed = false, want true")
 	}
-	if result := channel.Send(DeliveredImpulse{Raw: second, Parsed: mustParseImpulse(t, second)}); !result.Routed {
+	if result := channel.Send(deliver(second)); !result.Routed {
 		t.Fatalf("Send(second) Routed = false, want true")
 	}
 
@@ -87,16 +141,16 @@ func TestExchangeStackStoresExplicitExchanges(t *testing.T) {
 }
 
 func TestExchangeStackSwapsTargetToOriginForReceiverView(t *testing.T) {
-	channel, err := NewExchangeStack("michael", Nature{Identity: "builder", Purpose: "hold the line"})
+	channel, err := NewExchangeStack("michael", makeNature("builder", "hold the line"))
 	if err != nil {
 		t.Fatalf("NewExchangeStack() error = %v", err)
 	}
 
-	raw, _ := NewImpulse("skyra skyra hello there | michael: hello")
-	result := channel.Send(DeliveredImpulse{
+	raw := mustImpulse(t, "skyra skyra hello there | michael: hello")
+	result := channel.Send(being.DeliveredImpulse{
 		OriginName: "michael",
 		Raw:        raw,
-		Parsed:     mustParseImpulse(t, raw),
+		Parsed:     mustParse(t, raw),
 	})
 	if !result.Routed {
 		t.Fatalf("Send() Routed = false, want true")
@@ -112,13 +166,13 @@ func TestExchangeStackSwapsTargetToOriginForReceiverView(t *testing.T) {
 }
 
 func TestExchangeStackRejectsCloseWithoutOpenExchange(t *testing.T) {
-	channel, err := NewExchangeStack("bob", Nature{Identity: "friend", Purpose: "relate"})
+	channel, err := NewExchangeStack("bob", makeNature("friend", "relate"))
 	if err != nil {
 		t.Fatalf("NewExchangeStack() error = %v", err)
 	}
 
-	closeImpulse, _ := NewImpulse("skyra bob -close | bob: closing")
-	result := channel.Send(DeliveredImpulse{Raw: closeImpulse, Parsed: mustParseImpulse(t, closeImpulse)})
+	closeImpulse := mustImpulse(t, "skyra bob -close | bob: closing")
+	result := channel.Send(being.DeliveredImpulse{Raw: closeImpulse, Parsed: mustParse(t, closeImpulse)})
 	if result.Routed {
 		t.Fatalf("Send(close) Routed = true, want false")
 	}
@@ -131,29 +185,19 @@ func TestExchangeStackRejectsCloseWithoutOpenExchange(t *testing.T) {
 }
 
 func TestExchangeStackDerivePresentUsesNameNatureAndCurrentOpenExchange(t *testing.T) {
-	nature := Nature{
-		Identity: "builder",
-		Purpose:  "hold the line",
-	}
+	b := newBeing(t, "michael", "builder", "hold the line", true)
+	sender := newBeing(t, "skyra", "system", "relate", true)
 
-	being, err := NewBeing("michael", nature, true, true)
-	if err != nil {
-		t.Fatalf("NewBeing() error = %v", err)
-	}
-	sender, err := NewBeing("skyra", Nature{Identity: "system", Purpose: "relate"}, true, true)
-	if err != nil {
-		t.Fatalf("NewBeing(sender) error = %v", err)
-	}
-	if err := being.SeedPeer(sender.Name, sender.Nature); err != nil {
+	if err := SeedPeer(b, sender.Name, sender.Nature); err != nil {
 		t.Fatalf("SeedPeer() error = %v", err)
 	}
 
-	open, _ := NewImpulse("skyra skyra relate | michael: initiating")
-	if _, err := being.EmitToPeer(sender.Name, open); err != nil {
+	open := mustImpulse(t, "skyra skyra relate | michael: initiating")
+	if _, err := b.EmitToPeer(sender.Name, open); err != nil {
 		t.Fatalf("EmitToPeer() error = %v", err)
 	}
 
-	present, err := being.DerivePresent(sender)
+	present, err := b.DerivePresent(sender)
 	if err != nil {
 		t.Fatalf("DerivePresent() error = %v", err)
 	}
@@ -165,29 +209,19 @@ func TestExchangeStackDerivePresentUsesNameNatureAndCurrentOpenExchange(t *testi
 }
 
 func TestClosedTopProducesNoOpenExchangeInPresent(t *testing.T) {
-	being, err := NewBeing(
-		"michael",
-		Nature{Identity: "builder", Purpose: "hold the line"},
-		true,
-		true,
-	)
-	if err != nil {
-		t.Fatalf("NewBeing() error = %v", err)
-	}
-	sender, err := NewBeing("skyra", Nature{Identity: "system", Purpose: "relate"}, true, true)
-	if err != nil {
-		t.Fatalf("NewBeing(sender) error = %v", err)
-	}
-	if err := being.SeedPeer(sender.Name, sender.Nature); err != nil {
+	b := newBeing(t, "michael", "builder", "hold the line", true)
+	sender := newBeing(t, "skyra", "system", "relate", true)
+
+	if err := SeedPeer(b, sender.Name, sender.Nature); err != nil {
 		t.Fatalf("SeedPeer() error = %v", err)
 	}
 
-	impulse, _ := NewImpulse("skyra skyra hello | michael: hello")
-	close, _ := NewImpulse("skyra skyra -close | michael: closing")
-	_, _ = being.EmitToPeer(sender.Name, impulse)
-	_, _ = being.EmitToPeer(sender.Name, close)
+	impulse := mustImpulse(t, "skyra skyra hello | michael: hello")
+	close := mustImpulse(t, "skyra skyra -close | michael: closing")
+	_, _ = b.EmitToPeer(sender.Name, impulse)
+	_, _ = b.EmitToPeer(sender.Name, close)
 
-	present, err := being.DerivePresent(sender)
+	present, err := b.DerivePresent(sender)
 	if err != nil {
 		t.Fatalf("DerivePresent() error = %v", err)
 	}
@@ -198,76 +232,48 @@ func TestClosedTopProducesNoOpenExchangeInPresent(t *testing.T) {
 }
 
 func TestExternalDispatchDerivesExpressionOnly(t *testing.T) {
-	being, err := NewBeing(
-		"sensor",
-		Nature{Identity: "sensor", Purpose: "receive"},
-		true,
-		false,
-	)
-	if err != nil {
-		t.Fatalf("NewBeing() error = %v", err)
-	}
+	b := newBeing(t, "sensor", "sensor", "receive", false)
 
-	channel, err := NewExternalDispatch("world", Nature{Identity: "world", Purpose: "emit"})
+	channel, err := NewExternalDispatch("world", makeNature("world", "emit"))
 	if err != nil {
 		t.Fatalf("NewExternalDispatch() error = %v", err)
 	}
-	if err := being.AttachPeer(channel); err != nil {
+	if err := b.AttachPeer(channel); err != nil {
 		t.Fatalf("AttachPeer() error = %v", err)
 	}
 
-	impulse, _ := NewImpulse("skyra world incoming signal | sensor: observing")
-	if _, err := being.EmitToPeer("world", impulse); err != nil {
+	impulse := mustImpulse(t, "skyra world incoming signal | sensor: observing")
+	if _, err := b.EmitToPeer("world", impulse); err != nil {
 		t.Fatalf("EmitToPeer() error = %v", err)
 	}
 
-	sender, err := NewBeing("world", Nature{Identity: "world", Purpose: "emit"}, false, false)
-	if err != nil {
-		t.Fatalf("NewBeing(sender) error = %v", err)
-	}
-	present, err := being.DerivePresent(sender)
+	sender := newBeing(t, "world", "world", "emit", false)
+	present, err := b.DerivePresent(sender)
 	if err != nil {
 		t.Fatalf("DerivePresent() error = %v", err)
 	}
-
 	if present != "incoming signal" {
 		t.Fatalf("Present = %q, want %q", present, "incoming signal")
 	}
 }
 
-func TestKernelStateSeedsRelationshipAndResolvesByName(t *testing.T) {
-	kernelState := NewKernelState()
+func TestWorldRelatesBeingsAndResolvesByName(t *testing.T) {
+	w := New()
 
-	left, err := NewBeing(
-		"michael",
-		Nature{Identity: "builder", Purpose: "hold the line"},
-		true,
-		true,
-	)
-	if err != nil {
-		t.Fatalf("NewBeing(left) error = %v", err)
+	left := newBeing(t, "michael", "builder", "hold the line", true)
+	right := newBeing(t, "skyra", "system", "relate", true)
+
+	if err := w.Register(left); err != nil {
+		t.Fatalf("Register(left) error = %v", err)
 	}
-	right, err := NewBeing(
-		"skyra",
-		Nature{Identity: "system", Purpose: "relate"},
-		true,
-		true,
-	)
-	if err != nil {
-		t.Fatalf("NewBeing(right) error = %v", err)
+	if err := w.Register(right); err != nil {
+		t.Fatalf("Register(right) error = %v", err)
+	}
+	if err := w.Relate(left.Name, right.Name); err != nil {
+		t.Fatalf("Relate() error = %v", err)
 	}
 
-	if err := kernelState.InsertBeing(left); err != nil {
-		t.Fatalf("InsertBeing(left) error = %v", err)
-	}
-	if err := kernelState.InsertBeing(right); err != nil {
-		t.Fatalf("InsertBeing(right) error = %v", err)
-	}
-	if err := kernelState.SeedRelationship(left.Name, right.Name); err != nil {
-		t.Fatalf("SeedRelationship() error = %v", err)
-	}
-
-	resolved, ok := kernelState.BeingByName("michael")
+	resolved, ok := w.BeingByName("michael")
 	if !ok {
 		t.Fatalf("BeingByName() ok = false, want true")
 	}
@@ -277,7 +283,7 @@ func TestKernelStateSeedsRelationshipAndResolvesByName(t *testing.T) {
 
 	leftPeer, ok := left.PeerByName(right.Name)
 	if !ok {
-		t.Fatalf("PeerByName() ok = false, want true")
+		t.Fatalf("left PeerByName() ok = false, want true")
 	}
 	if leftPeer.Name() != "skyra" {
 		t.Fatalf("left peer name = %q, want %q", leftPeer.Name(), "skyra")
@@ -285,7 +291,7 @@ func TestKernelStateSeedsRelationshipAndResolvesByName(t *testing.T) {
 
 	rightPeer, ok := right.PeerByName(left.Name)
 	if !ok {
-		t.Fatalf("PeerByName() ok = false, want true")
+		t.Fatalf("right PeerByName() ok = false, want true")
 	}
 	if rightPeer.Name() != "michael" {
 		t.Fatalf("right peer name = %q, want %q", rightPeer.Name(), "michael")
@@ -293,42 +299,18 @@ func TestKernelStateSeedsRelationshipAndResolvesByName(t *testing.T) {
 }
 
 func TestExchangeStackDerivePresentSortsRelationshipsByPeerName(t *testing.T) {
-	receiver, err := NewBeing(
-		"michael",
-		Nature{Identity: "builder", Purpose: "hold the line"},
-		true,
-		true,
-	)
-	if err != nil {
-		t.Fatalf("NewBeing(receiver) error = %v", err)
-	}
-	sender, err := NewBeing(
-		"zoe",
-		Nature{Identity: "late", Purpose: "second"},
-		true,
-		true,
-	)
-	if err != nil {
-		t.Fatalf("NewBeing(sender) error = %v", err)
-	}
-	early, err := NewBeing(
-		"adam",
-		Nature{Identity: "early", Purpose: "first"},
-		true,
-		true,
-	)
-	if err != nil {
-		t.Fatalf("NewBeing(early) error = %v", err)
-	}
+	receiver := newBeing(t, "michael", "builder", "hold the line", true)
+	sender := newBeing(t, "zoe", "late", "second", true)
+	early := newBeing(t, "adam", "early", "first", true)
 
-	if err := receiver.SeedPeer(sender.Name, sender.Nature); err != nil {
+	if err := SeedPeer(receiver, sender.Name, sender.Nature); err != nil {
 		t.Fatalf("SeedPeer(sender) error = %v", err)
 	}
-	if err := receiver.SeedPeer(early.Name, early.Nature); err != nil {
+	if err := SeedPeer(receiver, early.Name, early.Nature); err != nil {
 		t.Fatalf("SeedPeer(early) error = %v", err)
 	}
 
-	impulse, _ := NewImpulse("skyra zoe hello | michael: greeting")
+	impulse := mustImpulse(t, "skyra zoe hello | michael: greeting")
 	if _, err := receiver.EmitToPeer(sender.Name, impulse); err != nil {
 		t.Fatalf("EmitToPeer() error = %v", err)
 	}
@@ -345,29 +327,14 @@ func TestExchangeStackDerivePresentSortsRelationshipsByPeerName(t *testing.T) {
 }
 
 func TestExchangeStackDerivePresentUsesExpressionOnlyForNonCognitiveReceiver(t *testing.T) {
-	receiver, err := NewBeing(
-		"sensor",
-		Nature{Identity: "sensor", Purpose: "receive"},
-		true,
-		false,
-	)
-	if err != nil {
-		t.Fatalf("NewBeing(receiver) error = %v", err)
-	}
-	sender, err := NewBeing(
-		"michael",
-		Nature{Identity: "builder", Purpose: "hold the line"},
-		true,
-		true,
-	)
-	if err != nil {
-		t.Fatalf("NewBeing(sender) error = %v", err)
-	}
-	if err := receiver.SeedPeer(sender.Name, sender.Nature); err != nil {
+	receiver := newBeing(t, "sensor", "sensor", "receive", false)
+	sender := newBeing(t, "michael", "builder", "hold the line", true)
+
+	if err := SeedPeer(receiver, sender.Name, sender.Nature); err != nil {
 		t.Fatalf("SeedPeer() error = %v", err)
 	}
 
-	impulse, _ := NewImpulse("skyra michael heat spike -custom | sensor: spike detected")
+	impulse := mustImpulse(t, "skyra michael heat spike -custom | sensor: spike detected")
 	if _, err := receiver.EmitToPeer(sender.Name, impulse); err != nil {
 		t.Fatalf("EmitToPeer() error = %v", err)
 	}
@@ -376,31 +343,19 @@ func TestExchangeStackDerivePresentUsesExpressionOnlyForNonCognitiveReceiver(t *
 	if err != nil {
 		t.Fatalf("DerivePresent() error = %v", err)
 	}
-
-	want := "name: sensor\nidentity: sensor\npurpose: receive\n\nYou are in an exchange with: michael\nthe identity of michael is: builder\nthe purpose of michael is: hold the line\n\nmichael: heat spike\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nbuilder - hold the line"
-	if present != want {
-		t.Fatalf("Present = %q, want %q", present, want)
+	if present != "heat spike" {
+		t.Fatalf("Present = %q, want %q", present, "heat spike")
 	}
 }
 
-func TestSignalCarriesRawImpulseUntilKernelParsing(t *testing.T) {
-	impulse, err := NewImpulse("skyra skyra relate to me -close | michael: closing")
+func TestSignalImpulseCanBeRoundTripped(t *testing.T) {
+	raw := "skyra skyra relate to me -close | michael: closing"
+	impulse := mustImpulse(t, raw)
+
+	parsed, err := being.ParseImpulse(impulse.Raw())
 	if err != nil {
-		t.Fatalf("NewImpulse() error = %v", err)
+		t.Fatalf("ParseImpulse() error = %v", err)
 	}
-
-	signal := Signal{
-		ID:         "sig-1",
-		Origin:     "michael",
-		TraceToken: "trace-1",
-		Impulse:    impulse.Raw(),
-	}
-
-	parsed, err := ParseImpulse(signal.Impulse)
-	if err != nil {
-		t.Fatalf("ParseImpulse(signal.Impulse) error = %v", err)
-	}
-
 	if parsed.TargetName != "skyra" {
 		t.Fatalf("TargetName = %q, want %q", parsed.TargetName, "skyra")
 	}
@@ -413,14 +368,4 @@ func TestSignalCarriesRawImpulseUntilKernelParsing(t *testing.T) {
 	if parsed.Reason != "closing" {
 		t.Fatalf("Reason = %q, want %q", parsed.Reason, "closing")
 	}
-}
-
-func mustParseImpulse(t *testing.T, impulse Impulse) ParsedImpulse {
-	t.Helper()
-
-	parsed, err := impulse.Parse()
-	if err != nil {
-		t.Fatalf("Parse() error = %v", err)
-	}
-	return parsed
 }

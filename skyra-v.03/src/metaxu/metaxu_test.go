@@ -1,16 +1,21 @@
-package kernel
+package metaxu
 
 import (
 	"testing"
 
-	"skyra-v03/src/domain"
+	being "skyra-v03/src/primitives/being"
+	"skyra-v03/src/primitives/identity"
+	"skyra-v03/src/primitives/language"
+	"skyra-v03/src/primitives/nature"
+	"skyra-v03/src/primitives/purpose"
+	"skyra-v03/src/world"
 )
 
 func TestAcceptSignalRoutesToReceiverAndStartsNewExchange(t *testing.T) {
-	state, origin, target := seededKernelState(t)
-	k := New(state)
+	w, origin, target := seededWorld(t)
+	m := New(w)
 
-	result := k.AcceptSignal(domain.Signal{
+	result := m.AcceptSignal(Signal{
 		ID:         "sig-1",
 		Origin:     origin.Name,
 		TraceToken: "trace-1",
@@ -36,10 +41,10 @@ func TestAcceptSignalRoutesToReceiverAndStartsNewExchange(t *testing.T) {
 }
 
 func TestAcceptSignalAppendsToExistingOpenExchange(t *testing.T) {
-	state, origin, target := seededKernelState(t)
-	k := New(state)
+	w, origin, target := seededWorld(t)
+	m := New(w)
 
-	first, err := domain.NewImpulse("skyra skyra first | skyra: opening")
+	first, err := being.NewImpulse("skyra skyra first | skyra: opening")
 	if err != nil {
 		t.Fatalf("NewImpulse(first) error = %v", err)
 	}
@@ -47,7 +52,7 @@ func TestAcceptSignalAppendsToExistingOpenExchange(t *testing.T) {
 		t.Fatalf("SendToPeer(first) error = %v", err)
 	}
 
-	result := k.AcceptSignal(domain.Signal{
+	result := m.AcceptSignal(Signal{
 		ID:         "sig-2",
 		Origin:     origin.Name,
 		TraceToken: "trace-2",
@@ -67,14 +72,14 @@ func TestAcceptSignalAppendsToExistingOpenExchange(t *testing.T) {
 }
 
 func TestAcceptSignalStartsNewExchangeAfterClosedTop(t *testing.T) {
-	state, origin, target := seededKernelState(t)
-	k := New(state)
+	w, origin, target := seededWorld(t)
+	m := New(w)
 
-	first, err := domain.NewImpulse("skyra skyra first | skyra: opening")
+	first, err := being.NewImpulse("skyra skyra first | skyra: opening")
 	if err != nil {
 		t.Fatalf("NewImpulse(first) error = %v", err)
 	}
-	closeImpulse, err := domain.NewImpulse("skyra skyra -close | skyra: closing")
+	closeImpulse, err := being.NewImpulse("skyra skyra -close | skyra: closing")
 	if err != nil {
 		t.Fatalf("NewImpulse(close) error = %v", err)
 	}
@@ -85,7 +90,7 @@ func TestAcceptSignalStartsNewExchangeAfterClosedTop(t *testing.T) {
 		t.Fatalf("SendToPeer(close) error = %v", err)
 	}
 
-	result := k.AcceptSignal(domain.Signal{
+	result := m.AcceptSignal(Signal{
 		ID:         "sig-3",
 		Origin:     origin.Name,
 		TraceToken: "trace-3",
@@ -103,9 +108,9 @@ func TestAcceptSignalStartsNewExchangeAfterClosedTop(t *testing.T) {
 	if !ok {
 		t.Fatalf("PeerByName() ok = false, want true")
 	}
-	stack, ok := targetPeer.(*domain.ExchangeStack)
+	stack, ok := targetPeer.(*world.ExchangeStack)
 	if !ok {
-		t.Fatalf("target peer type = %T, want *domain.ExchangeStack", targetPeer)
+		t.Fatalf("target peer type = %T, want *world.ExchangeStack", targetPeer)
 	}
 	if len(stack.Exchanges()) != 2 {
 		t.Fatalf("len(targetPeer.Exchanges()) = %d, want 2", len(stack.Exchanges()))
@@ -123,10 +128,10 @@ func TestAcceptSignalStartsNewExchangeAfterClosedTop(t *testing.T) {
 }
 
 func TestAcceptSignalCloseWritesOnlyToOriginStack(t *testing.T) {
-	state, origin, target := seededKernelState(t)
-	k := New(state)
+	w, origin, target := seededWorld(t)
+	m := New(w)
 
-	open, err := domain.NewImpulse("skyra skyra open | skyra: opening")
+	open, err := being.NewImpulse("skyra skyra open | skyra: opening")
 	if err != nil {
 		t.Fatalf("NewImpulse(open) error = %v", err)
 	}
@@ -134,7 +139,7 @@ func TestAcceptSignalCloseWritesOnlyToOriginStack(t *testing.T) {
 		t.Fatalf("EmitToPeer(open) error = %v", err)
 	}
 
-	result := k.AcceptSignal(domain.Signal{
+	result := m.AcceptSignal(Signal{
 		ID:         "sig-4",
 		Origin:     origin.Name,
 		TraceToken: "trace-4",
@@ -159,13 +164,13 @@ func TestAcceptSignalCloseWritesOnlyToOriginStack(t *testing.T) {
 	if !ok {
 		t.Fatalf("target PeerByName() ok = false, want true")
 	}
-	originStack, ok := originPeer.(*domain.ExchangeStack)
+	originStack, ok := originPeer.(*world.ExchangeStack)
 	if !ok {
-		t.Fatalf("origin peer type = %T, want *domain.ExchangeStack", originPeer)
+		t.Fatalf("origin peer type = %T, want *world.ExchangeStack", originPeer)
 	}
-	targetStack, ok := targetPeer.(*domain.ExchangeStack)
+	targetStack, ok := targetPeer.(*world.ExchangeStack)
 	if !ok {
-		t.Fatalf("target peer type = %T, want *domain.ExchangeStack", targetPeer)
+		t.Fatalf("target peer type = %T, want *world.ExchangeStack", targetPeer)
 	}
 	if len(originStack.Exchanges()) != 1 {
 		t.Fatalf("len(originStack.Exchanges()) = %d, want 1", len(originStack.Exchanges()))
@@ -182,10 +187,10 @@ func TestAcceptSignalCloseWritesOnlyToOriginStack(t *testing.T) {
 }
 
 func TestAcceptSignalDropsWhenTargetCannotBeResolved(t *testing.T) {
-	state, origin, _ := seededKernelState(t)
-	k := New(state)
+	w, origin, _ := seededWorld(t)
+	m := New(w)
 
-	result := k.AcceptSignal(domain.Signal{
+	result := m.AcceptSignal(Signal{
 		ID:         "sig-5",
 		Origin:     origin.Name,
 		TraceToken: "trace-5",
@@ -201,44 +206,47 @@ func TestAcceptSignalDropsWhenTargetCannotBeResolved(t *testing.T) {
 }
 
 func TestAcceptSignalRoutesToExternalDispatchAndDerivesExpressionOnlyPresent(t *testing.T) {
-	state := domain.NewKernelState()
-	origin, err := domain.NewBeing(
+	w := world.New()
+
+	origin, err := being.NewBeing(
 		"michael",
-		domain.Nature{Identity: "builder", Purpose: "hold the line"},
-		true,
+		nature.Nature{Identity: identity.Identity{Value: "builder"}, Purpose: purpose.Purpose{Value: "hold the line"}},
+		language.Language{Value: "skyra being"},
 		true,
 	)
 	if err != nil {
 		t.Fatalf("NewBeing(origin) error = %v", err)
 	}
-	target, err := domain.NewBeing(
+	sensor, err := being.NewBeing(
 		"sensor",
-		domain.Nature{Identity: "sensor", Purpose: "receive"},
-		true,
+		nature.Nature{Identity: identity.Identity{Value: "sensor"}, Purpose: purpose.Purpose{Value: "receive"}},
+		language.Language{Value: "skyra being"},
 		false,
 	)
 	if err != nil {
-		t.Fatalf("NewBeing(target) error = %v", err)
+		t.Fatalf("NewBeing(sensor) error = %v", err)
 	}
-	if err := state.InsertBeing(origin); err != nil {
-		t.Fatalf("InsertBeing(origin) error = %v", err)
+	if err := w.Register(origin); err != nil {
+		t.Fatalf("Register(origin) error = %v", err)
 	}
-	if err := state.InsertBeing(target); err != nil {
-		t.Fatalf("InsertBeing(target) error = %v", err)
+	if err := w.Register(sensor); err != nil {
+		t.Fatalf("Register(sensor) error = %v", err)
 	}
-	if err := origin.SeedPeer(target.Name, target.Nature); err != nil {
-		t.Fatalf("SeedPeer(origin->target) error = %v", err)
+	if err := w.Relate(origin.Name, sensor.Name); err != nil {
+		t.Fatalf("Relate() error = %v", err)
 	}
-	dispatch, err := domain.NewExternalDispatch(origin.Name, origin.Nature)
+
+	// Replace sensor's peer channel for origin with an ExternalDispatch
+	dispatch, err := world.NewExternalDispatch(origin.Name, origin.Nature)
 	if err != nil {
 		t.Fatalf("NewExternalDispatch() error = %v", err)
 	}
-	if err := target.AttachPeer(dispatch); err != nil {
-		t.Fatalf("AttachPeer(target<-origin) error = %v", err)
+	if err := sensor.AttachPeer(dispatch); err != nil {
+		t.Fatalf("AttachPeer() error = %v", err)
 	}
 
-	k := New(state)
-	result := k.AcceptSignal(domain.Signal{
+	m := New(w)
+	result := m.AcceptSignal(Signal{
 		ID:         "sig-6",
 		Origin:     origin.Name,
 		TraceToken: "trace-6",
@@ -253,45 +261,45 @@ func TestAcceptSignalRoutesToExternalDispatchAndDerivesExpressionOnlyPresent(t *
 	}
 }
 
-func seededKernelState(t *testing.T) (*domain.KernelState, *domain.Being, *domain.Being) {
+func seededWorld(t *testing.T) (*world.World, *being.Being, *being.Being) {
 	t.Helper()
 
-	state := domain.NewKernelState()
+	w := world.New()
 
-	origin, err := domain.NewBeing(
+	origin, err := being.NewBeing(
 		"michael",
-		domain.Nature{Identity: "builder", Purpose: "hold the line"},
-		true,
+		nature.Nature{Identity: identity.Identity{Value: "builder"}, Purpose: purpose.Purpose{Value: "hold the line"}},
+		language.Language{Value: "skyra being"},
 		true,
 	)
 	if err != nil {
 		t.Fatalf("NewBeing(origin) error = %v", err)
 	}
 
-	target, err := domain.NewBeing(
+	target, err := being.NewBeing(
 		"skyra",
-		domain.Nature{Identity: "system", Purpose: "relate"},
-		true,
+		nature.Nature{Identity: identity.Identity{Value: "system"}, Purpose: purpose.Purpose{Value: "relate"}},
+		language.Language{Value: "skyra being"},
 		true,
 	)
 	if err != nil {
 		t.Fatalf("NewBeing(target) error = %v", err)
 	}
 
-	if err := state.InsertBeing(origin); err != nil {
-		t.Fatalf("InsertBeing(origin) error = %v", err)
+	if err := w.Register(origin); err != nil {
+		t.Fatalf("Register(origin) error = %v", err)
 	}
-	if err := state.InsertBeing(target); err != nil {
-		t.Fatalf("InsertBeing(target) error = %v", err)
+	if err := w.Register(target); err != nil {
+		t.Fatalf("Register(target) error = %v", err)
 	}
-	if err := state.SeedRelationship(origin.Name, target.Name); err != nil {
-		t.Fatalf("SeedRelationship() error = %v", err)
+	if err := w.Relate(origin.Name, target.Name); err != nil {
+		t.Fatalf("Relate() error = %v", err)
 	}
 
-	return state, origin, target
+	return w, origin, target
 }
 
-func deliveredFrom(t *testing.T, originName string, impulse domain.Impulse) domain.DeliveredImpulse {
+func deliveredFrom(t *testing.T, originName string, impulse being.Impulse) being.DeliveredImpulse {
 	t.Helper()
 
 	parsed, err := impulse.Parse()
@@ -299,7 +307,7 @@ func deliveredFrom(t *testing.T, originName string, impulse domain.Impulse) doma
 		t.Fatalf("Parse() error = %v", err)
 	}
 
-	return domain.DeliveredImpulse{
+	return being.DeliveredImpulse{
 		OriginName: originName,
 		Raw:        impulse,
 		Parsed:     parsed,
