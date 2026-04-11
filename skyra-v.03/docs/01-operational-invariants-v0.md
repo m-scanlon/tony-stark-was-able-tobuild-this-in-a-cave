@@ -48,8 +48,7 @@ The runtime must support:
 The kernel service and being factory service are pre-runtime beings acting as
 hosting layers.
 
-The kernel being and being factory being are runtime beings hosted inside those
-services.
+The being factory being is a runtime being hosted inside the being factory service.
 
 That is a layering and phase distinction, not an ontological exception.
 
@@ -105,8 +104,8 @@ The external launcher raises the host services first.
 
 The genome then executes.
 
-The being factory being reads the genome, creates genome beings in dependency
-order, and routes each one through the kernel being.
+The being factory being reads the genome and creates genome beings in dependency
+order.
 
 Only after that is the runtime considered live.
 

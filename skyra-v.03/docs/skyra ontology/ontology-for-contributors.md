@@ -53,7 +53,6 @@ Skyra also makes a layering distinction.
 For example:
 
 - the `kernel service` may be a pre-runtime being acting as a hosting layer
-- the `kernel being` is the runtime being hosted inside that layer
 - the `being factory service` may be a pre-runtime being acting as a hosting
   layer
 - the `being factory being` is the runtime being hosted inside that layer

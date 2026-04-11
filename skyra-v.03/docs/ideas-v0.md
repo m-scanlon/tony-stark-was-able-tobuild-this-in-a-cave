@@ -18,3 +18,84 @@ Two beings relate. Through that relating, new beings emerge — concepts, skills
 This is differentiation at the relationship level. Not just at the being level.
 
 Each being has their own world per peer. The kernel sees all worlds. But each relationship grows its own.
+
+---
+
+## Routing To Claude Execution Surfaces
+
+If Skyra is linked to Claude Code, a Claude Code instance should not be treated
+as a being.
+
+It should be treated as an execution surface.
+
+That keeps the ontological layer clean.
+
+The being remains Skyra.
+
+The Claude worker is where one line of work for Skyra happens right now.
+
+### The Core Distinction
+
+Do not route to "the right thread."
+
+Route to the right execution surface.
+
+The kernel should own a binding like:
+
+```text
+exchange_id -> surface_id
+surface_id -> {
+  session_id,
+  process_handle,
+  cwd,
+  worktree,
+  writable
+}
+```
+
+So if Skyra has two Claude Code instances open, there is no ambiguity.
+
+Each instance has its own `surface_id`.
+
+Each live line of work is bound to one surface.
+
+### The Practical Rule
+
+One exchange binds to one surface at a time.
+
+If the surface is alive, the next turn goes to that surface.
+
+If the surface dies, the kernel respawns the worker and reattaches to that
+surface's `session_id`.
+
+If Skyra wants a branch rather than a continuation, the kernel forks the Claude
+session and creates a new `surface_id`.
+
+### Why This Matters
+
+This means Claude sessions are not Skyra's identity.
+
+They are temporary operational placements.
+
+Skyra's continuity lives in the kernel-owned relationship and exchange state,
+not in the worker process.
+
+### Operational Invariants For Coding Work
+
+- one writable Claude surface per repo/worktree
+- one active exchange per writable surface
+- if parallel coding is needed in the same repo, use separate worktrees
+- if two simultaneous coding lines become semantically different enough, that
+  may be differentiation rather than one being with two surfaces
+
+### Consequence
+
+Skyra does not need to remember "which terminal window."
+
+She needs the kernel to remember:
+
+- which exchange is active
+- which execution surface currently carries it
+- whether that surface is continuing, branched, or dead
+
+That is enough to route the next turn correctly.
