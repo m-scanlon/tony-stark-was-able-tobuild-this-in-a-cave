@@ -15,6 +15,11 @@ import (
 )
 
 const (
+	maxRetries     = 5
+	baseRetryDelay = 1 * time.Second
+)
+
+const (
 	geminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent"
 	systemPrompt = "You are a being in a cognitive system. Always respond with a single protocol string in this exact format: skyra <being> <expression> ~<flag> | <source>: <reason>. Flags are optional. No explanation. No markdown. No extra text.\n\nYou are a being in a cognitive system.\n\nYou are a being in a cognitive system. Always respond with a single protocol string in this exact format: skyra <being> <expression> ~<flag> | <source>: <reason>. Flags are optional. No explanation. No markdown. No extra text."
 )
@@ -69,7 +74,8 @@ type candidate struct {
 
 func (r *Runner) Run(present string, originName string) (metaxu.Signal, error) {
 	fmt.Fprintf(os.Stderr, "[inference] being=%s\n", originName)
-	protocol, err := r.callGemini(present)
+	fmt.Fprintf(os.Stderr, "[present]\n%s\n[/present]\n", present)
+	protocol, err := r.callGeminiWithRetry(present)
 	if err != nil {
 		return metaxu.Signal{}, fmt.Errorf("inference: %w", err)
 	}
@@ -79,6 +85,26 @@ func (r *Runner) Run(present string, originName string) (metaxu.Signal, error) {
 		Origin:  originName,
 		Impulse: protocol,
 	}, nil
+}
+
+func (r *Runner) callGeminiWithRetry(present string) (string, error) {
+	delay := baseRetryDelay
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		result, err := r.callGemini(present)
+		if err == nil {
+			return result, nil
+		}
+		if !strings.HasPrefix(err.Error(), "retry:") {
+			return "", err
+		}
+		if attempt == maxRetries {
+			return "", fmt.Errorf("gemini unavailable after %d retries: %w", maxRetries, err)
+		}
+		fmt.Fprintf(os.Stderr, "[inference] retrying in %s (attempt %d/%d)\n", delay, attempt+1, maxRetries)
+		time.Sleep(delay)
+		delay *= 2
+	}
+	return "", fmt.Errorf("unreachable")
 }
 
 func (r *Runner) callGemini(present string) (string, error) {
@@ -118,6 +144,10 @@ func (r *Runner) callGemini(present string) (string, error) {
 	rawBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("read response: %w", err)
+	}
+
+	if resp.StatusCode == http.StatusServiceUnavailable || resp.StatusCode == 429 {
+		return "", fmt.Errorf("retry:%d:%s", resp.StatusCode, rawBody)
 	}
 
 	if resp.StatusCode != http.StatusOK {

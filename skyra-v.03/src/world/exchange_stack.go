@@ -132,22 +132,18 @@ func (c *ExchangeStack) CurrentOpenExchange() Exchange {
 
 func (c *ExchangeStack) DerivePresent(receiver *being.Being, sender *being.Being) string {
 	var builder strings.Builder
-	builder.WriteString("name: ")
+	builder.WriteString("your name is: ")
 	builder.WriteString(receiver.Name)
-	builder.WriteString("\nidentity: ")
+	builder.WriteString("\nyour identity is: ")
 	builder.WriteString(receiver.Nature.Identity.Value)
-	builder.WriteString("\npurpose: ")
+	builder.WriteString("\nyour purpose is: ")
 	builder.WriteString(receiver.Nature.Purpose.Value)
 
-	builder.WriteString("\n\nYou are in an exchange with: ")
+	builder.WriteString("\n\nyou are in an exchange with: ")
 	builder.WriteString(sender.Name)
-	builder.WriteString("\nthe identity of ")
-	builder.WriteString(sender.Name)
-	builder.WriteString(" is: ")
+	builder.WriteString("\ntheir identity is: ")
 	builder.WriteString(sender.Nature.Identity.Value)
-	builder.WriteString("\nthe purpose of ")
-	builder.WriteString(sender.Name)
-	builder.WriteString(" is: ")
+	builder.WriteString("\ntheir purpose is: ")
 	builder.WriteString(sender.Nature.Purpose.Value)
 
 	open := c.CurrentOpenExchange()
@@ -159,9 +155,9 @@ func (c *ExchangeStack) DerivePresent(receiver *being.Being, sender *being.Being
 	}
 
 	builder.WriteString("\n\nrelationships:")
-	builder.WriteString("\nCall any of your relationships using this syntax-")
-	builder.WriteString("\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>")
-	builder.WriteString("\n<being> must be one of your relationships listed below")
+	builder.WriteString("\nTo respond, output a single protocol string:")
+	builder.WriteString("\nskyra <being> <expression> | <source>: <reason>")
+	builder.WriteString("\n<being> is who you are sending to — must be one of your relationships below")
 	builder.WriteString("\n<source> is the being you are currently in exchange with")
 	builder.WriteString("\n<reason> is why you are firing this expression")
 	builder.WriteString("\nRespond with the protocol string only — no explanation, no markdown, no extra text")
