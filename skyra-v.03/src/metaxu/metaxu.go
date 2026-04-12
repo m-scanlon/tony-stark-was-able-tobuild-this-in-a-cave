@@ -20,15 +20,16 @@ const (
 )
 
 type Result struct {
-	Status           RouteStatus
-	DropReason       string
-	ParsedImpulse    *being.ParsedImpulse
-	OriginName       string
-	TargetName       string
-	WrittenBeingName string
-	WrittenPeerName  string
-	NewExchange      bool
-	ReceiverPresent  string
+	Status            RouteStatus
+	DropReason        string
+	ParsedImpulse     *being.ParsedImpulse
+	OriginName        string
+	TargetName        string
+	WrittenBeingName  string
+	WrittenPeerName   string
+	NewExchange       bool
+	ReceiverPresent   string
+	ReceiverCognitive bool
 }
 
 type Metaxu struct {
@@ -82,6 +83,7 @@ func (m *Metaxu) AcceptSignal(signal Signal) Result {
 		return result
 	}
 	result.TargetName = target.Name
+	result.ReceiverCognitive = target.Cognitive
 
 	originDelivery := being.DeliveredImpulse{
 		Raw:    being.Impulse(parsed.Raw),
@@ -116,9 +118,11 @@ func (m *Metaxu) AcceptSignal(signal Signal) Result {
 		return result
 	}
 
-	if _, err := origin.SendToPeer(source.Name, originDelivery); err != nil {
-		result.DropReason = err.Error()
-		return result
+	if origin.Name != source.Name {
+		if _, err := origin.SendToPeer(source.Name, originDelivery); err != nil {
+			result.DropReason = err.Error()
+			return result
+		}
 	}
 
 	if source.Name != target.Name {

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	being "skyra-v03/src/primitives/being"
+	"skyra-v03/src/primitives/extract"
 	"skyra-v03/src/primitives/nature"
 )
 
@@ -19,6 +20,16 @@ func New() *World {
 }
 
 func (w *World) Grow(expression string) (*being.Being, error) {
+	name, err := extract.Meaning(expression, "~name", "grow")
+	if err != nil {
+		return nil, err
+	}
+	name = strings.TrimSpace(name)
+
+	if existing, ok := w.beings[name]; ok {
+		return existing, w.seedRelationships(existing, expression)
+	}
+
 	b, err := being.CreateBeing(expression)
 	if err != nil {
 		return nil, err
@@ -26,7 +37,7 @@ func (w *World) Grow(expression string) (*being.Being, error) {
 	if err := w.Register(b); err != nil {
 		return nil, err
 	}
-	return b, nil
+	return b, w.seedRelationships(b, expression)
 }
 
 func (w *World) Register(b *being.Being) error {
@@ -48,21 +59,26 @@ func (w *World) BeingByName(name string) (*being.Being, bool) {
 	return b, ok
 }
 
-func (w *World) Relate(leftName, rightName string) error {
-	left, ok := w.beings[leftName]
-	if !ok {
-		return fmt.Errorf("%w: %s", ErrUnknownBeing, leftName)
+func (w *World) seedRelationships(b *being.Being, expression string) error {
+	value, err := extract.Meaning(expression, "~relationships", "grow")
+	if err != nil {
+		return nil
 	}
-	right, ok := w.beings[rightName]
-	if !ok {
-		return fmt.Errorf("%w: %s", ErrUnknownBeing, rightName)
-	}
-
-	if err := seedPeer(left, right.Name, right.Nature); err != nil {
-		return err
-	}
-	if err := seedPeer(right, left.Name, left.Nature); err != nil {
-		return err
+	for _, peerName := range strings.Split(value, ",") {
+		peerName = strings.TrimSpace(peerName)
+		if peerName == "" {
+			continue
+		}
+		peer, ok := w.beings[peerName]
+		if !ok {
+			return fmt.Errorf("%w: %s", ErrUnknownBeing, peerName)
+		}
+		if err := seedPeer(b, peer.Name, peer.Nature); err != nil {
+			return err
+		}
+		if err := seedPeer(peer, b.Name, b.Nature); err != nil {
+			return err
+		}
 	}
 	return nil
 }

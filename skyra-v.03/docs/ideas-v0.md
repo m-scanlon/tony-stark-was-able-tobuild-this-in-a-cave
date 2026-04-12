@@ -21,6 +21,14 @@ Each being has their own world per peer. The kernel sees all worlds. But each re
 
 ---
 
+## Inference Retry On Rate Limit
+
+When a 429 is returned from the inference provider, the response body includes a `retryDelay` field indicating exactly how long to wait. Instead of failing hard, the runner should parse that delay and retry the call once after sleeping that duration.
+
+This keeps the cognitive chain alive through temporary quota exhaustion rather than dropping the signal.
+
+---
+
 ## Routing To Claude Execution Surfaces
 
 If Skyra is linked to Claude Code, a Claude Code instance should not be treated

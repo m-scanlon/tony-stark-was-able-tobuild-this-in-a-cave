@@ -78,7 +78,7 @@ func ParseImpulse(raw string) (ParsedImpulse, error) {
 
 	flagStart := len(parts)
 	for i := 2; i < len(parts); i++ {
-		if strings.HasPrefix(parts[i], "-") {
+		if strings.HasPrefix(parts[i], "~") {
 			flagStart = i
 			break
 		}
@@ -87,10 +87,10 @@ func ParseImpulse(raw string) (ParsedImpulse, error) {
 	flags := make([]Flag, 0, len(parts)-flagStart)
 	for i := flagStart; i < len(parts); i++ {
 		token := parts[i]
-		if !strings.HasPrefix(token, "-") || len(token) == 1 {
+		if !strings.HasPrefix(token, "~") || len(token) == 1 {
 			return ParsedImpulse{}, fmt.Errorf("being: invalid impulse: invalid flag %q", token)
 		}
-		flags = append(flags, Flag(strings.TrimPrefix(token, "-")))
+		flags = append(flags, Flag(strings.TrimPrefix(token, "~")))
 	}
 
 	expression := strings.Join(parts[2:flagStart], " ")

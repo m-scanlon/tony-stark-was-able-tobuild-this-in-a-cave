@@ -1,6 +1,7 @@
 package metaxu
 
 import (
+	"fmt"
 	"testing"
 
 	being "skyra-v03/src/primitives/being"
@@ -34,7 +35,7 @@ func TestAcceptSignalRoutesToReceiverAndStartsNewExchange(t *testing.T) {
 	if result.WrittenPeerName != origin.Name {
 		t.Fatalf("WrittenPeerName = %q, want %q", result.WrittenPeerName, origin.Name)
 	}
-	want := "name: skyra\nidentity: system\npurpose: relate\n\nYou are in an exchange with: michael\nthe identity of michael is: builder\nthe purpose of michael is: hold the line\n\nmichael: hello there\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nbuilder - hold the line"
+	want := "name: skyra\nidentity: system\npurpose: relate\n\nYou are in an exchange with: michael\nthe identity of michael is: builder\nthe purpose of michael is: hold the line\n\nmichael: hello there\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael: builder - hold the line"
 	if result.ReceiverPresent != want {
 		t.Fatalf("ReceiverPresent = %q, want %q", result.ReceiverPresent, want)
 	}
@@ -65,7 +66,7 @@ func TestAcceptSignalAppendsToExistingOpenExchange(t *testing.T) {
 	if result.NewExchange {
 		t.Fatalf("NewExchange = true, want false")
 	}
-	want := "name: skyra\nidentity: system\npurpose: relate\n\nYou are in an exchange with: michael\nthe identity of michael is: builder\nthe purpose of michael is: hold the line\n\nmichael: first\n\nmichael: second\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nbuilder - hold the line"
+	want := "name: skyra\nidentity: system\npurpose: relate\n\nYou are in an exchange with: michael\nthe identity of michael is: builder\nthe purpose of michael is: hold the line\n\nmichael: first\n\nmichael: second\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael: builder - hold the line"
 	if result.ReceiverPresent != want {
 		t.Fatalf("ReceiverPresent = %q, want %q", result.ReceiverPresent, want)
 	}
@@ -79,7 +80,7 @@ func TestAcceptSignalStartsNewExchangeAfterClosedTop(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewImpulse(first) error = %v", err)
 	}
-	closeImpulse, err := being.NewImpulse("skyra skyra -close | skyra: closing")
+	closeImpulse, err := being.NewImpulse("skyra skyra ~close | skyra: closing")
 	if err != nil {
 		t.Fatalf("NewImpulse(close) error = %v", err)
 	}
@@ -121,7 +122,7 @@ func TestAcceptSignalStartsNewExchangeAfterClosedTop(t *testing.T) {
 	if len(stack.Exchanges()[1]) != 1 {
 		t.Fatalf("len(targetPeer.Exchanges()[1]) = %d, want 1", len(stack.Exchanges()[1]))
 	}
-	want := "name: skyra\nidentity: system\npurpose: relate\n\nYou are in an exchange with: michael\nthe identity of michael is: builder\nthe purpose of michael is: hold the line\n\nmichael: after close\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nbuilder - hold the line"
+	want := "name: skyra\nidentity: system\npurpose: relate\n\nYou are in an exchange with: michael\nthe identity of michael is: builder\nthe purpose of michael is: hold the line\n\nmichael: after close\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael: builder - hold the line"
 	if result.ReceiverPresent != want {
 		t.Fatalf("ReceiverPresent = %q, want %q", result.ReceiverPresent, want)
 	}
@@ -143,7 +144,7 @@ func TestAcceptSignalCloseWritesOnlyToOriginStack(t *testing.T) {
 		ID:         "sig-4",
 		Origin:     origin.Name,
 		TraceToken: "trace-4",
-		Impulse:    "skyra skyra -close | skyra: closing",
+		Impulse:    "skyra skyra ~close | skyra: closing",
 	})
 
 	if result.Status != RouteStatusRouted {
@@ -181,7 +182,7 @@ func TestAcceptSignalCloseWritesOnlyToOriginStack(t *testing.T) {
 	if len(targetStack.Exchanges()) != 0 {
 		t.Fatalf("len(targetStack.Exchanges()) = %d, want 0", len(targetStack.Exchanges()))
 	}
-	if string(originStack.Exchanges()[0][1]) != "skyra skyra -close | skyra: closing" {
+	if string(originStack.Exchanges()[0][1]) != "skyra skyra ~close | skyra: closing" {
 		t.Fatalf("close stored raw impulse = %q, want raw value", string(originStack.Exchanges()[0][1]))
 	}
 }
@@ -232,8 +233,8 @@ func TestAcceptSignalRoutesToExternalDispatchAndDerivesExpressionOnlyPresent(t *
 	if err := w.Register(sensor); err != nil {
 		t.Fatalf("Register(sensor) error = %v", err)
 	}
-	if err := w.Relate(origin.Name, sensor.Name); err != nil {
-		t.Fatalf("Relate() error = %v", err)
+	if _, err := w.Grow(fmt.Sprintf("skyra being ~name %s ~relationships %s", origin.Name, sensor.Name)); err != nil {
+		t.Fatalf("Grow(relate) error = %v", err)
 	}
 
 	// Replace sensor's peer channel for origin with an ExternalDispatch
@@ -292,8 +293,8 @@ func seededWorld(t *testing.T) (*world.World, *being.Being, *being.Being) {
 	if err := w.Register(target); err != nil {
 		t.Fatalf("Register(target) error = %v", err)
 	}
-	if err := w.Relate(origin.Name, target.Name); err != nil {
-		t.Fatalf("Relate() error = %v", err)
+	if _, err := w.Grow(fmt.Sprintf("skyra being ~name %s ~relationships %s", origin.Name, target.Name)); err != nil {
+		t.Fatalf("Grow(relate) error = %v", err)
 	}
 
 	return w, origin, target

@@ -168,6 +168,8 @@ func (c *ExchangeStack) DerivePresent(receiver *being.Being, sender *being.Being
 	builder.WriteString("\n________________")
 	for _, peer := range sortedPeers(receiver.Peers) {
 		builder.WriteString("\n")
+		builder.WriteString(peer.Name())
+		builder.WriteString(": ")
 		builder.WriteString(peer.PeerNature().Identity.Value)
 		builder.WriteString(" - ")
 		builder.WriteString(peer.PeerNature().Purpose.Value)
@@ -221,7 +223,7 @@ func formatFlags(flags []being.Flag) string {
 		if flag == "" {
 			continue
 		}
-		parts = append(parts, "-"+string(flag))
+		parts = append(parts, "~"+string(flag))
 	}
 	return strings.Join(parts, " ")
 }

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -15,7 +16,7 @@ import (
 
 const (
 	geminiEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent"
-	systemPrompt   = "You are this being."
+	systemPrompt = "You are a being in a cognitive system. Always respond with a single protocol string in this exact format: skyra <being> <expression> ~<flag> | <source>: <reason>. Flags are optional. No explanation. No markdown. No extra text.\n\nYou are a being in a cognitive system.\n\nYou are a being in a cognitive system. Always respond with a single protocol string in this exact format: skyra <being> <expression> ~<flag> | <source>: <reason>. Flags are optional. No explanation. No markdown. No extra text."
 )
 
 type Config struct {
@@ -67,10 +68,12 @@ type candidate struct {
 }
 
 func (r *Runner) Run(present string, originName string) (metaxu.Signal, error) {
+	fmt.Fprintf(os.Stderr, "[inference] being=%s\n", originName)
 	protocol, err := r.callGemini(present)
 	if err != nil {
 		return metaxu.Signal{}, fmt.Errorf("inference: %w", err)
 	}
+	fmt.Fprintf(os.Stderr, "[inference] response=%s\n", protocol)
 
 	return metaxu.Signal{
 		Origin:  originName,

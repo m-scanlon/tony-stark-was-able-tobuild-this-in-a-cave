@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"testing"
 
 	being "skyra-v03/src/primitives/being"
@@ -53,7 +54,7 @@ func mustParse(t *testing.T, i being.Impulse) being.ParsedImpulse {
 // impulse parsing
 
 func TestParseImpulseWithExpressionAndFlags(t *testing.T) {
-	impulse, err := being.ParseImpulse("skyra bob hello there -close -custom | bob: testing expression and flags")
+	impulse, err := being.ParseImpulse("skyra bob hello there ~close ~custom | bob: testing expression and flags")
 	if err != nil {
 		t.Fatalf("ParseImpulse() error = %v", err)
 	}
@@ -78,7 +79,7 @@ func TestParseImpulseWithExpressionAndFlags(t *testing.T) {
 }
 
 func TestParseImpulseAllowsCloseWithoutExpression(t *testing.T) {
-	impulse, err := being.ParseImpulse("skyra bob -close | bob: closing exchange")
+	impulse, err := being.ParseImpulse("skyra bob ~close | bob: closing exchange")
 	if err != nil {
 		t.Fatalf("ParseImpulse() error = %v", err)
 	}
@@ -99,7 +100,7 @@ func TestExchangeStackStoresExplicitExchanges(t *testing.T) {
 	}
 
 	first := mustImpulse(t, "skyra bob hello | bob: opening")
-	close := mustImpulse(t, "skyra bob -close | bob: done")
+	close := mustImpulse(t, "skyra bob ~close | bob: done")
 	second := mustImpulse(t, "skyra bob new run | bob: resuming")
 
 	deliver := func(i being.Impulse) being.DeliveredImpulse {
@@ -171,7 +172,7 @@ func TestExchangeStackRejectsCloseWithoutOpenExchange(t *testing.T) {
 		t.Fatalf("NewExchangeStack() error = %v", err)
 	}
 
-	closeImpulse := mustImpulse(t, "skyra bob -close | bob: closing")
+	closeImpulse := mustImpulse(t, "skyra bob ~close | bob: closing")
 	result := channel.Send(being.DeliveredImpulse{Raw: closeImpulse, Parsed: mustParse(t, closeImpulse)})
 	if result.Routed {
 		t.Fatalf("Send(close) Routed = true, want false")
@@ -202,7 +203,7 @@ func TestExchangeStackDerivePresentUsesNameNatureAndCurrentOpenExchange(t *testi
 		t.Fatalf("DerivePresent() error = %v", err)
 	}
 
-	want := "name: michael\nidentity: builder\npurpose: hold the line\n\nYou are in an exchange with: skyra\nthe identity of skyra is: system\nthe purpose of skyra is: relate\n\nskyra: relate\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nsystem - relate"
+	want := "name: michael\nidentity: builder\npurpose: hold the line\n\nYou are in an exchange with: skyra\nthe identity of skyra is: system\nthe purpose of skyra is: relate\n\nskyra: relate\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nskyra: system - relate"
 	if present != want {
 		t.Fatalf("Present = %q, want %q", present, want)
 	}
@@ -217,7 +218,7 @@ func TestClosedTopProducesNoOpenExchangeInPresent(t *testing.T) {
 	}
 
 	impulse := mustImpulse(t, "skyra skyra hello | michael: hello")
-	close := mustImpulse(t, "skyra skyra -close | michael: closing")
+	close := mustImpulse(t, "skyra skyra ~close | michael: closing")
 	_, _ = b.EmitToPeer(sender.Name, impulse)
 	_, _ = b.EmitToPeer(sender.Name, close)
 
@@ -225,7 +226,7 @@ func TestClosedTopProducesNoOpenExchangeInPresent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DerivePresent() error = %v", err)
 	}
-	want := "name: michael\nidentity: builder\npurpose: hold the line\n\nYou are in an exchange with: skyra\nthe identity of skyra is: system\nthe purpose of skyra is: relate\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nsystem - relate"
+	want := "name: michael\nidentity: builder\npurpose: hold the line\n\nYou are in an exchange with: skyra\nthe identity of skyra is: system\nthe purpose of skyra is: relate\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nskyra: system - relate"
 	if present != want {
 		t.Fatalf("Present = %q, want %q", present, want)
 	}
@@ -269,8 +270,8 @@ func TestWorldRelatesBeingsAndResolvesByName(t *testing.T) {
 	if err := w.Register(right); err != nil {
 		t.Fatalf("Register(right) error = %v", err)
 	}
-	if err := w.Relate(left.Name, right.Name); err != nil {
-		t.Fatalf("Relate() error = %v", err)
+	if _, err := w.Grow(fmt.Sprintf("skyra being ~name %s ~relationships %s", left.Name, right.Name)); err != nil {
+		t.Fatalf("Grow(relate) error = %v", err)
 	}
 
 	resolved, ok := w.BeingByName("michael")
@@ -320,7 +321,7 @@ func TestExchangeStackDerivePresentSortsRelationshipsByPeerName(t *testing.T) {
 		t.Fatalf("DerivePresent() error = %v", err)
 	}
 
-	want := "name: michael\nidentity: builder\npurpose: hold the line\n\nYou are in an exchange with: zoe\nthe identity of zoe is: late\nthe purpose of zoe is: second\n\nzoe: hello\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nearly - first\nlate - second"
+	want := "name: michael\nidentity: builder\npurpose: hold the line\n\nYou are in an exchange with: zoe\nthe identity of zoe is: late\nthe purpose of zoe is: second\n\nzoe: hello\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nadam: early - first\nzoe: late - second"
 	if present != want {
 		t.Fatalf("Present = %q, want %q", present, want)
 	}
@@ -334,7 +335,7 @@ func TestExchangeStackDerivePresentUsesExpressionOnlyForNonCognitiveReceiver(t *
 		t.Fatalf("SeedPeer() error = %v", err)
 	}
 
-	impulse := mustImpulse(t, "skyra michael heat spike -custom | sensor: spike detected")
+	impulse := mustImpulse(t, "skyra michael heat spike ~custom | sensor: spike detected")
 	if _, err := receiver.EmitToPeer(sender.Name, impulse); err != nil {
 		t.Fatalf("EmitToPeer() error = %v", err)
 	}
@@ -349,7 +350,7 @@ func TestExchangeStackDerivePresentUsesExpressionOnlyForNonCognitiveReceiver(t *
 }
 
 func TestSignalImpulseCanBeRoundTripped(t *testing.T) {
-	raw := "skyra skyra relate to me -close | michael: closing"
+	raw := "skyra skyra relate to me ~close | michael: closing"
 	impulse := mustImpulse(t, raw)
 
 	parsed, err := being.ParseImpulse(impulse.Raw())
