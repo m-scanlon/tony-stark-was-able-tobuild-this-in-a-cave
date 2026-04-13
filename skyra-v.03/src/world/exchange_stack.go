@@ -10,17 +10,22 @@ import (
 	"skyra-v03/src/primitives/nature"
 )
 
-type Exchange []being.Impulse
+type ExchangeEntry struct {
+	Author  string
+	Impulse being.Impulse
+}
+
+type Exchange []ExchangeEntry
 
 func (e Exchange) IsClosed() bool {
 	if len(e) == 0 {
 		return false
 	}
-	return e[len(e)-1].IsClose()
+	return e[len(e)-1].Impulse.IsClose()
 }
 
-func (e Exchange) Impulses() []being.Impulse {
-	return append([]being.Impulse(nil), e...)
+func (e Exchange) Entries() []ExchangeEntry {
+	return append([]ExchangeEntry(nil), e...)
 }
 
 type ExchangeStack struct {
@@ -85,23 +90,25 @@ func (c *ExchangeStack) Send(delivery being.DeliveredImpulse) being.ChannelResul
 		stored = rewriteImpulseTarget(delivery.Raw, delivery.OriginName)
 	}
 
+	entry := ExchangeEntry{Author: delivery.OriginName, Impulse: stored}
+
 	if delivery.Parsed.IsClose() {
 		if !c.HasOpenExchange() {
 			return being.ChannelResult{DropReason: "cannot close without an open exchange"}
 		}
 
 		top := len(c.stack) - 1
-		c.stack[top] = append(c.stack[top], stored)
+		c.stack[top] = append(c.stack[top], entry)
 		return being.ChannelResult{Routed: true}
 	}
 
 	if c.HasOpenExchange() {
 		top := len(c.stack) - 1
-		c.stack[top] = append(c.stack[top], stored)
+		c.stack[top] = append(c.stack[top], entry)
 		return being.ChannelResult{Routed: true}
 	}
 
-	c.stack = append(c.stack, Exchange{stored})
+	c.stack = append(c.stack, Exchange{entry})
 	return being.ChannelResult{Routed: true, NewExchange: true}
 }
 
@@ -111,7 +118,7 @@ func (c *ExchangeStack) Exchanges() []Exchange {
 	}
 	exchanges := make([]Exchange, len(c.stack))
 	for i, exchange := range c.stack {
-		exchanges[i] = Exchange(exchange.Impulses())
+		exchanges[i] = Exchange(exchange.Entries())
 	}
 	return exchanges
 }
@@ -127,7 +134,7 @@ func (c *ExchangeStack) CurrentOpenExchange() Exchange {
 	if !c.HasOpenExchange() {
 		return nil
 	}
-	return Exchange(c.stack[len(c.stack)-1].Impulses())
+	return Exchange(c.stack[len(c.stack)-1].Entries())
 }
 
 func (c *ExchangeStack) DerivePresent(receiver *being.Being, sender *being.Being) string {
@@ -147,11 +154,15 @@ func (c *ExchangeStack) DerivePresent(receiver *being.Being, sender *being.Being
 	builder.WriteString(sender.Nature.Purpose.Value)
 
 	open := c.CurrentOpenExchange()
-	for _, impulse := range open {
+	for _, entry := range open {
 		builder.WriteString("\n\n")
-		builder.WriteString(sender.Name)
+		author := entry.Author
+		if author == "" {
+			author = sender.Name
+		}
+		builder.WriteString(author)
 		builder.WriteString(": ")
-		builder.WriteString(formatPresentImpulse(receiver, impulse))
+		builder.WriteString(formatPresentImpulse(receiver, entry.Impulse))
 	}
 
 	builder.WriteString("\n\nrelationships:")

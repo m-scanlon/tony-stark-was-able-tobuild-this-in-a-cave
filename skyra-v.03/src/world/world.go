@@ -79,6 +79,13 @@ func (w *World) seedRelationships(b *being.Being, expression string) error {
 		if err := seedPeer(peer, b.Name, b.Nature); err != nil {
 			return err
 		}
+		if lang, err := extract.MeaningToEnd(expression, "~language-"+peerName, "grow"); err == nil {
+			if ch, ok := b.Peers[peerName]; ok {
+				if setter, ok := ch.(interface{ SetCallableLanguage(string) }); ok {
+					setter.SetCallableLanguage(lang)
+				}
+			}
+		}
 	}
 	return nil
 }

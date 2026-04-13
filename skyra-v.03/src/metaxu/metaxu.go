@@ -86,8 +86,9 @@ func (m *Metaxu) AcceptSignal(signal Signal) Result {
 	result.ReceiverCognitive = target.Cognitive
 
 	originDelivery := being.DeliveredImpulse{
-		Raw:    being.Impulse(parsed.Raw),
-		Parsed: parsed,
+		OriginName: origin.Name,
+		Raw:        being.Impulse(parsed.Raw),
+		Parsed:     parsed,
 	}
 
 	targetDelivery := being.DeliveredImpulse{
@@ -132,18 +133,21 @@ func (m *Metaxu) AcceptSignal(signal Signal) Result {
 		}
 	}
 
-	channelResult, err := target.SendToPeer(origin.Name, targetDelivery)
-	if err != nil {
-		result.DropReason = err.Error()
-		return result
-	}
-	if !channelResult.Routed {
-		result.DropReason = channelResult.DropReason
-		return result
+	// for self-calls target == origin, step 2 already wrote to the self channel
+	if target.Name != origin.Name {
+		channelResult, err := target.SendToPeer(origin.Name, targetDelivery)
+		if err != nil {
+			result.DropReason = err.Error()
+			return result
+		}
+		if !channelResult.Routed {
+			result.DropReason = channelResult.DropReason
+			return result
+		}
+		result.NewExchange = channelResult.NewExchange
 	}
 
 	result.Status = RouteStatusRouted
-	result.NewExchange = channelResult.NewExchange
 	result.WrittenBeingName = target.Name
 	result.WrittenPeerName = origin.Name
 

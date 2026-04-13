@@ -20,8 +20,8 @@ func main() {
 	w := world.New()
 	m := metaxu.New(w)
 	runner := inference.New(inference.Config{
-		APIKey: os.Getenv("GEMINI_API_KEY"),
-		Model:  os.Getenv("GEMINI_MODEL"),
+		BaseURL: os.Getenv("OLLAMA_BASE_URL"),
+		Model:   os.Getenv("OLLAMA_MODEL"),
 	})
 
 	if err := seedGrow(w); err != nil {
@@ -97,20 +97,12 @@ func bootstrap(w *world.World) error {
 		return err
 	}
 
-	var kept []string
 	for _, line := range strings.Split(string(data), "\n") {
-		if !strings.HasPrefix(strings.TrimSpace(line), "#") {
-			kept = append(kept, line)
-		}
-	}
-
-	chunks := strings.Split(strings.Join(kept, "\n"), "skyra")
-	for _, chunk := range chunks {
-		chunk = strings.TrimSpace(chunk)
-		if chunk == "" {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		if _, err := w.Grow("skyra " + chunk); err != nil {
+		if _, err := w.Grow(line); err != nil {
 			return fmt.Errorf("genome: %w", err)
 		}
 	}

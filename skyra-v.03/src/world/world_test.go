@@ -132,7 +132,7 @@ func TestExchangeStackStoresExplicitExchanges(t *testing.T) {
 	if len(open) != 1 {
 		t.Fatalf("len(CurrentOpenExchange()) = %d, want 1", len(open))
 	}
-	parsed, err := open[0].Parse()
+	parsed, err := open[0].Impulse.Parse()
 	if err != nil {
 		t.Fatalf("Parse() error = %v", err)
 	}
@@ -161,8 +161,8 @@ func TestExchangeStackSwapsTargetToOriginForReceiverView(t *testing.T) {
 	if len(exchanges) != 1 || len(exchanges[0]) != 1 {
 		t.Fatalf("Exchanges() shape = %#v, want one exchange with one impulse", exchanges)
 	}
-	if string(exchanges[0][0]) != "skyra michael hello there | michael: hello" {
-		t.Fatalf("stored impulse = %q, want %q", string(exchanges[0][0]), "skyra michael hello there | michael: hello")
+	if string(exchanges[0][0].Impulse) != "skyra michael hello there | michael: hello" {
+		t.Fatalf("stored impulse = %q, want %q", string(exchanges[0][0].Impulse), "skyra michael hello there | michael: hello")
 	}
 }
 
@@ -203,7 +203,7 @@ func TestExchangeStackDerivePresentUsesNameNatureAndCurrentOpenExchange(t *testi
 		t.Fatalf("DerivePresent() error = %v", err)
 	}
 
-	want := "name: michael\nidentity: builder\npurpose: hold the line\n\nYou are in an exchange with: skyra\nthe identity of skyra is: system\nthe purpose of skyra is: relate\n\nskyra: relate\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nskyra: system - relate"
+	want := "your name is: michael\nyour identity is: builder\nyour purpose is: hold the line\n\nyou are in an exchange with: skyra\ntheir identity is: system\ntheir purpose is: relate\n\nmichael: relate\n\nrelationships:\nTo respond, output a single protocol string:\nskyra <being> <expression> | <source>: <reason>\n<being> is who you are sending to — must be one of your relationships below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nskyra: system - relate"
 	if present != want {
 		t.Fatalf("Present = %q, want %q", present, want)
 	}
@@ -226,7 +226,7 @@ func TestClosedTopProducesNoOpenExchangeInPresent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DerivePresent() error = %v", err)
 	}
-	want := "name: michael\nidentity: builder\npurpose: hold the line\n\nYou are in an exchange with: skyra\nthe identity of skyra is: system\nthe purpose of skyra is: relate\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nskyra: system - relate"
+	want := "your name is: michael\nyour identity is: builder\nyour purpose is: hold the line\n\nyou are in an exchange with: skyra\ntheir identity is: system\ntheir purpose is: relate\n\nrelationships:\nTo respond, output a single protocol string:\nskyra <being> <expression> | <source>: <reason>\n<being> is who you are sending to — must be one of your relationships below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nskyra: system - relate"
 	if present != want {
 		t.Fatalf("Present = %q, want %q", present, want)
 	}
@@ -321,7 +321,7 @@ func TestExchangeStackDerivePresentSortsRelationshipsByPeerName(t *testing.T) {
 		t.Fatalf("DerivePresent() error = %v", err)
 	}
 
-	want := "name: michael\nidentity: builder\npurpose: hold the line\n\nYou are in an exchange with: zoe\nthe identity of zoe is: late\nthe purpose of zoe is: second\n\nzoe: hello\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nadam: early - first\nzoe: late - second"
+	want := "your name is: michael\nyour identity is: builder\nyour purpose is: hold the line\n\nyou are in an exchange with: zoe\ntheir identity is: late\ntheir purpose is: second\n\nmichael: hello\n\nrelationships:\nTo respond, output a single protocol string:\nskyra <being> <expression> | <source>: <reason>\n<being> is who you are sending to — must be one of your relationships below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nadam: early - first\nzoe: late - second"
 	if present != want {
 		t.Fatalf("Present = %q, want %q", present, want)
 	}

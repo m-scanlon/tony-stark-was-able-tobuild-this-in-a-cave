@@ -35,7 +35,7 @@ func TestAcceptSignalRoutesToReceiverAndStartsNewExchange(t *testing.T) {
 	if result.WrittenPeerName != origin.Name {
 		t.Fatalf("WrittenPeerName = %q, want %q", result.WrittenPeerName, origin.Name)
 	}
-	want := "name: skyra\nidentity: system\npurpose: relate\n\nYou are in an exchange with: michael\nthe identity of michael is: builder\nthe purpose of michael is: hold the line\n\nmichael: hello there\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael: builder - hold the line"
+	want := "your name is: skyra\nyour identity is: system\nyour purpose is: relate\n\nyou are in an exchange with: michael\ntheir identity is: builder\ntheir purpose is: hold the line\n\nmichael: hello there\n\nrelationships:\nTo respond, output a single protocol string:\nskyra <being> <expression> | <source>: <reason>\n<being> is who you are sending to — must be one of your relationships below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael: builder - hold the line"
 	if result.ReceiverPresent != want {
 		t.Fatalf("ReceiverPresent = %q, want %q", result.ReceiverPresent, want)
 	}
@@ -66,7 +66,7 @@ func TestAcceptSignalAppendsToExistingOpenExchange(t *testing.T) {
 	if result.NewExchange {
 		t.Fatalf("NewExchange = true, want false")
 	}
-	want := "name: skyra\nidentity: system\npurpose: relate\n\nYou are in an exchange with: michael\nthe identity of michael is: builder\nthe purpose of michael is: hold the line\n\nmichael: first\n\nmichael: second\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael: builder - hold the line"
+	want := "your name is: skyra\nyour identity is: system\nyour purpose is: relate\n\nyou are in an exchange with: michael\ntheir identity is: builder\ntheir purpose is: hold the line\n\nmichael: first\n\nmichael: second\n\nrelationships:\nTo respond, output a single protocol string:\nskyra <being> <expression> | <source>: <reason>\n<being> is who you are sending to — must be one of your relationships below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael: builder - hold the line"
 	if result.ReceiverPresent != want {
 		t.Fatalf("ReceiverPresent = %q, want %q", result.ReceiverPresent, want)
 	}
@@ -122,7 +122,7 @@ func TestAcceptSignalStartsNewExchangeAfterClosedTop(t *testing.T) {
 	if len(stack.Exchanges()[1]) != 1 {
 		t.Fatalf("len(targetPeer.Exchanges()[1]) = %d, want 1", len(stack.Exchanges()[1]))
 	}
-	want := "name: skyra\nidentity: system\npurpose: relate\n\nYou are in an exchange with: michael\nthe identity of michael is: builder\nthe purpose of michael is: hold the line\n\nmichael: after close\n\nrelationships:\nCall any of your relationships using this syntax-\nskyra <being> <expression> | <source>: <reason> ~<emotional_signals>\n<being> must be one of your relationships listed below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael: builder - hold the line"
+	want := "your name is: skyra\nyour identity is: system\nyour purpose is: relate\n\nyou are in an exchange with: michael\ntheir identity is: builder\ntheir purpose is: hold the line\n\nmichael: after close\n\nrelationships:\nTo respond, output a single protocol string:\nskyra <being> <expression> | <source>: <reason>\n<being> is who you are sending to — must be one of your relationships below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael: builder - hold the line"
 	if result.ReceiverPresent != want {
 		t.Fatalf("ReceiverPresent = %q, want %q", result.ReceiverPresent, want)
 	}
@@ -182,8 +182,8 @@ func TestAcceptSignalCloseWritesOnlyToOriginStack(t *testing.T) {
 	if len(targetStack.Exchanges()) != 0 {
 		t.Fatalf("len(targetStack.Exchanges()) = %d, want 0", len(targetStack.Exchanges()))
 	}
-	if string(originStack.Exchanges()[0][1]) != "skyra skyra ~close | skyra: closing" {
-		t.Fatalf("close stored raw impulse = %q, want raw value", string(originStack.Exchanges()[0][1]))
+	if string(originStack.Exchanges()[0][1].Impulse) != "skyra skyra ~close | skyra: closing" {
+		t.Fatalf("close stored raw impulse = %q, want raw value", string(originStack.Exchanges()[0][1].Impulse))
 	}
 }
 
