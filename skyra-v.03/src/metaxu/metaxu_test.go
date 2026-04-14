@@ -20,7 +20,7 @@ func TestAcceptSignalRoutesToReceiverAndStartsNewExchange(t *testing.T) {
 		ID:         "sig-1",
 		Origin:     origin.Name,
 		TraceToken: "trace-1",
-		Impulse:    "skyra skyra hello there | skyra: greeting",
+		Impulse:    "skyra skyra hello there | greeting",
 	})
 
 	if result.Status != RouteStatusRouted {
@@ -35,7 +35,7 @@ func TestAcceptSignalRoutesToReceiverAndStartsNewExchange(t *testing.T) {
 	if result.WrittenPeerName != origin.Name {
 		t.Fatalf("WrittenPeerName = %q, want %q", result.WrittenPeerName, origin.Name)
 	}
-	want := "your name is: skyra\nyour identity is: system\nyour purpose is: relate\n\nyou are in an exchange with: michael\ntheir identity is: builder\ntheir purpose is: hold the line\n\nmichael: hello there\n\nrelationships:\nTo respond, output a single protocol string:\nskyra <being> <expression> | <source>: <reason>\n<being> is who you are sending to — must be one of your relationships below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael: builder - hold the line"
+	want := "your name is: skyra\nyour identity is: system\nyour purpose is: relate\n\nyou are in an exchange with: michael\ntheir identity is: builder\ntheir purpose is: hold the line\n\nmichael: hello there\n\nyour cognitive network — beings you can address:\nTo respond, output a single protocol string:\nskyra <being> <what you want to say> | <reason>\n<being> is who you are sending to from the network below\n<what you want to say> is the substance of your expression to that being — carry the message forward\n<reason> is why you are firing this signal\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael\n  identity: builder"
 	if result.ReceiverPresent != want {
 		t.Fatalf("ReceiverPresent = %q, want %q", result.ReceiverPresent, want)
 	}
@@ -45,7 +45,7 @@ func TestAcceptSignalAppendsToExistingOpenExchange(t *testing.T) {
 	w, origin, target := seededWorld(t)
 	m := New(w)
 
-	first, err := being.NewImpulse("skyra skyra first | skyra: opening")
+	first, err := being.NewImpulse("skyra skyra first | opening")
 	if err != nil {
 		t.Fatalf("NewImpulse(first) error = %v", err)
 	}
@@ -57,7 +57,7 @@ func TestAcceptSignalAppendsToExistingOpenExchange(t *testing.T) {
 		ID:         "sig-2",
 		Origin:     origin.Name,
 		TraceToken: "trace-2",
-		Impulse:    "skyra skyra second | skyra: follow-up",
+		Impulse:    "skyra skyra second | follow-up",
 	})
 
 	if result.Status != RouteStatusRouted {
@@ -66,7 +66,7 @@ func TestAcceptSignalAppendsToExistingOpenExchange(t *testing.T) {
 	if result.NewExchange {
 		t.Fatalf("NewExchange = true, want false")
 	}
-	want := "your name is: skyra\nyour identity is: system\nyour purpose is: relate\n\nyou are in an exchange with: michael\ntheir identity is: builder\ntheir purpose is: hold the line\n\nmichael: first\n\nmichael: second\n\nrelationships:\nTo respond, output a single protocol string:\nskyra <being> <expression> | <source>: <reason>\n<being> is who you are sending to — must be one of your relationships below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael: builder - hold the line"
+	want := "your name is: skyra\nyour identity is: system\nyour purpose is: relate\n\nyou are in an exchange with: michael\ntheir identity is: builder\ntheir purpose is: hold the line\n\nmichael: first\n\nmichael: second\n\nyour cognitive network — beings you can address:\nTo respond, output a single protocol string:\nskyra <being> <what you want to say> | <reason>\n<being> is who you are sending to from the network below\n<what you want to say> is the substance of your expression to that being — carry the message forward\n<reason> is why you are firing this signal\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael\n  identity: builder"
 	if result.ReceiverPresent != want {
 		t.Fatalf("ReceiverPresent = %q, want %q", result.ReceiverPresent, want)
 	}
@@ -76,11 +76,11 @@ func TestAcceptSignalStartsNewExchangeAfterClosedTop(t *testing.T) {
 	w, origin, target := seededWorld(t)
 	m := New(w)
 
-	first, err := being.NewImpulse("skyra skyra first | skyra: opening")
+	first, err := being.NewImpulse("skyra skyra first | opening")
 	if err != nil {
 		t.Fatalf("NewImpulse(first) error = %v", err)
 	}
-	closeImpulse, err := being.NewImpulse("skyra skyra ~close | skyra: closing")
+	closeImpulse, err := being.NewImpulse("skyra skyra ~close | closing")
 	if err != nil {
 		t.Fatalf("NewImpulse(close) error = %v", err)
 	}
@@ -95,7 +95,7 @@ func TestAcceptSignalStartsNewExchangeAfterClosedTop(t *testing.T) {
 		ID:         "sig-3",
 		Origin:     origin.Name,
 		TraceToken: "trace-3",
-		Impulse:    "skyra skyra after close | skyra: resuming",
+		Impulse:    "skyra skyra after close | resuming",
 	})
 
 	if result.Status != RouteStatusRouted {
@@ -122,7 +122,7 @@ func TestAcceptSignalStartsNewExchangeAfterClosedTop(t *testing.T) {
 	if len(stack.Exchanges()[1]) != 1 {
 		t.Fatalf("len(targetPeer.Exchanges()[1]) = %d, want 1", len(stack.Exchanges()[1]))
 	}
-	want := "your name is: skyra\nyour identity is: system\nyour purpose is: relate\n\nyou are in an exchange with: michael\ntheir identity is: builder\ntheir purpose is: hold the line\n\nmichael: after close\n\nrelationships:\nTo respond, output a single protocol string:\nskyra <being> <expression> | <source>: <reason>\n<being> is who you are sending to — must be one of your relationships below\n<source> is the being you are currently in exchange with\n<reason> is why you are firing this expression\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael: builder - hold the line"
+	want := "your name is: skyra\nyour identity is: system\nyour purpose is: relate\n\nyou are in an exchange with: michael\ntheir identity is: builder\ntheir purpose is: hold the line\n\nmichael: after close\n\nyour cognitive network — beings you can address:\nTo respond, output a single protocol string:\nskyra <being> <what you want to say> | <reason>\n<being> is who you are sending to from the network below\n<what you want to say> is the substance of your expression to that being — carry the message forward\n<reason> is why you are firing this signal\nRespond with the protocol string only — no explanation, no markdown, no extra text\n________________\nmichael\n  identity: builder"
 	if result.ReceiverPresent != want {
 		t.Fatalf("ReceiverPresent = %q, want %q", result.ReceiverPresent, want)
 	}
@@ -132,7 +132,7 @@ func TestAcceptSignalCloseWritesOnlyToOriginStack(t *testing.T) {
 	w, origin, target := seededWorld(t)
 	m := New(w)
 
-	open, err := being.NewImpulse("skyra skyra open | skyra: opening")
+	open, err := being.NewImpulse("skyra skyra open | opening")
 	if err != nil {
 		t.Fatalf("NewImpulse(open) error = %v", err)
 	}
@@ -144,7 +144,7 @@ func TestAcceptSignalCloseWritesOnlyToOriginStack(t *testing.T) {
 		ID:         "sig-4",
 		Origin:     origin.Name,
 		TraceToken: "trace-4",
-		Impulse:    "skyra skyra ~close | skyra: closing",
+		Impulse:    "skyra skyra ~close | closing",
 	})
 
 	if result.Status != RouteStatusRouted {
@@ -182,7 +182,7 @@ func TestAcceptSignalCloseWritesOnlyToOriginStack(t *testing.T) {
 	if len(targetStack.Exchanges()) != 0 {
 		t.Fatalf("len(targetStack.Exchanges()) = %d, want 0", len(targetStack.Exchanges()))
 	}
-	if string(originStack.Exchanges()[0][1].Impulse) != "skyra skyra ~close | skyra: closing" {
+	if string(originStack.Exchanges()[0][1].Impulse) != "skyra skyra ~close | closing" {
 		t.Fatalf("close stored raw impulse = %q, want raw value", string(originStack.Exchanges()[0][1].Impulse))
 	}
 }
@@ -195,7 +195,7 @@ func TestAcceptSignalDropsWhenTargetCannotBeResolved(t *testing.T) {
 		ID:         "sig-5",
 		Origin:     origin.Name,
 		TraceToken: "trace-5",
-		Impulse:    "skyra unknown hello | skyra: testing",
+		Impulse:    "skyra unknown hello | testing",
 	})
 
 	if result.Status != RouteStatusDropped {
@@ -251,7 +251,7 @@ func TestAcceptSignalRoutesToExternalDispatchAndDerivesExpressionOnlyPresent(t *
 		ID:         "sig-6",
 		Origin:     origin.Name,
 		TraceToken: "trace-6",
-		Impulse:    "skyra sensor heat spike | sensor: reporting",
+		Impulse:    "skyra sensor heat spike | reporting",
 	})
 
 	if result.Status != RouteStatusRouted {

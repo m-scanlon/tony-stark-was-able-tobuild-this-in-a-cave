@@ -71,12 +71,6 @@ func (m *Metaxu) AcceptSignal(signal Signal) Result {
 		OriginName:    origin.Name,
 	}
 
-	source, ok := m.world.BeingByName(parsed.Source)
-	if !ok {
-		result.DropReason = "source could not be resolved"
-		return result
-	}
-
 	target, ok := m.world.BeingByName(parsed.TargetName)
 	if !ok {
 		result.DropReason = "target could not be resolved"
@@ -85,20 +79,14 @@ func (m *Metaxu) AcceptSignal(signal Signal) Result {
 	result.TargetName = target.Name
 	result.ReceiverCognitive = target.Cognitive
 
-	originDelivery := being.DeliveredImpulse{
-		OriginName: origin.Name,
-		Raw:        being.Impulse(parsed.Raw),
-		Parsed:     parsed,
-	}
-
-	targetDelivery := being.DeliveredImpulse{
+	delivery := being.DeliveredImpulse{
 		OriginName: origin.Name,
 		Raw:        being.Impulse(parsed.Raw),
 		Parsed:     parsed,
 	}
 
 	if parsed.IsClose() {
-		channelResult, err := origin.SendToPeer(target.Name, originDelivery)
+		channelResult, err := origin.SendToPeer(target.Name, delivery)
 		if err != nil {
 			result.DropReason = err.Error()
 			return result
@@ -119,23 +107,24 @@ func (m *Metaxu) AcceptSignal(signal Signal) Result {
 		return result
 	}
 
-	if origin.Name != source.Name {
-		if _, err := origin.SendToPeer(source.Name, originDelivery); err != nil {
+	if origin.Name == target.Name {
+		// self-call: write once to the self channel
+		channelResult, err := origin.SendToPeer(origin.Name, delivery)
+		if err != nil {
 			result.DropReason = err.Error()
 			return result
 		}
-	}
-
-	if source.Name != target.Name {
-		if _, err := origin.SendToPeer(target.Name, originDelivery); err != nil {
+		if !channelResult.Routed {
+			result.DropReason = channelResult.DropReason
+			return result
+		}
+		result.NewExchange = channelResult.NewExchange
+	} else {
+		if _, err := origin.SendToPeer(target.Name, delivery); err != nil {
 			result.DropReason = err.Error()
 			return result
 		}
-	}
-
-	// for self-calls target == origin, step 2 already wrote to the self channel
-	if target.Name != origin.Name {
-		channelResult, err := target.SendToPeer(origin.Name, targetDelivery)
+		channelResult, err := target.SendToPeer(origin.Name, delivery)
 		if err != nil {
 			result.DropReason = err.Error()
 			return result

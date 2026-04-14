@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"skyra-v03/src/primitives/callable"
 	"skyra-v03/src/primitives/identity"
 	"skyra-v03/src/primitives/purpose"
 )
@@ -11,6 +12,7 @@ import (
 type Nature struct {
 	Identity identity.Identity
 	Purpose  purpose.Purpose
+	Callable callable.Callable
 }
 
 func (n Nature) Validate() error {
@@ -34,8 +36,14 @@ func CreateNature(expression string) (Nature, error) {
 		return Nature{}, err
 	}
 
+	c, err := callable.CreateCallable(expression)
+	if err != nil {
+		return Nature{}, err
+	}
+
 	return Nature{
 		Identity: id,
 		Purpose:  p,
+		Callable: c,
 	}, nil
 }

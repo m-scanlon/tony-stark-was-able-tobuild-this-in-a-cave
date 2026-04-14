@@ -45,7 +45,6 @@ type ParsedImpulse struct {
 	TargetName string
 	Expression string
 	Flags      []Flag
-	Source     string
 	Reason     string
 }
 
@@ -95,26 +94,7 @@ func ParseImpulse(raw string) (ParsedImpulse, error) {
 
 	expression := strings.Join(parts[2:flagStart], " ")
 
-	colonIdx := strings.Index(right, ":")
-	if colonIdx < 0 {
-		return ParsedImpulse{}, fmt.Errorf("being: invalid impulse: missing : separator in right zone")
-	}
-
-	source := strings.TrimSpace(right[:colonIdx])
-	if source == "" {
-		return ParsedImpulse{}, fmt.Errorf("being: invalid impulse: source is required")
-	}
-
-	rest := strings.TrimSpace(right[colonIdx+1:])
-
-	tildeIdx := strings.Index(rest, "~")
-	var reason string
-	if tildeIdx < 0 {
-		reason = strings.TrimSpace(rest)
-	} else {
-		reason = strings.TrimSpace(rest[:tildeIdx])
-	}
-
+	reason := strings.TrimSpace(right)
 	if reason == "" {
 		return ParsedImpulse{}, fmt.Errorf("being: invalid impulse: reason is required")
 	}
@@ -124,7 +104,6 @@ func ParseImpulse(raw string) (ParsedImpulse, error) {
 		TargetName: targetName,
 		Expression: expression,
 		Flags:      flags,
-		Source:     source,
 		Reason:     reason,
 	}
 
@@ -144,9 +123,6 @@ func (i ParsedImpulse) Validate() error {
 	}
 	if i.Expression == "" && !i.IsClose() {
 		return fmt.Errorf("being: invalid impulse: expression is required unless close is present")
-	}
-	if strings.TrimSpace(i.Source) == "" {
-		return fmt.Errorf("being: invalid impulse: source is required")
 	}
 	if strings.TrimSpace(i.Reason) == "" {
 		return fmt.Errorf("being: invalid impulse: reason is required")

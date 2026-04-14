@@ -43,18 +43,33 @@ func main() {
 
 		dispatch(m, w, runner, metaxu.Signal{
 			Origin:  "michael",
-			Impulse: fmt.Sprintf("skyra sensory %s | michael: experience", line),
+			Impulse: fmt.Sprintf("skyra sensory %s | experience", line),
 		})
 	}
 }
 
 func dispatch(m *metaxu.Metaxu, w *world.World, runner *inference.Runner, initial metaxu.Signal) {
 	signal := initial
+	var lastCognitiveName string
+	var lastSignal string
+
 	for {
 		result := m.AcceptSignal(signal)
 
 		if result.Status == metaxu.RouteStatusDropped {
 			fmt.Fprintf(os.Stderr, "dropped: %s\n", result.DropReason)
+			if result.OriginName != "" && result.OriginName == lastCognitiveName && lastSignal != "" {
+				correction := "you wrote this last time:\n" + lastSignal + "\nyour last signal was dropped: " + result.DropReason + " — try again"
+				lastSignal = ""
+				lastCognitiveName = ""
+				next, err := runner.Run(correction, result.OriginName)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "inference: %v\n", err)
+					return
+				}
+				signal = next
+				continue
+			}
 			return
 		}
 
@@ -63,6 +78,8 @@ func dispatch(m *metaxu.Metaxu, w *world.World, runner *inference.Runner, initia
 		}
 
 		if result.ReceiverCognitive {
+			lastCognitiveName = result.TargetName
+			lastSignal = signal.Impulse
 			next, err := runner.Run(result.ReceiverPresent, result.TargetName)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "inference: %v\n", err)
@@ -81,7 +98,13 @@ func dispatch(m *metaxu.Metaxu, w *world.World, runner *inference.Runner, initia
 		case "sensory":
 			signal = metaxu.Signal{
 				Origin:  "sensory",
-				Impulse: fmt.Sprintf("skyra theory-of-mind %s | sensory: routing", result.ReceiverPresent),
+				Impulse: fmt.Sprintf("skyra thalamus %s | routing", result.ReceiverPresent),
+			}
+			continue
+		case "thalamus":
+			signal = metaxu.Signal{
+				Origin:  "thalamus",
+				Impulse: fmt.Sprintf("skyra prefrontal %s | relaying", result.ReceiverPresent),
 			}
 			continue
 		case "motor":
@@ -113,7 +136,7 @@ func seedGrow(w *world.World) error {
 	id := identity.Identity{Value: "the instantiator"}
 	p := purpose.Purpose{Value: "creates and registers beings from protocol expressions"}
 	n := nature.Nature{Identity: id, Purpose: p}
-	l := language.Language{Value: "skyra being ~name <name> ~identity <identity> ~purpose <purpose> ~language <expression> ~cognitive <true|false> ~relationships <a,b,c> | <source>: <reason>"}
+	l := language.Language{Value: "skyra being ~name <name> ~identity <identity> ~purpose <purpose> ~language <expression> ~cognitive <true|false> ~relationships <a,b,c> | <reason>"}
 
 	b, err := being.NewBeing("grow", n, l, false)
 	if err != nil {
@@ -122,17 +145,3 @@ func seedGrow(w *world.World) error {
 	return w.Register(b)
 }
 
-// originFrom extracts the source name from the right zone of a protocol string.
-// skyra <being> <expression> | <source>: <reason>
-func originFrom(impulse string) string {
-	parts := strings.SplitN(impulse, "|", 2)
-	if len(parts) != 2 {
-		return ""
-	}
-	right := strings.TrimSpace(parts[1])
-	colonIdx := strings.Index(right, ":")
-	if colonIdx < 0 {
-		return ""
-	}
-	return strings.TrimSpace(right[:colonIdx])
-}

@@ -160,30 +160,35 @@ func (c *ExchangeStack) DerivePresent(receiver *being.Being, sender *being.Being
 		if author == "" {
 			author = sender.Name
 		}
-		builder.WriteString(author)
+		isOwn := author == receiver.Name
+		if isOwn {
+			builder.WriteString("you")
+		} else {
+			builder.WriteString(author)
+		}
 		builder.WriteString(": ")
-		builder.WriteString(formatPresentImpulse(receiver, entry.Impulse))
+		builder.WriteString(formatPresentImpulse(receiver, entry.Impulse, isOwn))
 	}
 
-	builder.WriteString("\n\nrelationships:")
+	builder.WriteString("\n\nyour cognitive network — beings you can address:")
 	builder.WriteString("\nTo respond, output a single protocol string:")
-	builder.WriteString("\nskyra <being> <expression> | <source>: <reason>")
-	builder.WriteString("\n<being> is who you are sending to — must be one of your relationships below")
-	builder.WriteString("\n<source> is the being you are currently in exchange with")
-	builder.WriteString("\n<reason> is why you are firing this expression")
+	builder.WriteString("\nskyra <being> <what you want to say> | <reason>")
+	builder.WriteString("\n<being> is who you are sending to from the network below")
+	builder.WriteString("\n<what you want to say> is the substance of your expression to that being — carry the message forward")
+	builder.WriteString("\n<reason> is why you are firing this signal")
 	builder.WriteString("\nRespond with the protocol string only — no explanation, no markdown, no extra text")
 	builder.WriteString("\n________________")
 	for _, peer := range sortedPeers(receiver.Peers) {
 		builder.WriteString("\n")
 		builder.WriteString(peer.Name())
-		builder.WriteString(": ")
+		if callable := peer.PeerNature().Callable.Value; callable != "" {
+			builder.WriteString("\n  call me when: ")
+			builder.WriteString(callable)
+		}
+		builder.WriteString("\n  identity: ")
 		builder.WriteString(peer.PeerNature().Identity.Value)
-		builder.WriteString(" - ")
-		builder.WriteString(peer.PeerNature().Purpose.Value)
 		if lang := peer.CallableLanguage(); lang != "" {
-			builder.WriteString("\n")
-			builder.WriteString(peer.Name())
-			builder.WriteString(" ")
+			builder.WriteString("\n  language: ")
 			builder.WriteString(lang)
 		}
 	}
@@ -201,7 +206,7 @@ func sortedPeers(peers map[string]being.RelationshipChannel) []being.Relationshi
 	return channels
 }
 
-func formatPresentImpulse(receiver *being.Being, impulse being.Impulse) string {
+func formatPresentImpulse(receiver *being.Being, impulse being.Impulse, isOwn bool) string {
 	parsed, err := impulse.Parse()
 	if err != nil {
 		return impulse.Raw()
@@ -214,12 +219,15 @@ func formatPresentImpulse(receiver *being.Being, impulse being.Impulse) string {
 		return formatFlags(parsed.Flags)
 	}
 
-	parts := make([]string, 0, 2)
+	parts := make([]string, 0, 3)
 	if parsed.Expression != "" {
 		parts = append(parts, parsed.Expression)
 	}
 	if flags := formatFlags(parsed.Flags); flags != "" {
 		parts = append(parts, flags)
+	}
+	if isOwn && parsed.Reason != "" {
+		parts = append(parts, "(your reason for sending this: "+parsed.Reason+")")
 	}
 	return strings.Join(parts, " ")
 }
