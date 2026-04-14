@@ -1117,6 +1117,38 @@ The target swap in `ExchangeStack` is the most subtle piece — it ensures each 
 - Emotional routing — strain/stress/anger/conflict ladder defined in canon but not in the kernel.
 - Trust movement — static at origin values only.
 
+## Phase 14: Getting The Language Stable
+
+### Dates
+
+- `2026-04-10` to `2026-04-14`
+
+### What happened
+
+The ontology held. What changed was the protocol and the present — the decisions that determine whether a model does the right thing when it reads a present.
+
+The initial domain package was refactored into `primitives/`, `world/`, `metaxu/`, and `inference/`. The kernel being concept was retired — the kernel is the runtime, not a being.
+
+The genome was populated. The dispatch loop was written. The system ran end to end for the first time on `2026-04-12`.
+
+Several protocol decisions closed over the following days:
+
+- source removed from the wire format — the runtime tracks origin, the model does not name itself
+- present format rewritten to second-person language
+- exchange authorship fixed — entries now store author so DerivePresent attributes correctly
+- self-call routing fixed — self-channel no longer written twice
+- correction path added to dispatch — on a dropped signal, the producing being gets one retry with its bad output and the drop reason shown
+- genome topology tightened — thalamus removed from prefrontal's addressable relationships
+- inference runner swapped from Gemini to a local Ollama runner on the Mac mini
+
+Stable protocol format: `skyra <being> <expression> | <reason>`
+
+### What is still open
+
+- no backpressure — the cognitive layer has no exit condition; nothing tells prefrontal an external being is waiting
+- directionality — relationship seeding is bidirectional by default; no way to express inbound-only topology in the genome
+- grounding — nothing constrains a cognitive being to respond to what it received
+
 ## Appendix: Post-Canon Pressure Notes
 
 This appendix records same-day interpretation and stress-test material that shaped understanding after the `skyra-v.03` canon landed.
