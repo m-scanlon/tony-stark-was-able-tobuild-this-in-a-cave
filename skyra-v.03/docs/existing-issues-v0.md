@@ -73,3 +73,68 @@ The protocol has no concept of an external being waiting for a response. Michael
 2. **Typed input/output on beings** — each being declares what types it can receive and emit. Theory-of-mind receives `raw_signal`, emits `attributed_contact`. Prefrontal receives `attributed_contact`, emits `judgment`. Premotor receives `judgment`, emits `shaped_expression`. Kernel rejects signals whose emitted type does not match the target being's declared input type. Misrouting becomes a type error. Architecturally rich but requires significant new infrastructure.
 
 3. **Grounded expression requirement in the present** — the present explicitly separates "what you received" from "your network" and requires the model to carry the received content forward. If the exchange has `thalamus: hi`, the emitted signal must carry `hi` or a derivative. No protocol change — enforced through how the present is constructed and the instruction given to inference. Lightest to implement.
+
+---
+
+## Issue 4: Spinning without resolving
+
+**Symptom**
+Beings fire the same signal into the same exchange repeatedly — "continue", "hi", "proceed" — without the exchange going anywhere. This is distinct from the backpressure problem. The issue is not that the system fails to route outward. The issue is that it keeps moving while going nowhere. It thrashes instead of holding.
+
+**Root cause**
+There is no constraint against repetition. A being can fire the same expression at the same peer indefinitely without the system recognizing that nothing is resolving. Paralysis is acceptable — a being that cannot resolve an exchange and goes quiet is behaving honestly. Spinning is not — it is noise that looks like progress.
+
+**Candidate solutions**
+
+1. **Repetition detection in dispatch** — dispatch tracks the last N expressions a being produced. If the same expression fires twice in a row to the same target, the loop stops. No new protocol, no new beings. Cheap floor on the worst case.
+
+2. **Stillness as a valid signal** — introduce a `~hold` flag. A being that cannot resolve an exchange can fire `skyra <self> ~hold | unresolved` instead of continuing to emit. Dispatch treats `~hold` as a terminal state for that exchange turn. The being went quiet honestly rather than spinning.
+
+3. **Exchange entropy in the present** — the present surfaces how many times the current exchange has turned without a new expression appearing. If the turn count is high and the expressions are similar, the model is shown this explicitly. Forces self-awareness about the loop before the next signal fires.
+
+---
+
+## Issue 5: Beings have no shared account of the external world
+
+**Symptom**
+When michael speaks, the signal arrives at prefrontal as an exchange entry — something that happened in a peer channel. The external origin is lost. Prefrontal cannot deliberate over what michael said because it only sees a signal in an exchange, not a fact about the world. When it routes internally to strategy or conflict, those beings have even less — they see whatever prefrontal chose to pass, not what michael actually said. The cognitive network is not oriented toward a shared external reality. It is passing notes about notes.
+
+**Root cause**
+The present has no external account layer. Each being sees only its own exchange history with its peers. There is no persistent, shared representation of what is happening outside — who said what, what is in the world right now, what the system is responding to. The external signal arrives, gets written into an exchange stack, and the external context dissolves into the relay chain.
+
+**Why this matters**
+People deliberate over external reality, not over internal routing decisions. When someone speaks to you, the thing you think about is what they said — not the fact that your auditory cortex fired. The external account is the shared ground that makes internal deliberation meaningful. Without it, the cognitive network has nothing real to be oriented toward together.
+
+**Candidate directions**
+
+1. **External present layer** — the present gains a third block alongside identity and exchange: a persistent account of the external world. What external beings have said, what is happening outside, what the system is currently responding to. All cognitive beings see the same external layer. Internal routing becomes deliberation over shared external reality rather than signal passing.
+
+2. **External exchange always in prefrontal's present** — the simplest version: prefrontal always sees the full unmodified signal from the external being, regardless of how many relay hops it passed through. The chain of custody is preserved. Prefrontal is always oriented toward michael, not toward thalamus.
+
+3. **Shared world state being** — a non-cognitive being whose job is to hold a running account of external events. Cognitive beings can address it to read the current world state. The external account becomes queryable rather than broadcast.
+
+---
+
+## Issue 6: No structured record of the boundary exchange
+
+**Symptom**
+There is no clean abstraction for what crosses the external boundary. Inbound signals from michael and outbound signals from motor are written into exchange stacks the same way internal signals are. The full arc of the external conversation — what michael said, what Skyra expressed, what michael said back — is not preserved as a distinct thing. Internal beings have no shared thread to deliberate over. They are working degraded copies of the original signal, not the same ground truth.
+
+**Root cause**
+Metaxu treats all signals uniformly. Nothing records boundary crossings as a distinct event. `DerivePresent` assembles the present from peer exchange stacks, which dissolves external origin and external response into the relay chain. The architecture has an implicit boundary — sensory inbound, motor outbound — but no explicit record of what crosses it.
+
+**Why this matters**
+Internal deliberation needs to be *about* the external exchange, not about internal routing decisions. If every cognitive being's present includes the full external conversation — what arrived, what was expressed — the cognitive network is oriented toward shared ground. Strategy, values, consequence are all working the same problem. The gap between what michael said and what Skyra last expressed creates natural pressure toward resolution without requiring formal backpressure mechanisms.
+
+**Open questions**
+- Does the full boundary history go into every present, or a window? Full history gets expensive as exchanges grow.
+- Does `BoundaryExchange` live in `world` or `metaxu`? It is world state, not routing logic — probably `world`.
+- How does `DerivePresent` render it? Likely as the top block, before identity and peer exchange — external reality first, then who you are, then what your peers said.
+
+**Candidate directions**
+
+1. **`BoundaryExchange` type baked into present derivation** — a new type in `world` with `RecordInbound`, `RecordOutbound`, and `Render() string`. Metaxu writes to it when signals cross the sensory or motor boundary. `DerivePresent` on every cognitive being includes the rendered boundary exchange as its top block. No new beings. No new routing. The external conversation is just always there.
+
+2. **Windowed boundary record** — same as above but `DerivePresent` only renders the last N turns of the boundary exchange rather than the full history. Keeps the present from growing unbounded as the conversation lengthens. N is a tunable constant.
+
+3. **Boundary exchange on prefrontal only** — simpler version: only prefrontal's present includes the boundary record. Other cognitive beings get it indirectly through what prefrontal passes them. Less correct than option 1 but lower implementation cost.

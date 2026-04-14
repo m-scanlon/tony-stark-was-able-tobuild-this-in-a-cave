@@ -4,6 +4,16 @@ Speculative ideas. Not canon. Not in scope for current iteration.
 
 ---
 
+## Self-Directed Reasoning Prompt
+
+When a cognitive being addresses itself, the self-present should include an explicit invitation to reason freely before acting. Something like:
+
+> feel free to reason to yourself. think toward resolution of your purpose.
+
+The intent is to give the being permission to think without pressure to immediately produce a routable signal — but to anchor that thinking toward resolution rather than letting it spin. Reasoning is valid. Reasoning that goes nowhere is not.
+
+---
+
 ## Relationship Worlds
 
 Instead of an exchange stack at the top of a peer relationship — a world.
