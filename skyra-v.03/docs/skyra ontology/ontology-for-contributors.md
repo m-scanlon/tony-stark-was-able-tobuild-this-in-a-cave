@@ -464,6 +464,53 @@ Thinking is defined as:
 This is one of the deepest parts of the model: cognition is not a separate
 magic substance. It is still relating.
 
+### Present Derivation
+
+Present is assembled fresh at signal time, not stored.
+
+When a signal arrives at the kernel and is routed to a target being, the kernel
+calls `DerivePresent` on the target to produce the present the being will
+reason from. The present is then handed to inference. The being fires from
+that present.
+
+The kernel does not cache or persist the present. It is derived on every turn.
+
+For a `cognitive` being, the derived present contains four blocks in this order:
+
+1. **Who you are** — name, identity, purpose. The being's own nature.
+2. **Who you are in exchange with** — the sender's name, identity, and purpose.
+3. **The active exchange** — every entry in the current open exchange with that
+   peer, rendered in order. Each entry shows who authored it. The being's own
+   prior expressions in the exchange are shown as `you:` with the reason for
+   sending included. Other beings' expressions are shown with their name.
+4. **Your cognitive network** — every peer the being can address, with their
+   identity and callable language if it has stabilized. Non-cognitive beings do
+   not appear here. Routing decisions belong to the being, not the kernel.
+
+For a `non-cognitive` being, the derived present is minimal: the last
+expression received, stripped of flags. Non-cognitive beings are transducers.
+They do not reason over relational context.
+
+### The Boundary Exchange Problem
+
+Present derivation currently has a gap.
+
+When a signal arrives from the outside world, it passes through sensory and
+thalamus before reaching prefrontal. By the time prefrontal's present is
+derived, the external origin — what michael actually said — has dissolved into
+the relay chain. Internal beings deliberate over routing decisions, not over
+shared external reality.
+
+This is an open problem. The present should include a distinct block for the
+boundary exchange: what arrived from the external world and what Skyra last
+expressed outward. That block belongs at the top of every cognitive being's
+present, before nature and before peer exchange. Internal deliberation should
+be oriented toward shared external ground, not toward internal signal passing.
+
+The shape of the solution — a `BoundaryExchange` record assembled by the
+kernel and rendered into `DerivePresent` — is directionally settled but not
+yet implemented. See Issue 6 in `existing-issues-v0.md`.
+
 ## 15. Judgment Is A Society Of Beings
 
 The executive layer is not one opaque control loop. It is a set of specialized

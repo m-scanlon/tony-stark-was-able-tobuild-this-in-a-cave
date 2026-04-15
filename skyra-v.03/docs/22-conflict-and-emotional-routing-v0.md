@@ -9,6 +9,20 @@ It defines the role of emotional expression flags, the kernel's routing
 exception, the canonical transition ladder, the conflict being, and the
 differentiator trigger.
 
+## Strain
+
+`strain` is pre-failure load. It is present when a being is still holding its current interpretation coherently, but holding that coherence is getting expensive. It comes before explicit mismatch — earlier than conflict.
+
+`strain` is self-reported by the being paying the cost. It is not stamped by the kernel. It is not inferred by another being.
+
+`strain` is private by default. A being may experience it without expressing it outward.
+
+When a being chooses to surface `strain` outward, it becomes `stress` or `anger` on expression — not `strain`. That surfacing is chosen disclosure, not mandatory telemetry.
+
+The hippocampus listens for `strain`. Its role is to reinstate fit before failure when possible while the load is still internal.
+
+When a being surfaces `strain` as `stress` or `anger`, it is making itself vulnerable — saying it is still holding but holding is costly. That may later become retained experience and trust may move through that retained consequence.
+
 ## Emotional Signals
 
 `strain` is not a being.
@@ -130,6 +144,20 @@ Its trigger is pattern, not incident.
 The system keeps trying until optimism has exhausted itself.
 
 Only then does the differentiator restructure the being.
+
+## Conflict Versus Differentiation
+
+The system is optimistic by default. Its default arc is: mismatch is surfaced, a new path is proposed, repair is tried before reorganization.
+
+Two distinct problems exist:
+
+**Language problem** — the relationship is worth keeping. The prefrontal suggests a new path. The failing exchange may still be closed if repair does not resolve it.
+
+**Being-identity problem** — the relationship is breaking because the beings themselves are misaligned. The boundary was wrong. Repeated failure over time triggers restructuring through the differentiator.
+
+The differentiator fires only on repeated failure over time. Its trigger is pattern, not incident. The system keeps trying until optimism has exhausted itself.
+
+Because both prefrontal and differentiator are beings, they accumulate retained experience about failing patterns and bad fits over time. They learn what clean looks like by experiencing what dirty looks like.
 
 ## Short Framing
 

@@ -8,6 +8,14 @@ current `v.03` canon.
 It also locks the distinction between expression, inference, signal,
 `trace_token`, and relationship strength.
 
+## Directionality
+
+The relationship pair is unordered. Two beings. One relationship.
+
+Direction is turn-level flow, not relationship identity. If A expresses to B, that uses the same relationship as B expressing to A. The relationship does not split by direction.
+
+The relationship-graph key is the unordered pair `(being_a, being_b)`. Direction is expressed at the turn level through the expression itself — routing context, not relationship identity.
+
 ## The Medium
 
 The medium is the relationship field.
