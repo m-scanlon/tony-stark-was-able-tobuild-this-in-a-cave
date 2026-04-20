@@ -2,7 +2,7 @@
 
 ## What A Thread Is
 
-A thread and an threadID are the same thing. One concept. The threadID born at the origin event is the thread. It travels through every exchange it spawns. The runtime does not need to track the thread separately from the threadID — the threadID is the thread.
+A thread and a threadID are the same thing. One concept. The threadID born at the origin event is the thread. It travels through every exchange it spawns. The runtime does not need to track the thread separately from the threadID — the threadID is the thread.
 
 ## The Problem
 

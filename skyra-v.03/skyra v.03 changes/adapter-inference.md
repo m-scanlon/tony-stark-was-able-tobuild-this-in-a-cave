@@ -95,6 +95,20 @@ skyra being ~name prefrontal ~surface process ~command "inference-adapter --mode
 
 `~surface process` tells the router this being has a process surface. `~command` is what the router runs to spawn the adapter. The router reads these at registration, spawns the adapter, holds the handles.
 
+## Self-Directed Reasoning
+
+The present sent to a being addressing itself includes an explicit invitation before the protocol section:
+
+```
+feel free to reason to yourself. think toward resolution of your purpose.
+```
+
+This gives the being permission to think without pressure to immediately produce a routable signal — but anchors that thinking toward resolution. Reasoning is valid. Reasoning that goes nowhere is not. The adapter does not need to know about this — it is added by DerivePresent when the origin and the addressed being are the same.
+
+## Rate Limit Retry
+
+When the model API returns a 429, the response body includes a `retryDelay` field indicating how long to wait. The adapter parses that delay and retries the call once after sleeping that duration. If the retry also fails, the adapter writes an error response and continues the loop. This keeps the cognitive chain alive through temporary quota exhaustion rather than dropping the signal.
+
 ## Open Questions
 
 - Does the adapter stream tokens back as they arrive or wait for the full response before writing to stdout? Streaming is better for latency but complicates the wire format — the runtime needs to know when a protocol string is complete mid-stream.

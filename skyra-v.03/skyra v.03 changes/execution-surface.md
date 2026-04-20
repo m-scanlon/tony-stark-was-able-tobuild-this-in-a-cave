@@ -69,11 +69,14 @@ If identity is blank — don't render the identity block. If there are no open e
 
 Same function. The being's own state determines what comes out. No separate code path. No binary split.
 
+## Decided
+
+- **Genome syntax** — `~surface process ~command "<path>"`. See adapter-inference.md.
+- **Spawn model** — long-running process. The router spawns the adapter at being registration and keeps it alive. Not spawn-per-signal.
+- **Wire format** — present as plain text terminated by `---`. Adapter writes protocol strings back one per line terminated by `---`. See adapter-inference.md.
+- **Process failure** — router monitors adapter health, restarts on crash. Restart policy is per-being. See process-router.md.
+- **Michael's surfaces** — all merge at the boundary adapter. Michael is one being. The adapter multiplexes all surfaces into one stdout stream. See adapter-user.md.
+
 ## Open Questions
 
-- How does the genome syntax declare execution surface — `~surface`, `~process`, `~runner`?
-- How does the kernel invoke a process — does it spawn a new process per signal or keep a long-running process and pipe to it?
-- What is the minimal shape of a process — what does it receive, what does it return, what is the wire format?
-- How does the kernel handle a process that fails or times out?
-- Does each surface for Michael get its own channel into the runtime or do they merge at the boundary adapter?
 - HTTP adapters receive two kinds of responses — transport acknowledgments (200 OK) and content responses (actual signal). The adapter needs to distinguish between them and only pass content responses through to the runtime. Transport responses are plumbing, not signal. How the adapter makes that distinction is unresolved.

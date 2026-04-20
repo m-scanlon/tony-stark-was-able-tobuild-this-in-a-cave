@@ -22,7 +22,7 @@ One sense being. It owns all external exchanges — one per external contact. Wh
 
 ## Thread Origin
 
-Every thread originates at the sense being. An external signal arrives. The sense being interprets it, forms valid protocol, and passes it inward with an threadID. That threadID is the thread. Everything downstream serves it.
+Every thread originates at the sense being. An external signal arrives. The sense being interprets it, forms valid protocol, and passes it inward with a threadID. That threadID is the thread. Everything downstream serves it.
 
 ## Relationship To The Old Sensory Being
 

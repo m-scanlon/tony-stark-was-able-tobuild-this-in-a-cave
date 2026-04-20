@@ -61,10 +61,13 @@ The policy probably belongs on the being's surface declaration, not hardcoded in
 
 grow is the control surface for the router the same way it is for beings. A new genome directive for a being with a process surface triggers adapter registration. An updated directive for an existing being triggers hot reload. The router does not have a separate configuration mechanism — everything flows through grow.
 
+## Decided
+
+- **Wire format** — present as plain text terminated by `---` on its own line. Adapter writes protocol strings back one per line, terminated by `---`. See adapter-inference.md.
+- **Shutdown** — router closes adapter stdin. Adapter drains in-flight work and exits cleanly. SIGTERM as fallback. See adapter-inference.md.
+
 ## Open Questions
 
-- What is the wire format on stdin/stdout — what exactly does the router write and what does it expect back?
 - Does the router handle adapter stdout in a dedicated goroutine per adapter or a shared reader?
-- How does the router signal the adapter to shut down cleanly — SIGTERM, closing stdin, a protocol message?
 - What is the restart backoff strategy — immediate, exponential, or capped?
 - Does the queue (if adopted) have a depth limit, and what happens when it fills?
