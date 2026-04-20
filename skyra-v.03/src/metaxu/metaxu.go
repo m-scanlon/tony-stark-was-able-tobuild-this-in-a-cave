@@ -1,15 +1,23 @@
 package metaxu
 
 import (
+	"fmt"
+	"strings"
+
 	being "skyra-v03/src/primitives/being"
+	"skyra-v03/src/primitives/meaning"
 	"skyra-v03/src/world"
 )
 
 type Signal struct {
-	ID         string
-	Origin     string
-	TraceToken string
-	Impulse    string
+	ID             string
+	Origin         string
+	TraceToken     string
+	ThreadID       string
+	About          string
+	Because        string
+	ContextEntries []being.ExchangeEntry
+	Impulse        string
 }
 
 type RouteStatus string
@@ -25,9 +33,9 @@ type Result struct {
 	ParsedImpulse     *being.ParsedImpulse
 	OriginName        string
 	TargetName        string
+	ThreadID          string
 	WrittenBeingName  string
 	WrittenPeerName   string
-	NewExchange       bool
 	ReceiverPresent   string
 	ReceiverCognitive bool
 }
@@ -69,6 +77,7 @@ func (m *Metaxu) AcceptSignal(signal Signal) Result {
 		Status:        RouteStatusDropped,
 		ParsedImpulse: &parsed,
 		OriginName:    origin.Name,
+		ThreadID:      signal.ThreadID,
 	}
 
 	target, ok := m.world.BeingByName(parsed.TargetName)
@@ -79,32 +88,47 @@ func (m *Metaxu) AcceptSignal(signal Signal) Result {
 	result.TargetName = target.Name
 	result.ReceiverCognitive = target.Cognitive
 
-	delivery := being.DeliveredImpulse{
-		OriginName: origin.Name,
-		Raw:        being.Impulse(parsed.Raw),
-		Parsed:     parsed,
+	operatorName := exchangeOperator(parsed.Expression)
+	if operatorName != "" && target.Name != operatorName {
+		result.DropReason = fmt.Sprintf("target %s directly; do not wrap %s inside a signal to %s", operatorName, operatorName, target.Name)
+		return result
 	}
 
-	if parsed.IsClose() {
-		channelResult, err := origin.SendToPeer(target.Name, delivery)
-		if err != nil {
-			result.DropReason = err.Error()
-			return result
+	threadID := signal.ThreadID
+	if threadID == "" && origin.Cognitive && target.Cognitive && operatorName == "" {
+		if id, ok := m.world.FindOpenExchangeThread(origin.Name, target.Name); ok {
+			threadID = id
 		}
-		if !channelResult.Routed {
-			result.DropReason = channelResult.DropReason
-			return result
-		}
+	}
+	result.ThreadID = threadID
 
-		result.Status = RouteStatusRouted
-		result.NewExchange = channelResult.NewExchange
-		result.WrittenBeingName = origin.Name
-		result.WrittenPeerName = target.Name
-
-		if present, err := target.DerivePresent(origin); err == nil {
-			result.ReceiverPresent = present
-		}
+	if origin.Cognitive && target.Cognitive && operatorName == "" && !m.world.HasExchangeThread(origin.Name, target.Name, threadID) {
+		result.DropReason = fmt.Sprintf("no open exchange with %s for thread %s; open one with start-exchange first", target.Name, threadID)
 		return result
+	}
+
+	// Extract ~expression-reference from expression if present; resolve context entries and strip from raw
+	ref, _ := meaning.Extract(parsed.Expression, "~expression-reference", "continue")
+	rawImpulse := being.Impulse(parsed.Raw)
+	var refContextEntries []being.ExchangeEntry
+	if ref != "" {
+		refContextEntries = m.world.ResolveExpressionRef(origin.Name, threadID, ref)
+		rawImpulse = being.Impulse(meaning.Strip(parsed.Raw, "~expression-reference"))
+	}
+
+	contextEntries := signal.ContextEntries
+	if len(refContextEntries) > 0 {
+		contextEntries = append(contextEntries, refContextEntries...)
+	}
+
+	delivery := being.DeliveredImpulse{
+		OriginName:     origin.Name,
+		ThreadID:       threadID,
+		About:          signal.About,
+		Because:        signal.Because,
+		ContextEntries: contextEntries,
+		Raw:            rawImpulse,
+		Parsed:         parsed,
 	}
 
 	if origin.Name == target.Name {
@@ -118,11 +142,12 @@ func (m *Metaxu) AcceptSignal(signal Signal) Result {
 			result.DropReason = channelResult.DropReason
 			return result
 		}
-		result.NewExchange = channelResult.NewExchange
 	} else {
-		if _, err := origin.SendToPeer(target.Name, delivery); err != nil {
-			result.DropReason = err.Error()
-			return result
+		if origin.Cognitive && operatorName == "" {
+			if _, err := origin.SendToPeer(target.Name, delivery); err != nil {
+				result.DropReason = err.Error()
+				return result
+			}
 		}
 		channelResult, err := target.SendToPeer(origin.Name, delivery)
 		if err != nil {
@@ -133,7 +158,6 @@ func (m *Metaxu) AcceptSignal(signal Signal) Result {
 			result.DropReason = channelResult.DropReason
 			return result
 		}
-		result.NewExchange = channelResult.NewExchange
 	}
 
 	result.Status = RouteStatusRouted
@@ -144,4 +168,14 @@ func (m *Metaxu) AcceptSignal(signal Signal) Result {
 		result.ReceiverPresent = present
 	}
 	return result
+}
+
+func exchangeOperator(expression string) string {
+	expression = strings.TrimSpace(expression)
+	for _, operatorName := range []string{"start-exchange", "close-exchange"} {
+		if expression == operatorName || strings.HasPrefix(expression, operatorName+" ") {
+			return operatorName
+		}
+	}
+	return ""
 }

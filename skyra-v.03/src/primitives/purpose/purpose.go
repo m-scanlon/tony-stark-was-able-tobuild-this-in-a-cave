@@ -1,13 +1,13 @@
 package purpose
 
-import "skyra-v03/src/primitives/extract"
+import "skyra-v03/src/primitives/meaning"
 
 type Purpose struct {
 	Value string
 }
 
 func CreatePurpose(expression string) (Purpose, error) {
-	value, err := extract.Meaning(expression, "~purpose", "purpose")
+	value, err := meaning.Extract(expression, "~purpose", "purpose")
 	if err != nil {
 		return Purpose{}, err
 	}

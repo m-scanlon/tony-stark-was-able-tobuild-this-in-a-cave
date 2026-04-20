@@ -65,9 +65,6 @@ func (d *ExternalDispatch) Send(delivery being.DeliveredImpulse) being.ChannelRe
 	}
 
 	d.lastExpression = delivery.Parsed.Expression
-	if delivery.Parsed.IsClose() {
-		d.lastExpression = ""
-	}
 
 	return being.ChannelResult{Routed: true}
 }

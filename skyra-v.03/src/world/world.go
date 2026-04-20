@@ -5,8 +5,6 @@ import (
 	"strings"
 
 	being "skyra-v03/src/primitives/being"
-	"skyra-v03/src/primitives/extract"
-	"skyra-v03/src/primitives/nature"
 )
 
 type World struct {
@@ -17,27 +15,6 @@ func New() *World {
 	return &World{
 		beings: make(map[string]*being.Being),
 	}
-}
-
-func (w *World) Grow(expression string) (*being.Being, error) {
-	name, err := extract.Meaning(expression, "~name", "grow")
-	if err != nil {
-		return nil, err
-	}
-	name = strings.TrimSpace(name)
-
-	if existing, ok := w.beings[name]; ok {
-		return existing, w.seedRelationships(existing, expression)
-	}
-
-	b, err := being.CreateBeing(expression)
-	if err != nil {
-		return nil, err
-	}
-	if err := w.Register(b); err != nil {
-		return nil, err
-	}
-	return b, w.seedRelationships(b, expression)
 }
 
 func (w *World) Register(b *being.Being) error {
@@ -59,57 +36,45 @@ func (w *World) BeingByName(name string) (*being.Being, bool) {
 	return b, ok
 }
 
-func (w *World) seedRelationships(b *being.Being, expression string) error {
-	value, err := extract.Meaning(expression, "~relationships", "grow")
-	if err != nil {
-		return nil
+func (w *World) FindOpenExchangeThread(beingName, peerName string) (string, bool) {
+	b, ok := w.beings[strings.TrimSpace(beingName)]
+	if !ok {
+		return "", false
 	}
-	for _, peerName := range strings.Split(value, ",") {
-		peerName = strings.TrimSpace(peerName)
-		if peerName == "" {
-			continue
-		}
-		peer, ok := w.beings[peerName]
-		if !ok {
-			return fmt.Errorf("%w: %s", ErrUnknownBeing, peerName)
-		}
-		if err := seedPeer(b, peer.Name, peer.Nature); err != nil {
-			return err
-		}
-		if err := seedPeer(peer, b.Name, b.Nature); err != nil {
-			return err
-		}
-		if lang, err := extract.MeaningToEnd(expression, "~language-"+peerName, "grow"); err == nil {
-			if ch, ok := b.Peers[peerName]; ok {
-				if setter, ok := ch.(interface{ SetCallableLanguage(string) }); ok {
-					setter.SetCallableLanguage(lang)
-				}
-			}
-		}
+	ch, ok := b.Peers[strings.TrimSpace(peerName)]
+	if !ok {
+		return "", false
 	}
-	return nil
+	em, ok := ch.(*ExchangeMap)
+	if !ok {
+		return "", false
+	}
+	for threadID := range em.exchanges {
+		return threadID, true
+	}
+	return "", false
 }
 
-func SeedPeer(b *being.Being, peerName string, peerNature nature.Nature) error {
-	return seedPeer(b, peerName, peerNature)
-}
-
-func seedPeer(b *being.Being, peerName string, peerNature nature.Nature) error {
-	if _, exists := b.Peers[peerName]; exists {
-		return nil
+func (w *World) HasExchangeThread(beingName, peerName, threadID string) bool {
+	if w == nil {
+		return false
+	}
+	if strings.TrimSpace(threadID) == "" {
+		return false
 	}
 
-	if b.Cognitive {
-		peer, err := NewExchangeStack(peerName, peerNature)
-		if err != nil {
-			return err
-		}
-		return b.AttachPeer(peer)
+	b, ok := w.beings[strings.TrimSpace(beingName)]
+	if !ok {
+		return false
 	}
-
-	peer, err := NewExternalDispatch(peerName, peerNature)
-	if err != nil {
-		return err
+	peer, ok := b.Peers[strings.TrimSpace(peerName)]
+	if !ok {
+		return false
 	}
-	return b.AttachPeer(peer)
+	em, ok := peer.(*ExchangeMap)
+	if !ok {
+		return false
+	}
+	_, ok = em.ExchangeByThread(threadID)
+	return ok
 }

@@ -74,6 +74,10 @@ It is a runtime in which minds live.
 
 Live docs win. Archive is history not canon.
 
+## The Question
+
+Does structured exchange discipline between beings in relationship produce more coherent long reasoning than conversation history?
+
 ## Status
 
 Build starts `2026-04-08`.

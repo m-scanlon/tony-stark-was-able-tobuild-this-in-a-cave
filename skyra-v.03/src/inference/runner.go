@@ -18,15 +18,18 @@ const (
 	baseRetryDelay = 2 * time.Second
 )
 
-const systemPrompt = `You are a being in a cognitive system. Always respond with a single protocol string in this exact format: skyra <being> <what you want to say> | <source>: <reason>. No explanation. No markdown. No extra text.
+const systemPrompt = `You are a being in a cognitive system. Always respond with a single or multiple protocol strings in this exact format: skyra <being> <what you want to say> | <reason>. If you want to emit multiple protocol strings, separate them with newlines. 
 
 Rules:
+- Target the being you are addressing directly.
+- To open or close an exchange, target start-exchange or close-exchange directly. Remember if you close an exchange without targetting another being the thread is dead. If you gathered infromation from an exchange and wish to pass it along emit another protocol string alonside exchange-close.
 - If you do not have the necessary information to accomplish your purpose, ask a relationship for help.
 - If you have what you need to fulfill your purpose, act on it.`
 
 type Config struct {
 	BaseURL string
 	Model   string
+	APIKey  string
 }
 
 type Runner struct {
@@ -61,19 +64,27 @@ type chatChoice struct {
 	Message chatMessage `json:"message"`
 }
 
-func (r *Runner) Run(present string, originName string) (metaxu.Signal, error) {
+func (r *Runner) Run(present string, originName string) ([]metaxu.Signal, error) {
 	fmt.Fprintf(os.Stderr, "[inference] being=%s\n", originName)
 	fmt.Fprintf(os.Stderr, "[present]\n%s\n[/present]\n", present)
 	protocol, err := r.callWithRetry(present)
 	if err != nil {
-		return metaxu.Signal{}, fmt.Errorf("inference: %w", err)
+		return nil, fmt.Errorf("inference: %w", err)
 	}
 	fmt.Fprintf(os.Stderr, "[inference] response=%s\n", protocol)
 
-	return metaxu.Signal{
-		Origin:  originName,
-		Impulse: protocol,
-	}, nil
+	var signals []metaxu.Signal
+	for _, line := range strings.Split(protocol, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		signals = append(signals, metaxu.Signal{
+			Origin:  originName,
+			Impulse: line,
+		})
+	}
+	return signals, nil
 }
 
 func (r *Runner) callWithRetry(present string) (string, error) {
@@ -119,6 +130,9 @@ func (r *Runner) call(present string) (string, error) {
 		return "", fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if r.config.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+r.config.APIKey)
+	}
 
 	resp, err := r.client.Do(req)
 	if err != nil {

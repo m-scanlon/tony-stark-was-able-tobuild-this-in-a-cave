@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"skyra-v03/src/primitives/extract"
+	"skyra-v03/src/primitives/meaning"
 	"skyra-v03/src/primitives/language"
 	"skyra-v03/src/primitives/nature"
 )
@@ -18,7 +18,7 @@ type Being struct {
 }
 
 func CreateBeing(expression string) (*Being, error) {
-	name, err := extract.Meaning(expression, "~name", "being")
+	name, err := meaning.Extract(expression, "~name", "being")
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (b *Being) DerivePresent(sender *Being) (string, error) {
 }
 
 func extractCognitive(expression string) (bool, error) {
-	value, err := extract.Meaning(expression, "~cognitive", "being")
+	value, err := meaning.Extract(expression, "~cognitive", "being")
 	if err != nil {
 		return false, err
 	}

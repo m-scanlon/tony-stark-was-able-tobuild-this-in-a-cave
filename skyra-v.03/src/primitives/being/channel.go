@@ -7,10 +7,6 @@ import (
 	"skyra-v03/src/primitives/nature"
 )
 
-type Flag string
-
-const FlagClose Flag = "close"
-
 type Impulse string
 
 func NewImpulse(raw string) (Impulse, error) {
@@ -32,19 +28,10 @@ func (i Impulse) Parse() (ParsedImpulse, error) {
 	return ParseImpulse(i.Raw())
 }
 
-func (i Impulse) IsClose() bool {
-	parsed, err := i.Parse()
-	if err != nil {
-		return false
-	}
-	return parsed.IsClose()
-}
-
 type ParsedImpulse struct {
 	Raw        string
 	TargetName string
 	Expression string
-	Flags      []Flag
 	Reason     string
 }
 
@@ -54,10 +41,16 @@ func ParseImpulse(raw string) (ParsedImpulse, error) {
 		return ParsedImpulse{}, fmt.Errorf("being: invalid impulse: raw value is required")
 	}
 
-	zones := strings.SplitN(raw, "|", 2)
-	if len(zones) != 2 {
+	switch strings.Count(raw, "|") {
+	case 0:
 		return ParsedImpulse{}, fmt.Errorf("being: invalid impulse: missing | divider")
+	case 1:
+		// expected shape
+	default:
+		return ParsedImpulse{}, fmt.Errorf("being: invalid impulse: expected exactly one | divider")
 	}
+
+	zones := strings.SplitN(raw, "|", 2)
 
 	left := strings.TrimSpace(zones[0])
 	right := strings.TrimSpace(zones[1])
@@ -75,24 +68,7 @@ func ParseImpulse(raw string) (ParsedImpulse, error) {
 		return ParsedImpulse{}, fmt.Errorf("being: invalid impulse: target name is required")
 	}
 
-	flagStart := len(parts)
-	for i := 2; i < len(parts); i++ {
-		if strings.HasPrefix(parts[i], "~") {
-			flagStart = i
-			break
-		}
-	}
-
-	flags := make([]Flag, 0, len(parts)-flagStart)
-	for i := flagStart; i < len(parts); i++ {
-		token := parts[i]
-		if !strings.HasPrefix(token, "~") || len(token) == 1 {
-			return ParsedImpulse{}, fmt.Errorf("being: invalid impulse: invalid flag %q", token)
-		}
-		flags = append(flags, Flag(strings.TrimPrefix(token, "~")))
-	}
-
-	expression := strings.Join(parts[2:flagStart], " ")
+	expression := strings.Join(parts[2:], " ")
 
 	reason := strings.TrimSpace(right)
 	if reason == "" {
@@ -103,7 +79,6 @@ func ParseImpulse(raw string) (ParsedImpulse, error) {
 		Raw:        raw,
 		TargetName: targetName,
 		Expression: expression,
-		Flags:      flags,
 		Reason:     reason,
 	}
 
@@ -121,8 +96,8 @@ func (i ParsedImpulse) Validate() error {
 	if strings.TrimSpace(i.TargetName) == "" {
 		return fmt.Errorf("being: invalid impulse: target name is required")
 	}
-	if i.Expression == "" && !i.IsClose() {
-		return fmt.Errorf("being: invalid impulse: expression is required unless close is present")
+	if strings.TrimSpace(i.Expression) == "" {
+		return fmt.Errorf("being: invalid impulse: expression is required")
 	}
 	if strings.TrimSpace(i.Reason) == "" {
 		return fmt.Errorf("being: invalid impulse: reason is required")
@@ -130,29 +105,24 @@ func (i ParsedImpulse) Validate() error {
 	return nil
 }
 
-func (i ParsedImpulse) HasFlag(flag Flag) bool {
-	for _, existing := range i.Flags {
-		if existing == flag {
-			return true
-		}
-	}
-	return false
-}
-
-func (i ParsedImpulse) IsClose() bool {
-	return i.HasFlag(FlagClose)
-}
-
 type DeliveredImpulse struct {
-	OriginName string
-	Raw        Impulse
-	Parsed     ParsedImpulse
+	OriginName     string
+	ThreadID       string
+	About          string
+	Because        string
+	ContextEntries []ExchangeEntry
+	Raw            Impulse
+	Parsed         ParsedImpulse
+}
+
+type ExchangeEntry struct {
+	Author  string
+	Impulse Impulse
 }
 
 type ChannelResult struct {
-	Routed      bool
-	NewExchange bool
-	DropReason  string
+	Routed     bool
+	DropReason string
 }
 
 type RelationshipChannel interface {
