@@ -1149,6 +1149,61 @@ Stable protocol format: `skyra <being> <expression> | <reason>`
 - directionality — relationship seeding is bidirectional by default; no way to express inbound-only topology in the genome
 - grounding — nothing constrains a cognitive being to respond to what it received
 
+## Phase 15: The Logos Rewrite
+
+### Dates
+
+- `2026-04-21`
+
+### What happened
+
+The v.03 runtime was working but carried too much internal weight — separate type hierarchies for beings, worlds, the kernel, external dispatch, and exchange maps. The question that opened the session was whether all of that could collapse into one thing.
+
+It could.
+
+The session arrived at a single interface:
+
+```go
+type Logos interface {
+    Relate(r Relation) Logos
+    ID() string
+    Name() string
+}
+```
+
+Every participant in the system — being, world, operator, router — implements this and nothing else. The pattern is named: Homoiconic Actor Model / Recursive Message Passing with Homogeneous Nodes.
+
+`logos.Parse` is the only thing outside the system. It converts raw input into a `Relation` struct and hands it to the first node. Everything after that is `Relate` calling `Relate`.
+
+### What was built
+
+`skyra-v.04/` — a new Go runtime, 674 lines total:
+
+- `logos/logos.go` — the interface, `Relation` struct, and `Parse`. 50 lines. The unmoved mover.
+- `being/being.go` — `Being` implements `Logos`. `Relate` creates. `DerivePresent` builds the inference context. `Receive` writes to the exchange record.
+- `world/world.go` — `World` implements `Logos`. `Relate` seeds a new world: grow, start-thread, continue-thread, close-thread, parent.
+- `world/grow.go` — creates a `Being` from a relation and registers it in the world's map.
+- `thread/` — `StartThread`, `ContinueThread`, `CloseThread` each implement `Logos`. ContinueThread handles the 3-write rule and calls inference.
+- `inference/inference.go` — OpenRouter HTTP call. No retry. API key from macOS keychain.
+- `main.go` — stdin loop. Reads genome, bootstraps world, wraps user input as a continue-thread relation to skyra.
+- `genome.skyra` — two beings: michael and skyra.
+
+### What this proves
+
+A being responding to a message, a world creating a being, a router forwarding to a target — these are all the same operation. The unification is not cosmetic. The v.03 runtime needed ~2000 lines to express what v.04 expresses in 674. The capability is the same. The type surface collapsed.
+
+The 3-write rule is implemented in `ContinueThread`: arrival write to target's exchange, directed write to origin's exchange (if origin is a being in the map), response write to both (deduplicated when source == target per the overlap rule).
+
+The system ran on `2026-04-21`. Skyra responded to michael.
+
+### What is still open
+
+- debug prints still in ContinueThread — not yet removed
+- start-thread is implicit; the user cannot yet address multiple beings or name a thread
+- no persistence — world state lives in memory for the session only
+- no relationship emergence — exchange writes accumulate but nothing triggers a structural change
+- genome is two beings; no differentiation path yet
+
 ## Appendix: Post-Canon Pressure Notes
 
 This appendix records same-day interpretation and stress-test material that shaped understanding after the `skyra-v.03` canon landed.
