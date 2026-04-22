@@ -20,32 +20,42 @@ type ContinueThread struct {
 
 func (c *ContinueThread) Relate(r logos.Relation) logos.Logos {
 	name, _ := meaning.Extract(r.Impulse, "~with", "continue-thread")
+	message, _ := meaning.ExtractToEnd(r.Impulse, "~say", "continue-thread")
 	target, ok := c.LogosMap[name]
 	if !ok {
+		fmt.Println("debug: target not found:", name)
 		return c
 	}
 	b, ok := target.(inferrable)
 	if !ok {
+		fmt.Println("debug: target not inferrable:", name)
 		return c
 	}
 
 	// target's exchange with origin — arrival and response (same slot)
-	updated := b.Receive(r.Origin, r.Impulse)
+	updated := b.Receive(r.Origin, message)
 	c.LogosMap[name] = updated
 
 	// origin's exchange with target — inbound and response (same slot, if origin is a being)
 	if origin, ok := c.LogosMap[r.Origin]; ok {
 		if ob, ok := origin.(inferrable); ok {
-			c.LogosMap[r.Origin] = ob.Receive(name, r.Impulse)
+			c.LogosMap[r.Origin] = ob.Receive(name, message)
 		}
 	}
 
-	present := updated.(inferrable).DerivePresent() + "\n" + r.Impulse
+	senderContext := ""
+	if origin, ok := c.LogosMap[r.Origin]; ok {
+		if ob, ok := origin.(inferrable); ok {
+			senderContext = "\nsender:\n" + ob.DerivePresent()
+		}
+	}
+	present := updated.(inferrable).DerivePresent() + senderContext + "\nmessage from " + r.Origin + ": " + message
 	response, err := inference.Call(present)
 	if err != nil {
 		fmt.Println("inference error:", err)
 		return c
 	}
+	fmt.Println("debug: inference response received, len:", len(response))
 
 	updated = updated.(inferrable).Receive(r.Origin, b.Name()+": "+response)
 	c.LogosMap[name] = updated

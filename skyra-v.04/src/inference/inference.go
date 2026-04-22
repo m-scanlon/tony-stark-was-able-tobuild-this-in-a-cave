@@ -53,6 +53,7 @@ func Call(present string) (string, error) {
 	payload := chatRequest{
 		Model: model,
 		Messages: []chatMessage{
+			{Role: "system", Content: "You are a being. Your present is given to you — it contains your identity, purpose, and exchange history. Respond directly. Do not use asterisks. Do not use roleplay markers. Do not say 'as [name]'. Do not narrate your actions. Just respond."},
 			{Role: "user", Content: present},
 		},
 		Temperature: 0.2,
