@@ -1,20 +1,22 @@
-package adapter
+package adapt
 
 import (
 	"fmt"
 	"os"
 
-	"skyra-v04/src/primitives/logos"
+	"skyra-v04/src/primitives/entity"
 	"skyra-v04/src/primitives/meaning"
 )
 
 var _ IAdapter = WriteLogos{}
 
-type WriteLogos struct{}
+type WriteLogos struct {
+	presentAdapt
+}
 
 func (w WriteLogos) ID() string { return "write" }
 
-func (w WriteLogos) Relate(rel logos.Relation) logos.Logos {
+func (w WriteLogos) Relate(rel entity.Relation) entity.Entity {
 	path, err := meaning.Extract(rel.Impulse, "~path", "write")
 	if err != nil {
 		fmt.Println("write: missing ~path")

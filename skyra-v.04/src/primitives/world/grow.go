@@ -2,19 +2,20 @@ package world
 
 import (
 	"skyra-v04/src/primitives/being"
-	"skyra-v04/src/primitives/logos"
+	"skyra-v04/src/primitives/entity"
 	"skyra-v04/src/primitives/meaning"
 )
 
 type Grow struct {
-	LogosMap map[string]logos.Logos
+	presentWorld
+	EntityMap map[string]entity.Entity
 }
 
-func (g *Grow) Relate(r logos.Relation) logos.Logos {
+func (g *Grow) Relate(r entity.Relation) entity.Entity {
 	name, _ := meaning.Extract(r.Impulse, "~name", "grow")
 	r.ID = name
 	b, _ := being.Being{}.Relate(r).(being.Being)
-	g.LogosMap[b.ID()] = b
+	g.EntityMap[b.ID()] = b
 	return g
 }
 

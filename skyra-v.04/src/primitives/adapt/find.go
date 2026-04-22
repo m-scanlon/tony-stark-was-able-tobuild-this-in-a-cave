@@ -1,21 +1,21 @@
-package adapter
+package adapt
 
 import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
 
-	"skyra-v04/src/primitives/logos"
+	"skyra-v04/src/primitives/entity"
 	"skyra-v04/src/primitives/meaning"
 )
 
 var _ IAdapter = FindLogos{}
 
-type FindLogos struct{}
+type FindLogos struct{ presentAdapt }
 
 func (f FindLogos) ID() string { return "find" }
 
-func (f FindLogos) Relate(rel logos.Relation) logos.Logos {
+func (f FindLogos) Relate(rel entity.Relation) entity.Entity {
 	root, err := meaning.Extract(rel.Impulse, "~path", "find")
 	if err != nil {
 		fmt.Println("find: missing ~path")

@@ -4,17 +4,18 @@ import (
 	"strings"
 
 	"skyra-v04/src/primitives/impression"
-	"skyra-v04/src/primitives/logos"
+	"skyra-v04/src/primitives/entity"
 	"skyra-v04/src/primitives/pathos"
 	"skyra-v04/src/primitives/relationship"
 )
 
 type IBeing interface {
-	logos.Logos
+	entity.Entity
 	DerivePresent() string
 }
 
 type Being struct {
+	presentBeing
 	id            string
 	name          string
 	Impression    string
@@ -26,7 +27,7 @@ type Being struct {
 func (b Being) ID() string   { return b.id }
 func (b Being) Name() string { return b.name }
 
-func (b Being) Relate(r logos.Relation) logos.Logos {
+func (b Being) Relate(r entity.Relation) entity.Entity {
 	p, _ := pathos.Pathos{}.Relate(r).(pathos.Pathos)
 	imp, _ := impression.Impression{}.Relate(r).(impression.Impression)
 	return Being{
@@ -39,7 +40,7 @@ func (b Being) Relate(r logos.Relation) logos.Logos {
 	}
 }
 
-func (b Being) Receive(origin, entry string) logos.Logos {
+func (b Being) Receive(origin, entry string) entity.Entity {
 	newExchanges := make(map[string][]string, len(b.exchanges))
 	for k, v := range b.exchanges {
 		newExchanges[k] = v

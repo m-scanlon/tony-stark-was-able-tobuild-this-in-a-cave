@@ -1,20 +1,21 @@
 package thread
 
 import (
-	"skyra-v04/src/primitives/logos"
+	"skyra-v04/src/primitives/entity"
 )
 
 type StartThread struct {
-	LogosMap map[string]logos.Logos
+	presentThread
+	EntityMap map[string]entity.Entity
 }
 
-func (s *StartThread) Relate(r logos.Relation) logos.Logos {
+func (s *StartThread) Relate(r entity.Relation) entity.Entity {
 	thread, _ := Thread{}.Relate(r).(Thread)
-	target, ok := s.LogosMap[r.ID]
+	target, ok := s.EntityMap[r.ID]
 	if !ok {
 		return s
 	}
-	target.Relate(logos.Relation{
+	target.Relate(entity.Relation{
 		ID:       thread.id,
 		Origin:   r.Origin,
 		ThreadID: thread.id,

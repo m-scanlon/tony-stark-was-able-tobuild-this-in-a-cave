@@ -1,12 +1,13 @@
 package exchange
 
-import "skyra-v04/src/primitives/logos"
+import "skyra-v04/src/primitives/entity"
 
 type Exchange struct {
+	entity.PresentEntity
 	entries []string
 }
 
-func (e Exchange) Relate(r logos.Relation) logos.Logos {
+func (e Exchange) Relate(r entity.Relation) entity.Entity {
 	return Exchange{entries: append(e.entries, r.Impulse)}
 }
 

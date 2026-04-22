@@ -1,20 +1,22 @@
-package adapter
+package adapt
 
 import (
 	"fmt"
 	"os"
 
-	"skyra-v04/src/primitives/logos"
+	"skyra-v04/src/primitives/entity"
 	"skyra-v04/src/primitives/meaning"
 )
 
 var _ IAdapter = ReadLogos{}
 
-type ReadLogos struct{}
+type ReadLogos struct {
+	presentAdapt
+}
 
 func (r ReadLogos) ID() string { return "read" }
 
-func (r ReadLogos) Relate(rel logos.Relation) logos.Logos {
+func (r ReadLogos) Relate(rel entity.Relation) entity.Entity {
 	path, err := meaning.Extract(rel.Impulse, "~path", "read")
 	if err != nil {
 		fmt.Println("read: missing ~path")

@@ -6,12 +6,12 @@ import (
 	"os"
 	"strings"
 
-	"skyra-v04/src/primitives/logos"
+	"skyra-v04/src/primitives/entity"
 	"skyra-v04/src/primitives/world"
 )
 
 func main() {
-	w, _ := world.World{}.Relate(logos.Relation{}).(world.World)
+	w, _ := world.World{}.Relate(entity.Relation{}).(world.World)
 
 	if err := bootstrap(w); err != nil {
 		fmt.Fprintln(os.Stderr, "bootstrap:", err)
@@ -27,14 +27,14 @@ func main() {
 			continue
 		}
 
-		rel, err := logos.Parse("michael", "main", "skyra continue-thread ~with skyra ~say "+raw+" | main")
+		rel, err := entity.Parse("michael", "main", "skyra continue-thread ~with skyra ~say "+raw+" | main")
 		if err != nil {
 			fmt.Println("error:", err)
 			fmt.Print("> ")
 			continue
 		}
 
-		node, ok := w.LogosMap[rel.ID]
+		node, ok := w.EntityMap[rel.ID]
 		if !ok {
 			fmt.Println("error: unknown target:", rel.ID)
 			fmt.Print("> ")
@@ -56,11 +56,11 @@ func bootstrap(w world.World) error {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		rel, err := logos.Parse("genome", "", line)
+		rel, err := entity.Parse("genome", "", line)
 		if err != nil {
 			return fmt.Errorf("genome: %w", err)
 		}
-		node, ok := w.LogosMap[rel.ID]
+		node, ok := w.EntityMap[rel.ID]
 		if !ok {
 			return fmt.Errorf("genome: unknown target %q", rel.ID)
 		}

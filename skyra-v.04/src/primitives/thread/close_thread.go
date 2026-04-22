@@ -1,20 +1,21 @@
 package thread
 
 import (
-	"skyra-v04/src/primitives/logos"
+	"skyra-v04/src/primitives/entity"
 	"skyra-v04/src/primitives/meaning"
 )
 
 type CloseThread struct {
-	LogosMap map[string]logos.Logos
+	presentThread
+	EntityMap map[string]entity.Entity
 }
 
-func (c *CloseThread) Relate(r logos.Relation) logos.Logos {
+func (c *CloseThread) Relate(r entity.Relation) entity.Entity {
 	name, _ := meaning.Extract(r.Impulse, "~with", "close-thread")
-	if t, ok := c.LogosMap[name]; ok {
+	if t, ok := c.EntityMap[name]; ok {
 		if thread, ok := t.(Thread); ok {
 			thread.Active = false
-			c.LogosMap[name] = thread
+			c.EntityMap[name] = thread
 		}
 	}
 	return c

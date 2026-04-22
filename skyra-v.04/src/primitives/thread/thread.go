@@ -2,11 +2,12 @@ package thread
 
 import (
 	"skyra-v04/src/primitives/exchange"
-	"skyra-v04/src/primitives/logos"
+	"skyra-v04/src/primitives/entity"
 	"skyra-v04/src/primitives/meaning"
 )
 
 type Thread struct {
+	presentThread
 	id        string
 	About     string
 	Because   string
@@ -14,7 +15,7 @@ type Thread struct {
 	exchanges map[string]exchange.Exchange
 }
 
-func (t Thread) Relate(r logos.Relation) logos.Logos {
+func (t Thread) Relate(r entity.Relation) entity.Entity {
 	about, _ := meaning.Extract(r.Impulse, "~about", "thread")
 	because, _ := meaning.Extract(r.Impulse, "~because", "thread")
 	return Thread{

@@ -1,4 +1,4 @@
-package adapter
+package adapt
 
 import (
 	"bufio"
@@ -8,17 +8,19 @@ import (
 	"path/filepath"
 	"strings"
 
-	"skyra-v04/src/primitives/logos"
+	"skyra-v04/src/primitives/entity"
 	"skyra-v04/src/primitives/meaning"
 )
 
 var _ IAdapter = GrepLogos{}
 
-type GrepLogos struct{}
+type GrepLogos struct {
+	presentAdapt
+}
 
 func (g GrepLogos) ID() string { return "grep" }
 
-func (g GrepLogos) Relate(rel logos.Relation) logos.Logos {
+func (g GrepLogos) Relate(rel entity.Relation) entity.Entity {
 	pattern, err := meaning.Extract(rel.Impulse, "~pattern", "grep")
 	if err != nil {
 		fmt.Println("grep: missing ~pattern")
