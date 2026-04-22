@@ -41,3 +41,19 @@ The child process is the extensibility primitive. Everything else builds on top 
 4. The child process binary implements `main.go` with the same stdin loop — it IS a Logos runtime, just smaller.
 
 The child process is a Skyra runtime running inside a Skyra runtime.
+
+## After That: Internet Access As A Logos Node
+
+Do not bake HTTP directly into `being`. Keep internet access as an external operator in the world.
+
+1. `src/primitives/net/fetch.go` — add a `Fetch` Logos primitive that accepts `~url`, optional `~query`, and bounded output size.
+2. `world.go` — register `nodes["fetch"]` so beings can route through it like any other operator.
+3. Protocol usage — `skyra fetch ~url <url> ~query <text> | <reason>` and return a normalized text artifact.
+4. Guardrails first:
+   - Allowlist domains and block private/local network ranges
+   - GET-only by default
+   - Request timeout, response size cap, and content-type checks
+   - Per-being rate limits and request audit logging
+5. `continue-thread` flow — a being calls `fetch`, receives the artifact, then reasons over that artifact in its own context.
+
+This keeps the ontology intact: internet is not a special case, it is just another Logos in the map.

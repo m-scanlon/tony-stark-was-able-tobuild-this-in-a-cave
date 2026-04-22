@@ -5,7 +5,7 @@ import (
 
 	"skyra-v04/src/primitives/impression"
 	"skyra-v04/src/primitives/logos"
-	"skyra-v04/src/primitives/nature"
+	"skyra-v04/src/primitives/pathos"
 	"skyra-v04/src/primitives/relationship"
 )
 
@@ -18,7 +18,7 @@ type Being struct {
 	id            string
 	name          string
 	Impression    string
-	nature        nature.Nature
+	pathos        pathos.Pathos
 	relationships map[string]relationship.Relationship
 	exchanges     map[string][]string // keyed by peer name
 }
@@ -27,13 +27,13 @@ func (b Being) ID() string   { return b.id }
 func (b Being) Name() string { return b.name }
 
 func (b Being) Relate(r logos.Relation) logos.Logos {
-	n, _ := nature.Nature{}.Relate(r).(nature.Nature)
+	p, _ := pathos.Pathos{}.Relate(r).(pathos.Pathos)
 	imp, _ := impression.Impression{}.Relate(r).(impression.Impression)
 	return Being{
 		id:            strings.TrimSpace(r.ID),
 		name:          strings.TrimSpace(r.ID),
 		Impression:    imp.Value,
-		nature:        n,
+		pathos:        p,
 		relationships: make(map[string]relationship.Relationship),
 		exchanges:     make(map[string][]string),
 	}
@@ -53,11 +53,11 @@ func (b Being) DerivePresent() string {
 	var sb strings.Builder
 
 	sb.WriteString("being: " + b.name + "\n")
-	if b.nature.Identity.Value != "" {
-		sb.WriteString("identity: " + b.nature.Identity.Value + "\n")
+	if b.pathos.Identity.Value != "" {
+		sb.WriteString("identity: " + b.pathos.Identity.Value + "\n")
 	}
-	if b.nature.Purpose.Value != "" {
-		sb.WriteString("purpose: " + b.nature.Purpose.Value + "\n")
+	if b.pathos.Purpose.Value != "" {
+		sb.WriteString("purpose: " + b.pathos.Purpose.Value + "\n")
 	}
 	if b.Impression != "" {
 		sb.WriteString("impression: " + b.Impression + "\n")

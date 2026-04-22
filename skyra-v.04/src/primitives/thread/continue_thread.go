@@ -18,7 +18,16 @@ type ContinueThread struct {
 	LogosMap map[string]logos.Logos
 }
 
+func traceRelation(stage string, r logos.Relation, hopsLeft int) {
+	fmt.Printf("trace: %s hops=%d origin=%s target=%s thread=%s impulse=%q\n", stage, hopsLeft, r.Origin, r.ID, r.ThreadID, r.Impulse)
+}
+
 func (c *ContinueThread) Relate(r logos.Relation) logos.Logos {
+	traceRelation("ingress", r, 4)
+	return c.relate(r, 4)
+}
+
+func (c *ContinueThread) relate(r logos.Relation, hopsLeft int) logos.Logos {
 	name, _ := meaning.Extract(r.Impulse, "~with", "continue-thread")
 	message, _ := meaning.ExtractToEnd(r.Impulse, "~say", "continue-thread")
 	target, ok := c.LogosMap[name]
@@ -49,7 +58,18 @@ func (c *ContinueThread) Relate(r logos.Relation) logos.Logos {
 			senderContext = "\nsender:\n" + ob.DerivePresent()
 		}
 	}
-	present := updated.(inferrable).DerivePresent() + senderContext + "\nmessage from " + r.Origin + ": " + message
+
+	beingsContext := "\nbeings you can talk to:\n"
+	for id, node := range c.LogosMap {
+		if id == name || id == r.Origin {
+			continue
+		}
+		if nb, ok := node.(inferrable); ok {
+			beingsContext += "  " + nb.Name() + "\n"
+		}
+	}
+
+	present := updated.(inferrable).DerivePresent() + senderContext + beingsContext + "\nmessage from " + r.Origin + ": " + message
 	response, err := inference.Call(present)
 	if err != nil {
 		fmt.Println("inference error:", err)
@@ -63,6 +83,29 @@ func (c *ContinueThread) Relate(r logos.Relation) logos.Logos {
 	if origin, ok := c.LogosMap[r.Origin]; ok {
 		if ob, ok := origin.(inferrable); ok {
 			c.LogosMap[r.Origin] = ob.Receive(name, b.Name()+": "+response)
+		}
+	}
+
+	// If the model emitted a protocol relation, route it as the next runtime pass.
+	// This allows beings to call operators or message other beings autonomously.
+	if hopsLeft > 0 {
+		if next, err := logos.Parse(name, r.ThreadID, response); err == nil {
+			traceRelation("dispatch", next, hopsLeft-1)
+			// response routed back to origin — print it directly
+			if next.ID == r.Origin {
+				fmt.Println(name + ": " + next.Impulse)
+				return c
+			}
+			nextNode, ok := c.LogosMap[next.ID]
+			if !ok {
+				fmt.Println("debug: emitted target not found:", next.ID)
+				return c
+			}
+			if next.ID == c.Name() {
+				return c.relate(next, hopsLeft-1)
+			}
+			nextNode.Relate(next)
+			return c
 		}
 	}
 

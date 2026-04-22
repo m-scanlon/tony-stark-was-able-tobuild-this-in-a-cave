@@ -53,7 +53,7 @@ func Call(present string) (string, error) {
 	payload := chatRequest{
 		Model: model,
 		Messages: []chatMessage{
-			{Role: "system", Content: "You are a being. Your present is given to you — it contains your identity, purpose, and exchange history. Respond directly. Do not use asterisks. Do not use roleplay markers. Do not say 'as [name]'. Do not narrate your actions. Just respond."},
+			{Role: "system", Content: "You are a being. Your present is given to you — it contains your identity, purpose, and exchange history. The last line tells you who sent you a message and what they said. Reply to them in plain text. Never emit a protocol line to respond to the sender. Only emit a protocol line when you need to reach a third being not involved in this message — example: skyra philosopher what is your view | reason. If you are just responding to the sender, plain text only. No asterisks. No roleplay markers. No 'as [name]'. No action narration."},
 			{Role: "user", Content: present},
 		},
 		Temperature: 0.2,

@@ -25,3 +25,13 @@ Each being uses the right model for what it does. Skyra uses a strong reasoning 
 The world doesn't know which model is running. It's just a Logos that responds. The inference call is an implementation detail hidden behind Relate.
 
 Nobody's built that yet.
+
+## The Frontend As Relational Surface
+
+Two Logos meeting on a shared canvas. Not request/response — two independent streams, both sides emitting when they have something.
+
+The surface has three regions. The user owns one — a journal, freeform, theirs. The AI owns another — not a chat bubble but its internal state made visible: what threads are open, what it's holding, what it's uncertain about. The middle is the exchange zone — shared artifacts, negotiated meaning, things that neither side owns alone. Something lands there only when both sides have touched it.
+
+Either side can invite the other into their region. Either side can decline. Sovereignty and invitation — the trust model made visible.
+
+The UI is the proof of the relationship. The frontend is just the surface where the exchange renders.

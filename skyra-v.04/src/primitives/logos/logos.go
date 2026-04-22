@@ -12,10 +12,11 @@ type Relation struct {
 	Impulse  string
 }
 
+// Logos is the universal interface. Every node in the runtime — being, world, operator, adapter — is a Logos.
+// Nodes relate to each other by passing a Relation. Nothing else is required.
 type Logos interface {
 	Relate(r Relation) Logos
 	ID() string
-	Name() string
 }
 
 func Parse(origin, threadID, raw string) (Relation, error) {
