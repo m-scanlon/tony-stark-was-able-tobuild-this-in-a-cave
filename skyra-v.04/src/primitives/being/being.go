@@ -11,8 +11,9 @@ import (
 
 type IBeing interface {
 	entity.Entity
-	DerivePresent() string
 }
+
+var _ IBeing = Being{}
 
 type Being struct {
 	presentBeing
@@ -50,7 +51,7 @@ func (b Being) Receive(origin, entry string) entity.Entity {
 	return b
 }
 
-func (b Being) DerivePresent() string {
+func (b Being) DerivePresent(r entity.Relation) string {
 	var sb strings.Builder
 
 	sb.WriteString("being: " + b.name + "\n")

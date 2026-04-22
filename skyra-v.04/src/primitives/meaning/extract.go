@@ -5,9 +5,10 @@ import (
 	"strings"
 )
 
-// ExtractToEnd extracts the value after token, stopping only at | (not at ~).
-// Use this when the value itself may contain ~ flags, e.g. expression syntax.
-func ExtractToEnd(expression, token, name string) (string, error) {
+// Extract reads the value after token. By default, the value ends at the next
+// ~ flag or | divider. Pass delimiters to override — e.g. Extract(exp, token, name, "|")
+// to read to the end of the expression (stopping only at |).
+func Extract(expression, token, name string, delimiters ...string) (string, error) {
 	idx := strings.Index(expression, token)
 	if idx == -1 {
 		return "", fmt.Errorf("%s: token %q not found in expression", name, token)
@@ -18,32 +19,12 @@ func ExtractToEnd(expression, token, name string) (string, error) {
 		return "", fmt.Errorf("%s: no value after token %q", name, token)
 	}
 
+	if len(delimiters) == 0 {
+		delimiters = []string{"~", "|"}
+	}
+
 	end := len(rest)
-	if i := strings.Index(rest, "|"); i != -1 && i < end {
-		end = i
-	}
-
-	value := strings.TrimSpace(rest[:end])
-	if value == "" {
-		return "", fmt.Errorf("%s: empty value for token %q", name, token)
-	}
-	return value, nil
-}
-
-func Extract(expression, token, name string) (string, error) {
-	idx := strings.Index(expression, token)
-	if idx == -1 {
-		return "", fmt.Errorf("%s: token %q not found in expression", name, token)
-	}
-
-	rest := strings.TrimSpace(expression[idx+len(token):])
-	if rest == "" {
-		return "", fmt.Errorf("%s: no value after token %q", name, token)
-	}
-
-	// value ends at the next ~ token or | divider
-	end := len(rest)
-	for _, delim := range []string{"~", "|"} {
+	for _, delim := range delimiters {
 		if i := strings.Index(rest, delim); i != -1 && i < end {
 			end = i
 		}

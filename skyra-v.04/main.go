@@ -27,7 +27,7 @@ func main() {
 			continue
 		}
 
-		rel, err := entity.Parse("michael", "main", "skyra continue-thread ~with skyra ~say "+raw+" | main")
+		rel, err := entity.Impress("michael", "main", "skyra continue-thread ~with skyra ~say "+raw+" | main")
 		if err != nil {
 			fmt.Println("error:", err)
 			fmt.Print("> ")
@@ -56,7 +56,7 @@ func bootstrap(w world.World) error {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		rel, err := entity.Parse("genome", "", line)
+		rel, err := entity.Impress("genome", "", line)
 		if err != nil {
 			return fmt.Errorf("genome: %w", err)
 		}

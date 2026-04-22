@@ -16,9 +16,14 @@ type BashLogos struct {
 
 func (b BashLogos) ID() string { return "bash" }
 
+func (b BashLogos) DerivePresent(r entity.Relation) string {
+	value, _ := meaning.Extract(r.Impulse, "~cmd", "bash", "|")
+	return value
+}
+
 func (b BashLogos) Relate(r entity.Relation) entity.Entity {
-	cmd, err := meaning.ExtractToEnd(r.Impulse, "~cmd", "bash")
-	if err != nil {
+	cmd := b.DerivePresent(r)
+	if cmd == "" {
 		fmt.Println("bash: missing ~cmd")
 		return b
 	}

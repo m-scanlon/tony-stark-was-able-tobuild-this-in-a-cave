@@ -16,14 +16,19 @@ type WriteLogos struct {
 
 func (w WriteLogos) ID() string { return "write" }
 
+func (w WriteLogos) DerivePresent(r entity.Relation) string {
+	value, _ := meaning.Extract(r.Impulse, "~content", "write", "|")
+	return value
+}
+
 func (w WriteLogos) Relate(rel entity.Relation) entity.Entity {
 	path, err := meaning.Extract(rel.Impulse, "~path", "write")
 	if err != nil {
 		fmt.Println("write: missing ~path")
 		return w
 	}
-	content, err := meaning.ExtractToEnd(rel.Impulse, "~content", "write")
-	if err != nil {
+	content := w.DerivePresent(rel)
+	if content == "" {
 		fmt.Println("write: missing ~content")
 		return w
 	}

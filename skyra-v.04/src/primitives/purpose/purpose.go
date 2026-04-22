@@ -2,11 +2,12 @@ package purpose
 
 import (
 	"skyra-v04/src/primitives/entity"
+	"skyra-v04/src/primitives/invariant"
 	"skyra-v04/src/primitives/meaning"
 )
 
 type Purpose struct {
-	entity.PresentEntity
+	invariant.Invariant
 	Value string
 }
 

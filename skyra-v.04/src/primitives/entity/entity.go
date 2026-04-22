@@ -17,27 +17,27 @@ type Relation struct {
 type Entity interface {
 	Relate(r Relation) Entity
 	ID() string
-	DerivePresent() string
+	DerivePresent(r Relation) string
 }
 
-func Parse(origin, threadID, raw string) (Relation, error) {
+func Impress(origin, threadID, raw string) (Relation, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return Relation{}, fmt.Errorf("logos: empty input")
+		return Relation{}, fmt.Errorf("entity: empty input")
 	}
 
 	parts := strings.SplitN(raw, "|", 2)
 	if len(parts) != 2 {
-		return Relation{}, fmt.Errorf("logos: missing | divider")
+		return Relation{}, fmt.Errorf("entity: missing | divider")
 	}
 
 	left := strings.TrimSpace(parts[0])
 	tokens := strings.Fields(left)
 	if len(tokens) < 2 {
-		return Relation{}, fmt.Errorf("logos: expected at least protocol and target")
+		return Relation{}, fmt.Errorf("entity: expected at least protocol and target")
 	}
 	if tokens[0] != "skyra" {
-		return Relation{}, fmt.Errorf("logos: must begin with skyra")
+		return Relation{}, fmt.Errorf("entity: must begin with skyra")
 	}
 
 	id := tokens[1]

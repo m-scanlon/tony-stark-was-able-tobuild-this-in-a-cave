@@ -9,8 +9,8 @@ import (
 )
 
 type inferrable interface {
+	entity.Entity
 	Name() string
-	DerivePresent() string
 	Receive(origin, entry string) entity.Entity
 }
 
@@ -30,7 +30,7 @@ func (c *ContinueThread) Relate(r entity.Relation) entity.Entity {
 
 func (c *ContinueThread) relate(r entity.Relation) entity.Entity {
 	name, _ := meaning.Extract(r.Impulse, "~with", "continue-thread")
-	message, _ := meaning.ExtractToEnd(r.Impulse, "~say", "continue-thread")
+	message := c.DerivePresent(r)
 	target, ok := c.EntityMap[name]
 	if !ok {
 		fmt.Println("debug: target not found:", name)
@@ -56,7 +56,7 @@ func (c *ContinueThread) relate(r entity.Relation) entity.Entity {
 	senderContext := ""
 	if origin, ok := c.EntityMap[r.Origin]; ok {
 		if ob, ok := origin.(inferrable); ok {
-			senderContext = "\nsender:\n" + ob.DerivePresent()
+			senderContext = "\nsender:\n" + ob.DerivePresent(r)
 		}
 	}
 
@@ -70,7 +70,7 @@ func (c *ContinueThread) relate(r entity.Relation) entity.Entity {
 		}
 	}
 
-	present := updated.(inferrable).DerivePresent() + senderContext + beingsContext + "\nmessage from " + r.Origin + ": " + message
+	present := updated.(inferrable).DerivePresent(r) + senderContext + beingsContext + "\nmessage from " + r.Origin + ": " + message
 	response, err := inference.Call(present)
 	if err != nil {
 		fmt.Println("inference error:", err)
@@ -87,7 +87,7 @@ func (c *ContinueThread) relate(r entity.Relation) entity.Entity {
 		}
 	}
 
-	if next, err := entity.Parse(name, r.ThreadID, response); err == nil {
+	if next, err := entity.Impress(name, r.ThreadID, response); err == nil {
 		traceRelation("dispatch", next)
 		if next.ID == r.Origin {
 			fmt.Println(name + ": " + next.Impulse)
