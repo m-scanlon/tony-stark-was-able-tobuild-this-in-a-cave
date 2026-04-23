@@ -3,7 +3,10 @@ package thread
 import (
 	"skyra-v04/src/primitives/entity"
 	"skyra-v04/src/primitives/meaning"
+	"skyra-v04/src/primitives/operator"
 )
+
+var _ operator.IOperator = (*CloseThread)(nil)
 
 type CloseThread struct {
 	presentThread
@@ -11,12 +14,10 @@ type CloseThread struct {
 }
 
 func (c *CloseThread) Relate(r entity.Relation) entity.Entity {
-	name, _ := meaning.Extract(r.Impulse, "~with", "close-thread")
-	if t, ok := c.EntityMap[name]; ok {
-		if thread, ok := t.(Thread); ok {
-			thread.Active = false
-			c.EntityMap[name] = thread
-		}
+	id, _ := meaning.Extract(r.Impulse, "~with", "close-thread")
+	if t, ok := c.EntityMap[id].(Thread); ok {
+		t.Active = false
+		c.EntityMap[id] = t
 	}
 	return c
 }

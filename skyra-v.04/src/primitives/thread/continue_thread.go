@@ -2,16 +2,20 @@ package thread
 
 import (
 	"fmt"
+	"strings"
 
-	"skyra-v04/src/inference"
 	"skyra-v04/src/primitives/entity"
 	"skyra-v04/src/primitives/meaning"
+	"skyra-v04/src/primitives/medium"
+	"skyra-v04/src/primitives/operator"
 )
+
+var _ operator.IOperator = (*ContinueThread)(nil)
 
 type inferrable interface {
 	entity.Entity
 	Name() string
-	Receive(origin, entry string) entity.Entity
+	Medium() medium.Medium
 }
 
 type ContinueThread struct {
@@ -30,7 +34,8 @@ func (c *ContinueThread) Relate(r entity.Relation) entity.Entity {
 
 func (c *ContinueThread) relate(r entity.Relation) entity.Entity {
 	name, _ := meaning.Extract(r.Impulse, "~with", "continue-thread")
-	message := c.DerivePresent(r)
+	message, _ := meaning.Extract(r.Impulse, "~say", "continue-thread", "|")
+
 	target, ok := c.EntityMap[name]
 	if !ok {
 		fmt.Println("debug: target not found:", name)
@@ -42,70 +47,94 @@ func (c *ContinueThread) relate(r entity.Relation) entity.Entity {
 		return c
 	}
 
-	// target's exchange with origin — arrival and response (same slot)
-	updated := b.Receive(r.Origin, message)
-	c.EntityMap[name] = updated
-
-	// origin's exchange with target — inbound and response (same slot, if origin is a being)
-	if origin, ok := c.EntityMap[r.Origin]; ok {
-		if ob, ok := origin.(inferrable); ok {
-			c.EntityMap[r.Origin] = ob.Receive(name, message)
-		}
-	}
-
-	senderContext := ""
-	if origin, ok := c.EntityMap[r.Origin]; ok {
-		if ob, ok := origin.(inferrable); ok {
-			senderContext = "\nsender:\n" + ob.DerivePresent(r)
-		}
-	}
-
-	beingsContext := "\nbeings you can talk to:\n"
-	for id, node := range c.EntityMap {
-		if id == name || id == r.Origin {
-			continue
-		}
-		if nb, ok := node.(inferrable); ok {
-			beingsContext += "  " + nb.Name() + "\n"
-		}
-	}
-
-	present := updated.(inferrable).DerivePresent(r) + senderContext + beingsContext + "\nmessage from " + r.Origin + ": " + message
-	response, err := inference.Call(present)
-	if err != nil {
-		fmt.Println("inference error:", err)
+	t, ok := c.EntityMap[r.ThreadID].(Thread)
+	if !ok {
+		fmt.Println("debug: thread not found:", r.ThreadID)
 		return c
 	}
-	fmt.Println("debug: inference response received, len:", len(response))
 
-	updated = updated.(inferrable).Receive(r.Origin, b.Name()+": "+response)
-	c.EntityMap[name] = updated
-
-	if origin, ok := c.EntityMap[r.Origin]; ok {
-		if ob, ok := origin.(inferrable); ok {
-			c.EntityMap[r.Origin] = ob.Receive(name, b.Name()+": "+response)
-		}
+	// Only append to the thread if the relation actually carries a message.
+	if message != "" {
+		t = t.Append(r.Origin, name, r)
+		c.EntityMap[r.ThreadID] = t
 	}
 
-	if next, err := entity.Impress(name, r.ThreadID, response); err == nil {
-		traceRelation("dispatch", next)
-		if next.ID == r.Origin {
-			fmt.Println(name + ": " + next.Impulse)
-			return c
+	// Build present: target's self state + current exchange + other exchanges summary + pulled refs + sender + message
+	exchangeLines := t.ExchangeBetween(name, r.Origin)
+	threadContext := "\nthread " + t.id + " (" + t.About + "):\n"
+	if exchangeLines != "" {
+		threadContext += "current exchange with " + r.Origin + ":\n" + exchangeLines
+	}
+	currentStateContext := ""
+	if other := t.OtherExchangesFor(name, r.Origin); other != "" {
+		currentStateContext = "\nyour other exchanges in this thread (use ~ref <peer>:<range> to pull):\n" + other
+	}
+	// Pull referenced entries (from the sender's own exchanges) into the target's present.
+	pulledContext := ""
+	if ref, _ := meaning.Extract(r.Impulse, "~ref", "continue-thread"); ref != "" {
+		entries := t.ResolveRef(r.Origin, ref)
+		if len(entries) > 0 {
+			pulledContext = "\npulled context (" + ref + "):\n"
+			for i, rel := range entries {
+				msg, err := meaning.Extract(rel.Impulse, "~say", "exchange", "|")
+				if err != nil {
+					msg = rel.Impulse
+				}
+				pulledContext += fmt.Sprintf("  [%d] %s: %s\n", i, rel.Origin, msg)
+			}
 		}
+	}
+	senderContext := ""
+	messageLine := ""
+	if message != "" {
+		senderContext = "\nsender: " + r.Origin
+		messageLine = "\nmessage from " + r.Origin + ": " + message
+	}
+	present := b.DerivePresent(r) + threadContext + currentStateContext + pulledContext + senderContext + messageLine
+
+	// Call target's medium to produce a response
+	m := b.Medium()
+	if m == nil {
+		fmt.Println("debug: target has no medium:", name)
+		return c
+	}
+	response, err := m(present, r)
+	if err != nil {
+		fmt.Println("medium error:", err)
+		return c
+	}
+	if response == "" {
+		return c
+	}
+
+	// Every line of the response must be a valid protocol string. Non-protocol lines are dropped.
+	for _, line := range strings.Split(response, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		next, err := entity.Impress(name, r.ThreadID, line)
+		if err != nil {
+			fmt.Println("debug: dropping non-protocol line from", name, "→", line)
+			continue
+		}
+		// Reject self-references — a being can't target itself.
+		if nextWith, _ := meaning.Extract(next.Impulse, "~with", "continue-thread"); nextWith == name {
+			fmt.Println("debug: dropping self-reference from", name)
+			continue
+		}
+		traceRelation("dispatch", next)
 		nextNode, ok := c.EntityMap[next.ID]
 		if !ok {
 			fmt.Println("debug: emitted target not found:", next.ID)
-			return c
+			continue
 		}
 		if next.ID == c.Name() {
-			return c.relate(next)
+			c.relate(next)
+		} else {
+			nextNode.Relate(next)
 		}
-		nextNode.Relate(next)
-		return c
 	}
-
-	fmt.Println(b.Name() + ": " + response)
 	return c
 }
 

@@ -1,12 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"strings"
 
 	"skyra-v04/src/primitives/entity"
+	_ "skyra-v04/src/primitives/medium"
 	"skyra-v04/src/primitives/world"
 )
 
@@ -18,32 +18,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Print("> ")
-	for scanner.Scan() {
-		raw := strings.TrimSpace(scanner.Text())
-		if raw == "" {
-			fmt.Print("> ")
-			continue
-		}
-
-		rel, err := entity.Impress("michael", "main", "skyra continue-thread ~with skyra ~say "+raw+" | main")
-		if err != nil {
-			fmt.Println("error:", err)
-			fmt.Print("> ")
-			continue
-		}
-
-		node, ok := w.EntityMap[rel.ID]
-		if !ok {
-			fmt.Println("error: unknown target:", rel.ID)
-			fmt.Print("> ")
-			continue
-		}
-
-		node.Relate(rel)
-		fmt.Print("> ")
+	// Kick off: skyra starts a thread with michael. start-thread creates the thread,
+	// registers it, and routes the first continue-thread.
+	rel, err := entity.Impress("michael", "", "skyra start-thread ~with skyra ~about conversation ~because bootstrap ~say hi | main")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "kickoff:", err)
+		os.Exit(1)
 	}
+	node, ok := w.EntityMap[rel.ID]
+	if !ok {
+		fmt.Fprintln(os.Stderr, "start-thread not found")
+		os.Exit(1)
+	}
+	node.Relate(rel)
 }
 
 func bootstrap(w world.World) error {
