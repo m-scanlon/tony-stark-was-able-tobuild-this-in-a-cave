@@ -7,12 +7,12 @@ import (
 )
 
 type Pathos struct {
-	entity.PresentEntity
 	Identity identity.Identity
 	Purpose  purpose.Purpose
 }
 
-func (p Pathos) ID() string { return p.Identity.Value }
+func (p Pathos) ID() string                          { return p.Identity.Value }
+func (p Pathos) DerivePresent(_ entity.Relation) string { return "" }
 
 func (p Pathos) Relate(r entity.Relation) entity.Entity {
 	p.Identity, _ = identity.Identity{}.Relate(r).(identity.Identity)

@@ -1,6 +1,7 @@
 package thread
 
 import (
+	"crypto/rand"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,8 +11,13 @@ import (
 	"skyra-v04/src/primitives/meaning"
 )
 
+func NewThreadID() string {
+	b := make([]byte, 8)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)
+}
+
 type Thread struct {
-	presentThread
 	id            string
 	About         string
 	Because       string
@@ -19,8 +25,9 @@ type Thread struct {
 	Relationships map[RelationshipKey]exchange.Exchange
 }
 
-func (t Thread) ID() string   { return t.id }
-func (t Thread) Name() string { return "thread" }
+func (t Thread) ID() string                                        { return t.id }
+func (t Thread) Name() string                                      { return "thread" }
+func (t Thread) ExchangeMap() map[RelationshipKey]exchange.Exchange { return t.Relationships }
 
 // Relate constructs a new Thread from a relation (zero-value semantics).
 func (t Thread) Relate(r entity.Relation) entity.Entity {
@@ -35,16 +42,55 @@ func (t Thread) Relate(r entity.Relation) entity.Entity {
 	}
 }
 
-// Append adds a relation to the exchange between two parties in this thread.
+// Append adds a relation to the exchange between two parties. If the exchange
+// doesn't exist or is inactive, it's opened/reopened with r.Origin as the parent.
 func (t Thread) Append(a, b string, r entity.Relation) Thread {
 	key := NewRelationshipKey(a, b)
 	newRel := make(map[RelationshipKey]exchange.Exchange, len(t.Relationships))
 	for k, v := range t.Relationships {
 		newRel[k] = v
 	}
-	newRel[key] = newRel[key].Append(r)
+	ex := newRel[key]
+	if !ex.Active {
+		ex = ex.Open(r.Origin)
+	}
+	ex = ex.Append(r)
+	newRel[key] = ex
 	t.Relationships = newRel
 	return t
+}
+
+// CloseExchange marks the exchange between a and b as inactive.
+func (t Thread) CloseExchange(a, b string) Thread {
+	key := NewRelationshipKey(a, b)
+	newRel := make(map[RelationshipKey]exchange.Exchange, len(t.Relationships))
+	for k, v := range t.Relationships {
+		newRel[k] = v
+	}
+	if ex, ok := newRel[key]; ok {
+		newRel[key] = ex.Close()
+	}
+	t.Relationships = newRel
+	return t
+}
+
+// FindReturnTarget returns the parent of the most-recently-active exchange
+// involving beingID where beingID is NOT the parent — i.e., an exchange the
+// being was called INTO rather than one they opened. Returns "" if none.
+func (t Thread) FindReturnTarget(beingID string) string {
+	for key, ex := range t.Relationships {
+		if !ex.Active {
+			continue
+		}
+		if key.A != beingID && key.B != beingID {
+			continue
+		}
+		if ex.Parent == beingID {
+			continue
+		}
+		return ex.Parent
+	}
+	return ""
 }
 
 // ExchangeWith returns the exchange between beingID and peer in this thread.
@@ -63,11 +109,7 @@ func (t Thread) ExchangeBetween(a, b string) string {
 	}
 	var sb strings.Builder
 	for i, rel := range ex.Relations {
-		msg, err := meaning.Extract(rel.Impulse, "~say", "exchange", "|")
-		if err != nil {
-			msg = rel.Impulse
-		}
-		sb.WriteString(fmt.Sprintf("  [%d] %s: %s\n", i, rel.Origin, msg))
+		sb.WriteString(fmt.Sprintf("  [%d] %s: %s\n", i, rel.Origin, rel.Impulse))
 	}
 	return sb.String()
 }
@@ -88,6 +130,36 @@ func (t Thread) OtherExchangesFor(beingID, excludePeer string) string {
 			continue
 		}
 		sb.WriteString(fmt.Sprintf("  %s (%d entries)\n", peer, len(ex.Relations)))
+	}
+	return sb.String()
+}
+
+// ActiveExchangesFor returns all active exchanges involving beingID, annotated
+// with role (current, waiting on you, you opened). currentPeer is the peer
+// whose message the being is currently responding to.
+func (t Thread) ActiveExchangesFor(beingID, currentPeer string) string {
+	var sb strings.Builder
+	for key, ex := range t.Relationships {
+		if !ex.Active {
+			continue
+		}
+		if key.A != beingID && key.B != beingID {
+			continue
+		}
+		peer := key.A
+		if key.A == beingID {
+			peer = key.B
+		}
+		label := ""
+		switch {
+		case peer == currentPeer:
+			label = "current"
+		case ex.Parent != beingID:
+			label = "waiting on your response"
+		default:
+			label = "you opened"
+		}
+		sb.WriteString(fmt.Sprintf("  %s — %s, %d entries\n", peer, label, len(ex.Relations)))
 	}
 	return sb.String()
 }

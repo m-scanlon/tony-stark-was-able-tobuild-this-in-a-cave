@@ -27,10 +27,8 @@ func cli(present string, r entity.Relation) (string, error) {
 	if input == "" {
 		return "", nil
 	}
-	// If the user typed a valid protocol line, pass it through. Otherwise wrap it
-	// as a continue-thread reply to whoever is in the current exchange with us.
 	if _, err := entity.Impress("", "", input); err == nil {
 		return input, nil
 	}
-	return fmt.Sprintf("skyra continue-thread ~with %s ~say %s | user", r.Origin, input), nil
+	return fmt.Sprintf("%s %s", r.Origin, input), nil
 }

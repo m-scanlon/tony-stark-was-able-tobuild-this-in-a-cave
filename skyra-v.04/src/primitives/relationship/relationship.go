@@ -6,7 +6,6 @@ import (
 )
 
 type Relationship struct {
-	entity.PresentEntity
 	peer    entity.Entity
 	threads map[string]thread.Thread
 }
@@ -17,7 +16,8 @@ func (r Relationship) Relate(rel entity.Relation) entity.Entity {
 	return r
 }
 
-func (r Relationship) ID() string                    { return r.peer.ID() }
-func (r Relationship) Name() string                  { return "relationship" }
+func (r Relationship) ID() string                          { return r.peer.ID() }
+func (r Relationship) Name() string                        { return "relationship" }
+func (r Relationship) DerivePresent(_ entity.Relation) string { return "" }
 func (r Relationship) Peer() entity.Entity             { return r.peer }
 func (r Relationship) Threads() map[string]thread.Thread { return r.threads }

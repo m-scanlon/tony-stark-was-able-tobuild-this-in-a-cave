@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strings"
@@ -11,29 +12,47 @@ import (
 )
 
 func main() {
-	w, _ := world.World{}.Relate(entity.Relation{}).(world.World)
+	loadEnv("../.env")
+	_ = os.RemoveAll("logs")
+
+	w := world.New()
 
 	if err := bootstrap(w); err != nil {
 		fmt.Fprintln(os.Stderr, "bootstrap:", err)
 		os.Exit(1)
 	}
 
-	// Kick off: skyra starts a thread with michael. start-thread creates the thread,
-	// registers it, and routes the first continue-thread.
-	rel, err := entity.Impress("michael", "", "skyra start-thread ~with skyra ~about conversation ~because bootstrap ~say hi | main")
+	rel, err := entity.Impress("michael", "", "skyra hi ~about conversation ~because bootstrap")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "kickoff:", err)
 		os.Exit(1)
 	}
-	node, ok := w.EntityMap[rel.ID]
-	if !ok {
-		fmt.Fprintln(os.Stderr, "start-thread not found")
-		os.Exit(1)
-	}
-	node.Relate(rel)
+	w.Relate(rel)
 }
 
-func bootstrap(w world.World) error {
+func loadEnv(path string) {
+	f, err := os.Open(path)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		k, v, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		if os.Getenv(k) == "" {
+			os.Setenv(k, v)
+		}
+	}
+}
+
+func bootstrap(w *world.World) error {
 	data, err := os.ReadFile("genome.skyra")
 	if err != nil {
 		return err
@@ -47,11 +66,7 @@ func bootstrap(w world.World) error {
 		if err != nil {
 			return fmt.Errorf("genome: %w", err)
 		}
-		node, ok := w.EntityMap[rel.ID]
-		if !ok {
-			return fmt.Errorf("genome: unknown target %q", rel.ID)
-		}
-		node.Relate(rel)
+		w.Relate(rel)
 	}
 	return nil
 }

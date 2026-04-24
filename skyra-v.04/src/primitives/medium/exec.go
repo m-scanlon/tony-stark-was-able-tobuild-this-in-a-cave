@@ -30,7 +30,7 @@ func execMedium(binPath string) Medium {
 		// Write the incoming relation as a protocol line to the binary's stdin.
 		go func() {
 			defer stdin.Close()
-			fmt.Fprintf(stdin, "skyra %s %s | %s\n", r.ID, r.Impulse, r.ThreadID)
+			fmt.Fprintf(stdin, "%s %s\n", r.ID, r.Impulse)
 		}()
 
 		out, err := io.ReadAll(stdout)

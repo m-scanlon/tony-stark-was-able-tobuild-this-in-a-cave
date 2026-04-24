@@ -26,22 +26,13 @@ func Impress(origin, threadID, raw string) (Relation, error) {
 		return Relation{}, fmt.Errorf("entity: empty input")
 	}
 
-	parts := strings.SplitN(raw, "|", 2)
-	if len(parts) != 2 {
-		return Relation{}, fmt.Errorf("entity: missing | divider")
-	}
-
-	left := strings.TrimSpace(parts[0])
-	tokens := strings.Fields(left)
+	tokens := strings.Fields(raw)
 	if len(tokens) < 2 {
-		return Relation{}, fmt.Errorf("entity: expected at least protocol and target")
-	}
-	if tokens[0] != "skyra" {
-		return Relation{}, fmt.Errorf("entity: must begin with skyra")
+		return Relation{}, fmt.Errorf("entity: expected at least target and message")
 	}
 
-	id := tokens[1]
-	impulse := strings.Join(tokens[2:], " ")
+	id := strings.ToLower(strings.TrimRight(tokens[0], ",:;."))
+	impulse := strings.Join(tokens[1:], " ")
 
 	return Relation{
 		ID:       id,
