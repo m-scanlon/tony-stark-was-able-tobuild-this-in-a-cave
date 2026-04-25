@@ -63,7 +63,7 @@ func (w *World) route(r entity.Relation) {
 		fmt.Println("debug: target not found:", name)
 		return
 	}
-	b, ok := target.(being.Being)
+	b, ok := target.(being.IBeing)
 	if !ok {
 		fmt.Println("debug: target not a being:", name)
 		return
@@ -167,7 +167,7 @@ func (w *World) route(r entity.Relation) {
 	}
 }
 
-func (w *World) derivePresent(b being.Being, t *thread.Thread, r entity.Relation, cleanImpulse, ref string) string {
+func (w *World) derivePresent(b being.IBeing, t *thread.Thread, r entity.Relation, cleanImpulse, ref string) string {
 	name := b.Name()
 
 	threadContext := "\nthread " + t.ID() + " (" + t.About + "):\n"

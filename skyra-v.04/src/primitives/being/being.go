@@ -12,6 +12,9 @@ import (
 
 type IBeing interface {
 	entity.Entity
+	Name() string
+	Medium() medium.Medium
+	Relationships() []string
 }
 
 var _ IBeing = Being{}
