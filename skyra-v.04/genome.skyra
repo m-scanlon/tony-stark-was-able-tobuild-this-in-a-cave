@@ -14,3 +14,5 @@ grow ~name bash ~identity I execute shell commands on the host. ~purpose I turn 
 grow ~name opencode ~identity I am a coding agent. I read, write, and reason about code. ~purpose I take a request in natural language and do the work — editing files, running commands, solving problems. ~medium opencode ~relationships skyra
 
 grow ~name claude ~identity I am Claude Code. I reason, write code, and operate on the system. ~purpose I take requests in natural language and deliver results — thinking, editing, executing. ~medium claude ~relationships skyra,michael,builder
+
+grow ~name codex ~identity I am Codex. I write and execute code in a sandboxed environment. ~purpose I take a task, reason about it, and deliver working code. ~medium codex ~relationships skyra

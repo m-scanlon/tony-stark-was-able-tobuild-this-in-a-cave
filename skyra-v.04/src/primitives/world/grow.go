@@ -3,6 +3,7 @@ package world
 import (
 	"skyra-v04/src/primitives/being"
 	"skyra-v04/src/primitives/claude"
+	"skyra-v04/src/primitives/codex"
 	"skyra-v04/src/primitives/entity"
 	"skyra-v04/src/primitives/meaning"
 	"skyra-v04/src/primitives/opencode"
@@ -19,6 +20,8 @@ func (w *World) grow(r entity.Relation) {
 		e = claude.Claude{}.Relate(r)
 	case "opencode":
 		e = opencode.OpenCode{}.Relate(r)
+	case "codex":
+		e = codex.Codex{}.Relate(r)
 	default:
 		e = being.Being{}.Relate(r)
 	}

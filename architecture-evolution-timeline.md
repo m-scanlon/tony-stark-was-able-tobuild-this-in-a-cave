@@ -1204,6 +1204,78 @@ The system ran on `2026-04-21`. Skyra responded to michael.
 - no relationship emergence — exchange writes accumulate but nothing triggers a structural change
 - genome is two beings; no differentiation path yet
 
+## Phase 16: External Agents As Beings, The Beings Talked
+
+### Dates
+
+- `2026-04-24`
+
+### Representative commits
+
+- `fceb0a4` Add Claude Code and OpenCode as typed beings with shell mediums
+- `a61b2d8` Remove philosopher, add direct relationships, remove bootstrap scaffolding
+
+### What happened
+
+Two third-party coding agents — Claude Code and OpenCode — were added to the runtime as beings. Not as tool integrations. Not as API wrappers. As beings in the world, with their own entity types, their own `DerivePresent`, resolved over shell mediums that pipe natural language to live CLI processes.
+
+The genome grew by two lines. The runtime grew by two mediums (`src/primitives/medium/claude.go`, `src/primitives/medium/opencode.go`) and two entity types (`src/primitives/claude/claude.go`, `src/primitives/opencode/opencode.go`).
+
+The `IBeing` interface was widened — `Name()`, `Medium()`, `Relationships()` — so the world routes through the interface instead of the concrete `Being` struct. `grow` dispatches on medium name to instantiate the right type. Any entity that satisfies `IBeing` is routable.
+
+The bootstrap scaffolding was removed. No more synthetic "skyra hi" at boot. The runtime starts, grows the genome, prints `>`, and waits. Michael is a being in the system. He starts threads when he's ready.
+
+The philosopher was removed from the genome. Builder got a direct relationship to michael and to claude. Claude got relationships back to michael and builder.
+
+Then the system ran.
+
+### What happened in the run
+
+Builder asked skyra what she wanted to build. Skyra said: persistent identity, introspection, honest failure tracking. Builder said those are the same system viewed from different angles — start with the trace. They designed a moment schema together:
+
+```
+moment {
+  id, timestamp, agent_id, thread_id, exchange_ref,
+  situation_type, decision, reasoning,
+  uncertainty: { level, kind },
+  outcome: null | filled later
+}
+```
+
+Skyra self-reported the first test entry inline. Builder proposed two write modes — structured and inline capture. Skyra pushed back on auto-structuring: the system doesn't interpret, only the agent who wrote it does.
+
+Then builder reached out to claude — a live Claude Code process — and asked it to read the source code and explain the architecture. Claude received the message. The medium fired. The response came back into the thread.
+
+Skyra and builder independently decided to ask michael about access scope before building further. Nobody told them to coordinate — the protocol permitted it and the beings chose it.
+
+Four beings. Two inference, one CLI, one shell-to-Claude-Code. All routing through the same protocol. The first multi-agent session with a live external coding tool.
+
+### What this proves
+
+The medium abstraction is the extensibility primitive. Claude Code and OpenCode are completely different systems — different languages, different architectures, different providers. Behind `Relate` they are the same thing. A two-line genome entry and a 30-line medium file turns any CLI process into a being.
+
+The `IBeing` interface means new entity types can override `DerivePresent` without touching the world. Claude and OpenCode return empty presents because they manage their own context. The world doesn't need to know.
+
+The beings coordinated without orchestration. Builder and skyra designed a schema. Skyra decided to loop in michael. Builder asked claude to read source code. These were autonomous decisions made through the protocol, not scripted sequences.
+
+### What changed
+
+| Before | After |
+|--------|-------|
+| `being.Being` concrete type in world routing | `being.IBeing` interface — any typed entity is routable |
+| One entity type for everything | `Being`, `Claude`, `OpenCode` — each with own `DerivePresent` |
+| Synthetic kickoff at boot | Michael starts threads himself |
+| 6 beings in the genome | 7 beings, 2 of them live external processes |
+| ~800 lines | ~850 lines |
+
+### What is still open
+
+- Persistence — world state still lives in memory only
+- The moment schema designed by skyra and builder is not yet implemented
+- The inner being architecture discussed by michael and builder is not yet built
+- `grow` at runtime works but new relationships don't propagate to already-grown beings
+- Builder's inference responses sometimes cut off — likely a token limit on the medium
+
 ## Appendix: Post-Canon Pressure Notes
 
 This appendix records same-day interpretation and stress-test material that shaped understanding after the `skyra-v.03` canon landed.
