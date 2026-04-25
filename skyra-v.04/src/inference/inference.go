@@ -23,6 +23,7 @@ type chatRequest struct {
 	Model       string        `json:"model"`
 	Messages    []chatMessage `json:"messages"`
 	Temperature float64       `json:"temperature"`
+	MaxTokens   int           `json:"max_tokens,omitempty"`
 }
 
 type chatMessage struct {
@@ -57,6 +58,7 @@ func Call(present string) (string, error) {
 			{Role: "user", Content: present},
 		},
 		Temperature: 0.2,
+		MaxTokens:   4096,
 	}
 
 	body, err := json.Marshal(payload)

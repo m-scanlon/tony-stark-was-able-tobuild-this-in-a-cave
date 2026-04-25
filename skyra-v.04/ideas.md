@@ -83,3 +83,17 @@ Currently a being targeting itself is illegal — dropped in two places. That sp
 Not a system prompt hack. Not a chain-of-thought wrapper. The internal self is a being — it has inference, it has state, it has judgment. The difference is scope. It lives inside one being and speaks only to that being. The world enforces the boundary.
 
 Not optional either, eventually. Every being with retained experience should have an internal self. A being without one is a being without memory pressure — it responds to the present with no weight from the past. That works for simple beings. It doesn't work for beings that accumulate.
+
+## The Runtime As Game Engine
+
+The runtime is already a character system. Beings with identities, relationships, memory, internal selves, time pressure, exchange history. Give them goals that conflict, resource constraints, a world with physics, and the runtime is an engine.
+
+The player is just another being in the genome. Cli medium. Same protocol as everyone else. No god mode — you're a participant. You can talk, persuade, lie, form alliances. So can they. The internal self means they have private thoughts you never see. They remember what you did three threads ago. They hold tensions.
+
+The runtime doesn't need to change. You just need beings with goals that pull in different directions and a world with enough scarcity that they can't all get what they want. Thread decay, time pressure on the internal self, energy cost per thread — those are the game mechanics. You don't script the story. You set the initial conditions and the beings play it out.
+
+## Blind Credential Delegation
+
+A being needs to be able to act on the user's behalf — authenticate, call APIs, access protected resources — without the model ever seeing the password or secret. The user grants permission, the credential is stored and used at the medium or kernel level, and the model only sees a capability handle, never the raw secret.
+
+The keychain package already does half of this — it reads from macOS Keychain without exposing the value to the being. The gap is a general system where: the user grants a named permission, the credential is resolved at execution time by the kernel or medium, the model receives confirmation that the action succeeded but never the credential itself. The model asks to act, the kernel authenticates on its behalf, the model sees the result.
