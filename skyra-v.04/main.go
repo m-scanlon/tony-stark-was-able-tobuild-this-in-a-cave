@@ -22,12 +22,23 @@ func main() {
 		os.Exit(1)
 	}
 
-	rel, err := entity.Impress("michael", "", "skyra hi ~about conversation ~because bootstrap")
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "kickoff:", err)
-		os.Exit(1)
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Print("> ")
+	for scanner.Scan() {
+		input := strings.TrimSpace(scanner.Text())
+		if input == "" {
+			fmt.Print("> ")
+			continue
+		}
+		rel, err := entity.Impress("michael", "", input)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			fmt.Print("> ")
+			continue
+		}
+		w.Relate(rel)
+		fmt.Print("> ")
 	}
-	w.Relate(rel)
 }
 
 func loadEnv(path string) {
