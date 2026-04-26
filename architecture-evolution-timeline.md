@@ -1276,6 +1276,73 @@ The beings coordinated without orchestration. Builder and skyra designed a schem
 - `grow` at runtime works but new relationships don't propagate to already-grown beings
 - Builder's inference responses sometimes cut off — likely a token limit on the medium
 
+## Phase 17: Medium Abstraction — The Other Side Of The Runtime
+
+### Dates
+
+- `2026-04-25`
+
+### Representative docs
+
+- [medium-abstraction.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/medium-abstraction.md)
+- [lens-spec.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/lens-spec.md)
+
+### What happened
+
+Every prior phase worked on what happens inside the runtime — beings, relationships, threads, exchanges, routing, memory. This session worked the other side: how beings meet the world outside the process.
+
+It started as a spec for cleaning up the medium layer — three identical agent mediums, three redundant being types, a hardcoded system prompt. Standard refactor territory. Then the builder started thinking out loud.
+
+The first move was separating medium from being. Claude is a being, not a medium. The thing called the `claude` medium is just a shell-out to a binary. The being and the medium got named after each other, and that naming confusion baked coupling into the code.
+
+The second move was directional. Mediums are interfaces. Always one way. In, never out. The keyboard is a medium. The screen is not. A medium is an intake surface — how something reaches a being. The return path is a different concern entirely. This broke the current `Medium` function signature, which takes input AND returns output. If medium is one-way in, then inference is not a medium — inference is how a being thinks. The medium delivers. The being processes. The world routes the response.
+
+The third move was perspective. From the user's perspective, the laptop is a medium — you reach the world through it. From the beings' perspective, the laptop is an entity — addressable, stateful. If whether something is a medium or an entity is just a matter of perspective, then medium is not a separate primitive. It's an entity in a different role — an entity you look through instead of look at.
+
+That collapsed medium as a primitive. But it opened a new one.
+
+If the present is global and the interfaces vary, something has to translate between the two. The present exists on the being. The interface determines what can come in. Between them is a place where the present gets rendered — shaped by the constraints of whatever it passes through. The same present through a CLI is text. Through a frontend it has space, layout, regions. The being doesn't change. The rendering surface does.
+
+That surface was named: **lens**.
+
+The lens holds no state, no logic, no present. It is blank glass. The runtime pushes present data to it. The lens renders. The state of the lens is the last present that was pushed to it. Close the laptop, open it tomorrow — the last derived present is still there. Nothing to sync. Nothing to fetch.
+
+The protocol is all push. Relations push in, presents push out to lenses. The only pull is the runtime reaching into its own storage — reading files, loading the genome, retrieving retained artifacts. That is infrastructure, not protocol. The protocol is push, everywhere.
+
+This led directly to the frontend architecture: React Native as the lens framework. A thin shell with a registry of primitive components. The runtime pushes a JSON component tree as present data. The lens resolves components from its registry and renders natively on whatever surface it's running on. Phone, laptop, TV, watch — each lens has its own component registry tuned to its surface constraints. The runtime pushes the same present. Each lens maps it to its own native components. Same data, different glass.
+
+`DerivePresent` changes from building flat strings to building structured JSON objects. The routing, threading, and exchange tracking stay the same. The only additions are the output format and a WebSocket channel that isn't stdout.
+
+The session also surfaced the business model: open core. The runtime — entities, interfaces, lenses, the push architecture — is open sourced. The initial implementation — Skyra, the world configurations, the being ecosystem — is the commercial product on top. Closer to AWS than an AI assistant. The runtime is infrastructure other people build on.
+
+### What this phase produced
+
+- **Three primitives**: entities, interfaces, and lenses. Addressable units, intake surfaces, and rendering surfaces.
+- **Medium collapsed**: not a separate primitive. An entity in a different role.
+- **Lens emerged**: a blank rendering surface that receives pushed present data.
+- **Push-only protocol**: the entire system is push. The lens has no state to sync.
+- **Frontend architecture**: React Native shells with component registries, receiving JSON presents over WebSocket.
+- **Business model**: open core — runtime is OSS, implementation on top is the product.
+
+### What changed
+
+| Before | After |
+|--------|-------|
+| Medium is a function type on a being | Medium is an entity viewed from the outside |
+| Medium handles intake and output | Intake is an interface. Output is a push to a lens |
+| Frontend is an app with its own state | Frontend is a blank lens that receives and renders |
+| `DerivePresent` returns a flat string | `DerivePresent` builds structured JSON |
+| Present is consumed once by one medium | Present is global, decomposable, pushed to all connected lenses |
+| Three primitives: being, world, medium | Three primitives: entity, interface, lens |
+
+### What is still open
+
+- Inference is not a medium under this model — where does it live? Being-level concern? Its own primitive?
+- Should threads decouple from the world? If the runtime is infrastructure, threads are an opinion.
+- Affordances — scoped to the being, actualized over mediums. The exact shape is not yet specified.
+- The `~medium cli` genome field is wrong twice: it puts medium on the being instead of the world, and it names an interface instead of a medium. Needs a new genome format.
+- The lens component registry — what are the primitive components? How does the registry grow?
+
 ## Appendix: Post-Canon Pressure Notes
 
 This appendix records same-day interpretation and stress-test material that shaped understanding after the `skyra-v.03` canon landed.

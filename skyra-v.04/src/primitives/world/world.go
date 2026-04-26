@@ -47,32 +47,30 @@ func (w *World) Relate(r entity.Relation) entity.Entity {
 			}).(thread.Thread)
 			w.threads[threadID] = &t
 		}
-		w.route(r)
+		w.DerivePresent(r)
 		return w
 	}
 }
 
-func (w *World) DerivePresent(_ entity.Relation) string { return "" }
-
-func (w *World) route(r entity.Relation) {
+func (w *World) DerivePresent(r entity.Relation) string {
 	traceRelation("ingress", r)
 
 	name := r.ID
 	target, ok := w.EntityMap[name]
 	if !ok {
 		fmt.Println("debug: target not found:", name)
-		return
+		return ""
 	}
 	b, ok := target.(being.IBeing)
 	if !ok {
 		fmt.Println("debug: target not a being:", name)
-		return
+		return ""
 	}
 
 	t, ok := w.threads[r.ThreadID]
 	if !ok {
 		fmt.Println("debug: thread not found:", r.ThreadID)
-		return
+		return ""
 	}
 
 	ref, _ := meaning.Extract(r.Impulse, "~ref", "route")
@@ -94,15 +92,15 @@ func (w *World) route(r entity.Relation) {
 	m := b.Medium()
 	if m == nil {
 		fmt.Println("debug: target has no medium:", name)
-		return
+		return ""
 	}
 	response, err := m(present, r)
 	if err != nil {
 		fmt.Println("medium error:", err)
-		return
+		return ""
 	}
 	if response == "" {
-		return
+		return ""
 	}
 
 	valid, formatErrs := w.parseResponse(response, name, r.ThreadID, r.Origin, present)
@@ -163,8 +161,9 @@ func (w *World) route(r entity.Relation) {
 			continue
 		}
 
-		w.route(next)
+		w.DerivePresent(next)
 	}
+	return ""
 }
 
 func (w *World) derivePresent(b being.IBeing, t *thread.Thread, r entity.Relation, cleanImpulse, ref string) string {
