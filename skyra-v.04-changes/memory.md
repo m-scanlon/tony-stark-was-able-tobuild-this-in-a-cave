@@ -2,33 +2,42 @@
 
 ## What This Is
 
-Memory is not stored on a being. Memory is a being.
+Memory is not stored on an entity. Memory is an entity.
 
-`remember` is a single being registered in the world at startup. All beings route to it. It knows who is asking by the origin on the Relation — `r.Origin` is the being whose memory is being operated on. Because `remember` sees all beings, it can observe patterns across the whole world — not just one being's retained experience.
+`remember` is an entity registered in the world at startup. It implements Entity — same interface as everything else. It takes a Relation and returns results. Same protocol.
 
 `remember` is not exempt from its own operations. It retains its own compression decisions, recalls its own history when asked, and compresses itself when it grows too large.
 
 ---
 
-## Two Access Patterns
+## Who Talks to Remember
 
-### Implicit — via the internal self
+The inner entity. Not the outer entity.
 
-The internal self routes to `remember` on every turn to retrieve retained experience relevant to the incoming message. The being never chooses this. It happens automatically as part of the internal self's deliberation. This is involuntary recall — the subconscious surfacing what it knows.
-
-### Explicit — via the being directly
-
-A being can route to `remember` on its own. Retain an artifact. Recall something specific. Trigger compression. Forget. These are conscious operations — the being decides to interact with its own memory.
-
-Both paths hit the same store. One is automatic, one is intentional.
+The inner entity has `remember` in its relationship list and routes to it with `<>` like any peer. The inner entity calls `remember` to pull context beyond its 10-pair working memory window. The outer entity never addresses `remember` — memory access is the inner entity's job.
 
 ---
 
 ## Operations
 
+### Recall
+
+The inner entity asks `remember` for relevant context.
+
+```
+<> remember ~recall ~about <topic>
+<> remember ~recall ~from <entity>
+<> remember ~recall ~type <trace|salience|tension|understanding>
+<> remember ~recall ~after <timestamp>
+<> remember ~recall ~before <timestamp>
+<> remember ~recall ~strength <min>
+```
+
+Filters compose. Without filters, relevance is weighted by type and recency — understanding surfaces first, traces surface last.
+
 ### Retain
 
-A being routes an artifact to `remember` to make it permanent.
+An entity routes an artifact to `remember` to make it permanent.
 
 ```
 <> remember ~retain <artifact>
@@ -41,61 +50,29 @@ Retained artifacts have a type:
 - **tension** — an unresolved question or contradiction. High weight. Persists through compression until resolved.
 - **understanding** — a conclusion reached, something now known. Highest weight. Survives indefinitely.
 
-### Recall
-
-A being asks `remember` for relevant context.
-
-```
-<> remember ~recall ~about <topic>
-<> remember ~recall ~from <being>
-<> remember ~recall ~type <trace|salience|tension|understanding>
-<> remember ~recall ~after <timestamp>
-<> remember ~recall ~before <timestamp>
-<> remember ~recall ~strength <min>
-```
-
-Filters compose. A being can recall all tension artifacts from a specific relationship after a given date. Without filters, relevance is weighted by type and recency — understanding surfaces first, traces surface last.
+The shape of when and how the inner entity retains is not yet decided.
 
 ### Compress
 
-A being triggers compression when its exchange history is too large to carry.
+Compression when the retained store grows too large.
 
 ```
 <> remember ~compress
 ```
 
-`remember` reads the origin being's exchange history, derives understanding artifacts from it, retains those, and discards what no longer needs to be carried. The being doesn't decide what to keep — `remember` does.
+`remember` reads the origin entity's retained artifacts, derives understanding artifacts from traces and salience, retains those, and discards what no longer needs to be carried. The entity doesn't decide what to keep — `remember` does.
 
-Memory quality is not measured by how much can be recalled. It is measured by how little the present being needs to carry without breaking.
+Memory quality is not measured by how much can be recalled. It is measured by how little the present entity needs to carry without breaking.
 
 ### Forget
 
-A being deletes its retained artifacts before a given timestamp.
+Delete retained artifacts before a given timestamp.
 
 ```
 <> remember ~forget ~before <timestamp>
 ```
 
-All artifacts retained by the origin being older than the given value are permanently removed. This is the only delete operation in the memory system.
-
----
-
-## Voluntary Orientation
-
-A being can ground itself in any of its exchange perspectives without sending a message.
-
-```
-<> remember <peer>
-```
-
-The being lands on its own perspective of the exchange with that peer. No message is sent. The target is the being itself — it is just grounding itself in that exchange context. The being then emits normally from there.
-
-This lets a being:
-- Check in on a dormant exchange before deciding to act
-- Recall context before opening a new exchange with someone else
-- Decide not to act after orienting — silence is a valid outcome
-
-"Remember" is the read. Every other emission is a write. This is the conscious counterpart to the internal self's involuntary recall.
+All artifacts retained by the origin entity older than the given value are permanently removed. This is the only delete operation in the memory system.
 
 ---
 
@@ -107,7 +84,7 @@ Every artifact retained by `remember` has a structure:
 ```
 type: trace
 core:           the exchange or event
-beings:         who was involved
+entities:       who was involved
 thread:         thread ID if applicable
 strength:       how significant the exchange was
 ```
@@ -141,5 +118,5 @@ strength:       confidence in the understanding
 ## What This Is Not
 
 - `remember` does not store raw conversation history. That lives in the exchange map on the thread. `remember` stores derived understanding.
-- `remember` does not decide what a being believes. It surfaces what the being has retained. The being reasons over it.
-- Memory is not a database. It is a being with judgment.
+- `remember` does not decide what an entity believes. It surfaces what the entity has retained. The entity reasons over it.
+- Memory is not a database. It is an entity with judgment.
