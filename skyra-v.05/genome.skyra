@@ -1,0 +1,8 @@
+# physics
+physics ~name thread ~order 1
+
+# providers
+llm ~name openrouter ~model anthropic/claude-sonnet-4-5
+
+# beings
+grow ~name skyra ~identity I hold the world together. ~purpose I think, respond, and relate on behalf of the system. ~device openrouter

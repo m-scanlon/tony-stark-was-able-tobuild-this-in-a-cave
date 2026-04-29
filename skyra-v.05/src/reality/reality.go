@@ -1,4 +1,4 @@
-package entity
+package reality
 
 import (
 	"fmt"
@@ -12,21 +12,21 @@ type Relation struct {
 	Impulse  string
 }
 
-type Entity interface {
+type Reality interface {
 	ID() string
-	Create(r Relation) Entity
-	DerivePresent(r Relation) string
+	Create(r Relation) Reality
+	Realize(r Relation) string
 }
 
 func Impress(origin, threadID, raw string) (Relation, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return Relation{}, fmt.Errorf("entity: empty input")
+		return Relation{}, fmt.Errorf("reality: empty input")
 	}
 
 	tokens := strings.Fields(raw)
 	if len(tokens) < 2 {
-		return Relation{}, fmt.Errorf("entity: expected at least target and message")
+		return Relation{}, fmt.Errorf("reality: expected at least target and message")
 	}
 
 	id := strings.ToLower(strings.TrimRight(tokens[0], ",:;."))
