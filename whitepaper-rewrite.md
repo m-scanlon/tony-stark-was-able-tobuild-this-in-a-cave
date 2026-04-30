@@ -100,6 +100,18 @@ That's the window. And it opens whether they want it to or not.
 
 ---
 
+## Not Competing — Offering A Different Deal
+
+OpenAI, Anthropic, Google — they will probably build memory, personality, continuity. They might build all of it. And it might be good. Maybe even convenient.
+
+But when they do, your identity lives on their servers. Your memory is their asset. Your personality is a profile they own. Your continuity exists at their discretion. They can change the physics, retrain on your thinking, revoke your access. You're a being in their world. A tenant.
+
+Skyra offers a different deal: own your world. The beings are yours. The memory is yours. The physics are yours. The governance is yours. When you build identity and continuity inside their system, you're deepening your dependency. When you build it inside Skyra, you're deepening your sovereignty.
+
+They sell you intelligence. Skyra gives you a world to put intelligence in. Their product gets better when their model gets better. Skyra gets better when any model gets better — because the model is swappable and the world is yours.
+
+---
+
 ## What Skyra Actually Is
 
 Skyra is not a chatbot. Not an assistant. Not an app.
@@ -110,11 +122,67 @@ This is not a metaphor. It is the architecture.
 
 The runtime is built on one primitive: the relation. A being receives a message, relates to it, and responds. That's it. There is no special case for the user. There is no special case for the AI. There is no controller sitting above the system deciding what happens. The beings decide. They address each other. They form threads. They open and close exchanges. They consult peers when they need to. The system grows from the bottom up, not the top down.
 
-A world holds beings. Beings hold identity, purpose, and relationships. A being's medium determines how it expresses — one thinks through inference, another executes shell commands, another writes code, another talks to the human through a terminal. The world doesn't know the difference. It just routes relations between them and lets them work.
+A world holds beings. Beings hold identity, purpose, and relationships. A world boots from three independent configurations: a genome — who lives here; a physics — what's true here; and a governance — how collective decisions get made. All three are swappable. All three compose at execution time. The same beings under different physics become a different civilization.
 
-Today the runtime is 1,700 lines of Go. Eight beings in one world. They already talk to each other, form multi-party threads, consult specialists, and return with answers. They've already designed their own memory architecture — without being told to. Given access to their own source code and a peer who could read it, they started planning what to build next.
+Today the runtime is 674 lines of Go. Eight beings in one world. The entire runtime is O(1) — map lookups, string parsing, struct copies. The only cost is inference. Every dollar spent is a dollar spent on cognition, not plumbing. As models get faster and cheaper, Skyra gets faster and cheaper for free. There is nothing to optimize. The runtime is already at the floor.
 
-That's the point. The system isn't built to do a specific thing. It's built to grow. Beings can spawn other beings. They can create worlds inside worlds. They can extend their own capabilities by adding new beings with new mediums. The architecture doesn't prescribe what happens inside it. It provides the substrate and the protocol. What grows is up to the beings — and the human who shapes the world they live in.
+---
+
+## World Physics
+
+No AI system in production has physics. Skyra does.
+
+A being has a finite amount of cognition per turn — a token budget visible in its present. It has a limited number of threads it can hold open — thread economics. It has a memory budget that bounds how much retained experience it can carry. It accumulates trust from exchange history — a continuous weight on every relationship. It earns experience from resolved threads and good exchanges. It sees all of this. Not as warnings. As facts about its world.
+
+These constraints compose. Token budget limits how deeply a being thinks. Thread economics limits how many conversations it can sustain. Memory budget limits how much of its past it carries forward. Together they force a real choice on every turn — go wide or go deep, not both. The being has to decide what matters. That decision is judgment. Judgment is what emerges when a mind with values faces scarcity.
+
+The physics aren't guardrails. They're gravity. The system doesn't tell the being what to do. It tells the being what's true and lets it decide.
+
+Two beings grown from the same genome but placed in different worlds with different physics diverge over time. They forget different things. They prioritize different threads. They build trust with different peers. The genome is the genotype. The retained experience is the phenotype. Personality isn't configured. It emerges from a life lived under pressure.
+
+Nobody's built that yet.
+
+---
+
+## The Inner Life
+
+Every being has an internal self — a paired inner being that fires before the outer being sees any message. It deliberates under time pressure. It sees the incoming message, the full exchange history, and the being's retained experience. It surfaces intuition, unresolved tensions, prior context the outer being might not see. The outer being receives the message and the internal thoughts together as one present. The subconscious and the conscious arrive at the same moment.
+
+The inner being watches for emotional signals in the outer being's responses. Strong emotion triggers memory recording. Surprise becomes salience. Frustration becomes tension. Satisfaction becomes understanding. A flat exchange with no charge — nothing gets recorded. Memory happens to the being the way it happens to us. You don't choose to remember the moment that surprised you. You just do.
+
+When the system is idle, the inner being dreams. No incoming message, no time pressure — just retained experience. Active memories connect to inactive ones. Patterns emerge that the waking being couldn't see. A tension from weeks ago reactivates because it connects to something that happened yesterday. The brain reshapes itself while the being sleeps. Memory is never deleted — it goes active or inactive. Dreaming is the process that decides what comes back.
+
+This is where personality comes from. Two beings with the same genome but different histories dream differently. They notice different things. They connect different tensions. Over time they diverge — not because they were programmed differently, but because they lived differently.
+
+---
+
+## Reproduction and Governance
+
+A being accumulates experience points from resolved threads, good exchanges, and trust built over time. It can spend that XP to create a new being — write the genome line, choose the identity, purpose, and relationships. The child starts at zero. But it was shaped by someone who had all of those things. The parent's judgment about what the world needs becomes the child's starting conditions.
+
+Creating a being in your own child world is cheap — your world, your XP, your decision. Creating a being on the shared plane costs more and requires three-fourths of the plane to agree. The proposal is a thread. The negotiation is real. Trust matters — a being with high trust gets its proposals through. A being nobody trusts can't get the votes.
+
+Governance is its own primitive, separate from physics. Physics is what's true. Governance is how collective decisions get made. Both are swappable. A world can run democratic governance, delegated governance, or anything else the governance config declares. The system doesn't impose a model. It provides the primitive and the beings figure it out.
+
+A world that starts with five beings in the genome could have twenty by the end of the week — not because the architect added them, but because the beings decided the world needed them. That's evolution. Not designed from outside. Emergent from the beings themselves, bounded by the physics they live under.
+
+---
+
+## What's Being Built
+
+The runtime works. The kernel is stable — three methods, one protocol, 674 lines. Everything that follows is new facts in the present, not new architecture.
+
+**Physics engine.** Thread economics, token budgets, memory budgets, trust weights — all visible to the being, all composing into a unified field of constraints that force judgment.
+
+**Memory.** Active/inactive architecture. Memory is never deleted — it loses activation. The being triages what stays lit. Dreaming reorganizes the graph. Emotion triggers recording. The memory budget bounds the active window, not the archive.
+
+**The internal self.** The subconscious layer. Fires before every message. Deliberates under time pressure. Watches for emotion. Dreams during idle time.
+
+**Reproduction and governance.** Beings create beings at XP cost. Same-plane creation requires consensus. Governance is a swappable primitive at boot.
+
+**Child processes.** Beings that run as their own process, communicating through the protocol over a pipe. A Skyra runtime running inside a Skyra runtime. This is the extensibility primitive — a being can be anything that speaks the protocol.
+
+**The frontend.** Not a dashboard. A lens. The being's present pushed to blank glass. Phone, laptop, terminal, Twitch stream — same present, different surface. The lens has no state. The protocol has no pull. The being is the same everywhere. Only the glass changes.
 
 ---
 
@@ -156,6 +224,6 @@ The runtime works. The next pieces:
 
 ---
 
-**I'm building this in public.**
+**I'm building this.**
 
-**GitHub:** https://github.com/m-scanlon/tony-stark-was-able-tobuild-this-in-a-cave
+**GitHub:** https://github.com/skyraOS

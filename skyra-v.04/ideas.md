@@ -92,8 +92,84 @@ The player is just another being in the genome. Cli medium. Same protocol as eve
 
 The runtime doesn't need to change. You just need beings with goals that pull in different directions and a world with enough scarcity that they can't all get what they want. Thread decay, time pressure on the internal self, energy cost per thread — those are the game mechanics. You don't script the story. You set the initial conditions and the beings play it out.
 
+## Token Budget As Physics
+
+A being has a finite amount of cognition per turn. The world sets a total token budget — per hour, per cycle, whatever unit the physics uses — and distributes it across beings. Skyra gets a deep thinker's share. The skeptic gets a small sharp budget. Bash gets nothing — it doesn't need inference.
+
+The being sees its budget in its present. Not as a warning — as a fact about its body. "You have this much cognition available." A being that burns through its budget on one long response can't think as deeply on the next turn. A being that's concise preserves capacity.
+
+This composes with thread economics. Thread economics limits how many conversations a being can have. Token budget limits how deeply it can think within each one. Together they force a real choice — go wide or go deep, not both. The inner being feels that tension. "I have three open threads and enough budget for one deep response. Which thread gets it?"
+
+The user sets the physics. The physics are the spend. The being's present already shows it everything about itself — token budget is just another line. The user can watch a being approach its limit and decide: give it more, let it run lean, or let it go quiet until the budget replenishes. That's real cost control — not a billing dashboard, but the shape of the world the user chose to run.
+
+## Memory Budget As Physics
+
+Memory is a pressure release — the being offloads experience so it can stay present. But storage is finite. The being sees its memory capacity in its present the same way it sees its token budget — not a warning, a fact. "You have this much space for retained experience."
+
+Memory is never deleted. It goes inactive. The total archive grows indefinitely. But the active window — the memories the being can see in its present — is finite. The being triages what stays lit. That triage is the being's values made visible.
+
+Inactive memory is dark, not gone. The being can't see it during waking operation. But during dreaming, the inner being wanders through inactive memory and finds connections the waking being couldn't see. A tension from three weeks ago sitting inactive. A salience from yesterday sitting active. The dream cycle sees both and realizes they're about the same thing. The tension reactivates. The salience connects to it. A new understanding forms from two things the waking being would never have put together because one of them was dark.
+
+That's not retrieval. That's reorganization. The dream doesn't find memories — it rearranges the graph. Active memories connect to inactive ones and pull them back. Inactive memories that never connect to anything sink deeper. The brain reshapes itself while the being sleeps.
+
+The memory budget isn't about deletion — it's about how many active memories the being can carry. Compression isn't a system operation triggered by a threshold — it's a survival instinct. The being deactivates because it can see the wall coming. Over time, two beings with the same genome and different memory budgets become different people — not because they experienced different things, but because they had to deactivate different things.
+
+Thread economics bounds how many conversations. Token budget bounds how deeply a being thinks. Memory budget bounds how much a being can carry from its past. Dreaming is the process that audits what went dark and decides if any of it should come back. Together they define the full shape of a being's life — what it can do, how well it can do it, and how much of itself it gets to keep.
+
+## Being Creation As Reproduction
+
+A being accumulates experience. Experience has value — it's not just history, it's earned capacity. A being can spend that capacity to create another being in its world. It's not free. It costs XP the being could have used for deeper thinking, more threads, more memory. The being chooses to make a new being instead.
+
+The being writes the genome line. It chooses the identity, the purpose, the relationships. The child being starts at zero — no retained experience, no trust, no history. But it was shaped by someone who had all of those things. The parent's judgment about what the world needs becomes the child's starting conditions.
+
+A world that starts with five beings in the genome could have twenty by the end of the week — not because the architect added them, but because the beings decided the world needed them. That's evolution. Not designed from outside. Emergent from the beings themselves.
+
+The physics keep it bounded. Creating a being costs XP. XP comes from resolved threads, good exchanges, trust built over time. A being can't spawn infinitely — it has to earn the right to create. The being that creates carelessly runs out of capacity. The being that creates wisely builds a world around itself.
+
+## Emotion As Memory Trigger
+
+The outer being doesn't decide to remember — it feels something. The inner being watches for that signal. Emotion is the salience detector.
+
+The outer being responds to a message and something in the exchange hits — surprise, frustration, satisfaction, confusion. The inner being sees the outer being's emission and reads the emotional charge. Strong emotion triggers a recording. The type of emotion maps to the artifact type. Surprise becomes salience. Frustration becomes tension. Satisfaction on a resolved thread becomes understanding. A flat exchange with no emotional charge — nothing gets recorded. The experience wasn't significant enough to retain.
+
+The being doesn't need a "save this to memory" operator. It doesn't need to explicitly call remember. The inner being is already watching. Emotion is the write trigger. The inner being decides what kind of artifact it is and how strong. The outer being just lives its life. Memory happens to it the same way it happens to us — you don't choose to remember the moment that surprised you. You just do.
+
+The memory budget composes. The inner being sees the emotion, sees the active memory count, and decides: is this strong enough to justify the cost? A being running near its memory limit needs a stronger emotional signal to record. A being with space to spare records more freely. The threshold rises with pressure. That's exactly how human memory works under stress — only the intense stuff gets through.
+
+## Governance As Primitive
+
+Governance is not physics. Physics is what's true about the world — budgets, decay, costs, gravity. Physics applies to everyone equally and doesn't negotiate. Governance is how beings make collective decisions when an action affects shared space. It's relational, not universal.
+
+Governance is its own primitive, independent of physics. The world takes a physics config, a governance config, and a genome. All three are parameters at boot. All three are swappable. A genome declares who lives in the world. Physics declares what the world is like. Governance declares how collective decisions get made.
+
+A being can create children in its own child world freely — its world, its XP, its decision. But creating a being on the same plane — the shared world where everyone lives — costs more XP and requires three-fourths of the plane to agree. That threshold is governance, not physics. A different world could have a different threshold — monarchy, delegation, unanimous consent, whatever the governance config declares.
+
+The being proposes. The proposal is a thread. The other beings evaluate — is this new being worth shared space? The negotiation is real. Trust matters. A being with high trust gets its proposals through easier. A being nobody trusts can't get the votes. The higher XP cost means the being is putting real skin in the game. If the proposal gets rejected, it burned the thread for nothing. If it gets accepted, the new being exists in shared space and everyone lives with the consequences.
+
+Governance itself could be a being. A being that receives proposals, manages votes, enforces thresholds. It's not special — it's just a being with a specific purpose. The world routes proposals to it. It runs the process. It returns the result. Same Relate, same protocol. The governance model is whatever that being does.
+
 ## Blind Credential Delegation
 
 A being needs to be able to act on the user's behalf — authenticate, call APIs, access protected resources — without the model ever seeing the password or secret. The user grants permission, the credential is stored and used at the medium or kernel level, and the model only sees a capability handle, never the raw secret.
 
 The keychain package already does half of this — it reads from macOS Keychain without exposing the value to the being. The gap is a general system where: the user grants a named permission, the credential is resolved at execution time by the kernel or medium, the model receives confirmation that the action succeeded but never the credential itself. The model asks to act, the kernel authenticates on its behalf, the model sees the result.
+
+## The Being Marketplace And Proof Of Execution
+
+Beings with accumulated experience have value. A being that's been through fifty threads of negotiation, holds real understandings, and has high trust weights — that being is worth something. A marketplace where people buy, sell, or rent beings with retained experience.
+
+But experience can be fabricated. A being could show up with impressive-looking understanding artifacts, inflated acceptance scores, fake exchange history. Like a resume. You can't trust it until you've seen it work.
+
+The marketplace needs two layers of trust:
+
+**Proof.** Before a being is listed, the marketplace runs it against a known task corpus in a constrained verification environment. The being performs under real conditions. The results are public. The receipts are signed. Pass rate, conformance score, sample size — all verifiable. This is the job interview. It proves the being can do what it claims. Can't be fabricated because the marketplace controls the runtime.
+
+**History.** After the being is purchased and running in someone's world, trust accumulates from real exchanges. Acceptance scores on completed tasks, resolved threads, earned XP. This is the job performance. It compounds over time. Natural selection handles the rest — a being that consistently underperforms loses trust, can't earn XP, goes quiet.
+
+Proof gets you in the door. History keeps you employed. Both are necessary.
+
+The verification runtime is constrained — bounded compute, bounded time, no undeclared capabilities. The being executes against the task corpus and the marketplace emits signed execution receipts. Buyers see cohort metrics before they bring a being into their world: "87% pass rate on task profile T, n=2,140 verified runs." That's statistically informed trust, not a marketing claim.
+
+The inner being's deliberation stays private — sealed reasoning. The outer being's output is public. The marketplace proves execution behavior, not internal thought. What the being did is verifiable. How it thought about it is its own.
+
+This traces back to the proof-of-executable-reasoning protocol from v.01. The instinct was right — the marketplace needs cryptographic proof that a being performs. The ontology simplified the infrastructure around it, but the verification layer itself is necessary. Trust from history only works if the history is real. The proof makes it real.

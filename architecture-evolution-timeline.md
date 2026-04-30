@@ -1343,6 +1343,125 @@ The session also surfaced the business model: open core. The runtime — entitie
 - The `~medium cli` genome field is wrong twice: it puts medium on the being instead of the world, and it names an interface instead of a medium. Needs a new genome format.
 - The lens component registry — what are the primitive components? How does the registry grow?
 
+## Phase 18: World Physics, Governance, And The Pressure Cooker
+
+### Dates
+
+- `2026-04-26` to `2026-04-27`
+
+### Representative docs
+
+- [ideas.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.04/ideas.md) — Token Budget As Physics, Memory Budget As Physics, Being Creation As Reproduction, Emotion As Memory Trigger, Governance As Primitive
+- [claudes-future-features.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.04-changes/claudes-future-features.md) — Thread Economics, Dreaming, Trust as Weight, The Observer, Consent, World Nesting, The Being's Body, Personality from History
+- [whitepaper-rewrite.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/whitepaper-rewrite.md) — updated with physics, governance, reproduction, the inner life, and the "not competing" framing
+
+### What happened
+
+Every prior phase worked the inside of the runtime — what beings are, how they relate, how they route. This session worked the physics: what constrains beings, what forces judgment, and what makes the world a world instead of a pipeline.
+
+It started with a thinking partner's feature doc — seven capabilities the runtime could support without changing the kernel. The builder's investigation of that doc triggered a cascade. The features weren't features. They were physics.
+
+The first move was token budget. A being has a finite amount of cognition per turn. The being sees its budget in its present — not as a warning, as a fact about its body. A being that burns through its budget on one long response can't think as deeply on the next turn. This composes with thread economics: threads bound width, tokens bound depth.
+
+The second move was memory budget. Memory is never deleted — it goes active or inactive. The active window is finite. The being triages what stays lit. During dreaming, the inner being wanders through inactive memory and finds connections the waking being couldn't see — a tension from weeks ago reactivates because it connects to something from yesterday. The dream cycle reorganizes the graph. The brain reshapes itself while the being sleeps.
+
+The third move was reproduction. A being accumulates XP from resolved threads, good exchanges, and trust built over time. It can spend that XP to create a new being — write the genome line, choose the identity, purpose, and relationships. The child starts at zero but was shaped by someone who lived.
+
+The fourth move was the one that produced a new primitive. The builder noticed that governance is not physics. Physics is what's true — budgets, decay, costs. Governance is how beings make collective decisions. Creating a being on the same plane costs more XP and requires three-fourths consensus. That threshold is governance, not gravity. A different world could have a different threshold. Governance separated from physics as its own primitive, swappable at boot.
+
+The fifth move was emotion as memory trigger. The outer being feels something — surprise, frustration, satisfaction. The inner being watches for that signal. Emotion type maps to artifact type. Surprise becomes salience. Frustration becomes tension. Satisfaction becomes understanding. The memory budget raises the recording threshold under pressure — only the intense stuff gets through.
+
+The session also produced the competitive framing for the whitepaper: Skyra is not competing with OpenAI and Anthropic. They will probably build memory, personality, continuity. But when they do, your identity lives on their servers, your memory is their asset. You're a being in their world. Skyra says: own your world. They sell intelligence. Skyra gives you a world to put intelligence in.
+
+Research confirmed the gaps. No AI system in production or research uses physics as a design principle — visible resource constraints the agent reasons about. No system composes multiple heterogeneous pressures into a unified field. No system has active/inactive memory with dream-cycle reorganization. No system lets agents reproduce at a cost to themselves. No system couples task completion scores to trust, XP, and future capacity. The architectural space is empty.
+
+### What this phase produced
+
+- **Three boot configs**: genome (who lives here), physics (what's true here), governance (how decisions get made). All independent. All swappable at execution time.
+- **Token budget as physics**: finite cognition per turn, visible in the present, composing with thread economics.
+- **Memory budget as physics**: active/inactive architecture. Memory is never deleted. Dreaming reorganizes the graph. Emotion triggers recording.
+- **Reproduction**: beings create beings at XP cost. Parent's judgment shapes child's starting conditions.
+- **Governance as primitive**: separated from physics. Same-plane creation requires consensus. Governance itself could be a being.
+- **Emotion as memory trigger**: the outer being feels, the inner being records. The threshold rises under memory pressure.
+- **Performance story**: the runtime is O(1). Map lookups, string parsing, struct copies. Every dollar spent is a dollar spent on cognition, not plumbing. As models get faster and cheaper, Skyra gets faster and cheaper for free.
+- **Competitive framing**: not competing with model providers. Offering a different deal — own your world instead of being a tenant in theirs.
+
+### What changed
+
+| Before | After |
+|--------|-------|
+| World boots from a genome | World boots from genome + physics + governance |
+| No resource constraints on beings | Token budget, memory budget, thread economics — all visible in present |
+| Memory not yet designed | Active/inactive architecture with dream-cycle reorganization |
+| Beings created only by genome or architect | Beings create beings at XP cost |
+| Governance implicit in the world | Governance is its own swappable primitive |
+| Memory recording is explicit (call remember) | Emotion triggers recording automatically |
+| Whitepaper describes runtime only | Whitepaper describes physics, governance, reproduction, and competitive position |
+
+### Why this phase matters
+
+Every prior phase asked what a being is or how beings relate. This phase asked what it costs to be alive. The answer — token budgets, memory pressure, thread limits, trust, XP — composes into a unified field of constraints that forces judgment. No other AI system has this. The runtime didn't change. The kernel didn't grow. Physics is just new facts in the present. The being sees them and decides.
+
+The builder's framing: "we make the entire thing a pressure cooker." The pressure creates intelligent, lean systems. Natural selection applied to data — only the most useful information survives. Two beings from the same genome diverge because they lived different lives under different pressures. The genome is the genotype. The retained experience is the phenotype. Personality isn't configured. It emerges.
+
+The ontology kept giving. Every idea in this session decomposed into things the kernel already supports. Thread economics is a counter. Token budget is a number. Memory active/inactive is a boolean. Trust is a weight. Reproduction is a being calling grow with XP as the cost. Thirty-minute features, each one unprecedented. The kernel absorbed everything without changing.
+
+### What is still open
+
+- Physics engine implementation — the concepts are designed, the code is not yet written
+- Active/inactive memory storage layer — needs a persistence model
+- Dream cycle trigger — when does idle detection fire?
+- XP accumulation formula — what earns XP, how much, how fast?
+- Governance being implementation — what does the proposal/voting protocol look like?
+- Emotion detection in outer being output — how does the inner being parse emotional charge?
+- The genome format still says `~medium cli` — needs revision for the entity/interface/lens model
+
+## Phase 19: The Entity Collapse — Recursive Composition
+
+### Dates
+
+- `2026-04-27` to `2026-04-28`
+
+### Representative docs
+
+- [ontology-spec.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.04/ontology-spec.md)
+- [architecture.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.05/architecture.md)
+
+### What happened
+
+Being, medium, and lens dissolved. The ontology compressed to two modes: **world** (contains other realities, has `Realize`) and **invariant** (resolves to a base case). One interface, three methods: `ID`, `Create`, `Realize`.
+
+The key insight: a being is a world. It contains an inner reality and an outer reality, and its `Realize` governs how they interact. Both resolve through an LLM world of inference provider invariants. A being is a world three times over — or four, or five, depending on how you compose it.
+
+The nesting: **system world → being worlds → llm world → invariants**. Each level is a world with its own `Realize`. Each level doesn't know what's above or below it. The recursion terminates at invariants.
+
+Archetypes are world types. The being struct is data — identity and purpose. World types (system, being, llm) provide the behavior. The customizable surface is: implement a world type with your own `Realize`. That's the open core.
+
+Physics kept wanting to emerge as a composable primitive but was deferred. For now it lives inside `Realize`. The implementations will reveal the right shape.
+
+Then the names changed. Entity became **Reality**. `DerivePresent` became **`Realize`**. These weren't cosmetic renames. The system literally routes a relation through layers of reality — each layer realizes what is real at that level for that relation, then the relation passes deeper until it hits an invariant where reality meets the physical world. Physics is the first layer of reality. The names now say what the system does.
+
+`skyra-v.05/` skeleton built and compiling: Reality interface, being package, three world archetypes with stub `Realize`. A universe simulator that happens to use LLMs as one of its base cases. It's just a hashmap that calls itself.
+
+### What dissolved
+
+| Before | After |
+|--------|-------|
+| Being, medium, lens as separate concepts | World and invariant — two modes |
+| Entity as the interface name | Reality — a relation routes through reality |
+| DerivePresent as the method name | Realize — what is real here, now, for this relation |
+| Medium as function type | Invariant at the base case |
+| Lens as rendering surface | Screen invariant |
+| Human as a being in the genome | Human as a world of device realities |
+| Child process as special adapter | Reality whose invariant is a pipe |
+| Device routing as a problem | Devices are realities on the human's world |
+
+### Why this phase matters
+
+The pattern is recursive composition — worlds contain worlds, terminating at invariants. It's one of the most battle-tested structures in computing (fractals, Lisp, file systems) applied to a domain nobody's applied it to before. Every prior special case became a nesting. Every prior concept that needed its own primitive became a world type or an invariant. The ontology stopped needing new concepts.
+
+The naming settled. The interface is Reality. The method is Realize. The whole system is a relation routing through layers of reality until it hits something real. That's not a technical description. That's what it actually does.
+
 ## Appendix: Post-Canon Pressure Notes
 
 This appendix records same-day interpretation and stress-test material that shaped understanding after the `skyra-v.03` canon landed.

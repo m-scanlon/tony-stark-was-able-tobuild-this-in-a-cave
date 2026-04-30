@@ -16,9 +16,21 @@
         "about": "",
         "because": "",
         "exchanges": [
-          { "peer": "claude", "status": "current", "entries": 6 },
-          { "peer": "michael", "status": "waiting", "entries": 33 },
-          { "peer": "skyra", "status": "waiting", "entries": 10 }
+          {
+            "peer": "claude",
+            "status": "current",
+            "entries": 6
+          },
+          {
+            "peer": "michael",
+            "status": "waiting",
+            "entries": 33
+          },
+          {
+            "peer": "skyra",
+            "status": "waiting",
+            "entries": 10
+          }
         ]
       }
     },
@@ -57,7 +69,12 @@
     {
       "type": "peers",
       "data": {
-        "available": ["skyra", "michael", "skeptic", "bash"]
+        "available": [
+          "skyra",
+          "michael",
+          "skeptic",
+          "bash"
+        ]
       }
     },
     {
@@ -72,18 +89,62 @@
       "type": "topology",
       "data": {
         "beings": [
-          { "id": "skyra", "name": "skyra", "medium": "inference" },
-          { "id": "builder", "name": "builder", "medium": "inference" },
-          { "id": "michael", "name": "michael", "medium": "cli" },
-          { "id": "skeptic", "name": "skeptic", "medium": "inference" },
-          { "id": "bash", "name": "bash", "medium": "shell" },
-          { "id": "claude", "name": "claude", "medium": "claude" }
+          {
+            "id": "skyra",
+            "name": "skyra",
+            "medium": "inference"
+          },
+          {
+            "id": "builder",
+            "name": "builder",
+            "medium": "inference"
+          },
+          {
+            "id": "michael",
+            "name": "michael",
+            "medium": "cli"
+          },
+          {
+            "id": "skeptic",
+            "name": "skeptic",
+            "medium": "inference"
+          },
+          {
+            "id": "bash",
+            "name": "bash",
+            "medium": "shell"
+          },
+          {
+            "id": "claude",
+            "name": "claude",
+            "medium": "claude"
+          }
         ],
         "edges": [
-          { "from": "builder", "to": "claude", "threadId": "7071eab88a074cf1", "status": "active" },
-          { "from": "builder", "to": "michael", "threadId": "7071eab88a074cf1", "status": "inactive" },
-          { "from": "builder", "to": "skyra", "threadId": "7071eab88a074cf1", "status": "inactive" },
-          { "from": "skyra", "to": "builder", "threadId": "7071eab88a074cf1", "status": "inactive" }
+          {
+            "from": "builder",
+            "to": "claude",
+            "threadId": "7071eab88a074cf1",
+            "status": "active"
+          },
+          {
+            "from": "builder",
+            "to": "michael",
+            "threadId": "7071eab88a074cf1",
+            "status": "inactive"
+          },
+          {
+            "from": "builder",
+            "to": "skyra",
+            "threadId": "7071eab88a074cf1",
+            "status": "inactive"
+          },
+          {
+            "from": "skyra",
+            "to": "builder",
+            "threadId": "7071eab88a074cf1",
+            "status": "inactive"
+          }
         ]
       }
     }

@@ -15,7 +15,7 @@ import (
 
 const (
 	baseURL      = "https://openrouter.ai/api/v1/chat/completions"
-	defaultModel = "anthropic/claude-3-haiku"
+	defaultModel = "anthropic/claude-sonnet-4-5"
 	timeout      = 120 * time.Second
 )
 

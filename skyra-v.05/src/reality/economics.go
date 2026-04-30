@@ -1,10 +1,8 @@
-package world
+package reality
 
 import (
 	"fmt"
 	"strings"
-
-	"skyra-v05/src/reality"
 )
 
 type Economics struct {
@@ -21,7 +19,7 @@ func NewEconomics() *Economics {
 
 func (e *Economics) ID() string { return e.id }
 
-func (e *Economics) Create(r reality.Relation) reality.Reality {
+func (e *Economics) Create(r *Relation) Reality {
 	return e
 }
 
@@ -29,7 +27,7 @@ func (e *Economics) Set(field string, value int) {
 	e.Fields[field] = value
 }
 
-func (e *Economics) Realize(r reality.Relation) string {
+func (e *Economics) Realize(r *Relation) string {
 	if len(e.Fields) == 0 {
 		return ""
 	}

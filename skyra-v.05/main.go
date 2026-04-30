@@ -6,20 +6,41 @@ import (
 	"os"
 	"strings"
 
+	"skyra-v05/src/debug"
 	"skyra-v05/src/inference"
 	"skyra-v05/src/reality"
-	"skyra-v05/src/reality/being"
-	"skyra-v05/src/reality/world"
 )
 
 func main() {
 	loadEnv("../.env")
 
-	llm := world.NewLLM()
-	physics := world.NewPhysics()
-	system := world.NewSystem(physics)
+	if err := debug.Init("logs"); err != nil {
+		fmt.Fprintln(os.Stderr, "debug:", err)
+		os.Exit(1)
+	}
+	defer debug.Close()
 
-	if err := bootstrap(system, llm, physics); err != nil {
+	if err := reality.InitHome(); err != nil {
+		fmt.Fprintln(os.Stderr, "home:", err)
+		os.Exit(1)
+	}
+
+	llm := reality.NewLLM()
+	operators := reality.NewOperators()
+	thread := &reality.NewThread{
+		Beings:  make(map[string]reality.Reality),
+		Access:  map[string]bool{"michael": true},
+		Threads: make(map[string]*reality.Thread),
+	}
+	mac := &reality.MacOS{}
+	mac = mac.Create(&reality.Relation{}).(*reality.MacOS)
+
+	exchange := &reality.Exchange{Exchanges: make(map[string]*reality.Conversation)}
+	operators.Register("exchange", func() reality.Reality {
+		return exchange
+	})
+
+	if err := bootstrap(thread, llm, operators, mac); err != nil {
 		fmt.Fprintln(os.Stderr, "bootstrap:", err)
 		os.Exit(1)
 	}
@@ -28,11 +49,36 @@ func main() {
 
 	fmt.Println("skyra v.05")
 
-	mac := world.NewMacOS()
-	mac.Run(system)
+	input := mac.Realize(&reality.Relation{})
+	rel, _ := reality.Impress("michael", input)
+
+	for {
+		debug.Log("main: relation →", rel.Origin, "|", rel.Impulse, "| thread:", rel.ThreadID)
+
+		thread.Realize(rel)
+
+		response := operators.Realize(rel)
+		debug.Log("main: response →", response)
+
+		emissions := thread.Route(rel.Origin, rel.ID, response, rel.ThreadID)
+
+		if len(emissions) == 0 {
+			debug.Log("main: no emissions, waiting for input")
+			input := mac.Realize(&reality.Relation{})
+			rel, _ = reality.Impress("michael", input)
+			continue
+		}
+
+		rel = emissions[0]
+		for _, extra := range emissions[1:] {
+			debug.Log("main: extra emission → from", extra.Origin, "to", extra.ID)
+			thread.Realize(extra)
+			operators.Realize(extra)
+		}
+	}
 }
 
-func bootstrap(system *world.System, llm *world.LLM, physics *world.Physics) error {
+func bootstrap(thread *reality.NewThread, llm *reality.LLM, operators *reality.Operators, mac *reality.MacOS) error {
 	data, err := os.ReadFile("genome.skyra")
 	if err != nil {
 		return err
@@ -51,35 +97,55 @@ func bootstrap(system *world.System, llm *world.LLM, physics *world.Physics) err
 		impulse := strings.Join(tokens[1:], " ")
 
 		switch operator {
-		case "physics":
-			physics.Create(reality.Relation{Impulse: impulse})
-
 		case "llm":
-			llm.Create(reality.Relation{Impulse: impulse})
+			llm.Create(&reality.Relation{Impulse: impulse})
 
 		case "grow":
-			name, _ := being.Extract(impulse, "~name", "grow")
-			deviceName, _ := being.Extract(impulse, "~device", "grow")
+			name, _ := reality.Extract(impulse, "~name", "grow")
+			beingType, _ := reality.Extract(impulse, "~type", "grow")
+			deviceName, _ := reality.Extract(impulse, "~device", "grow")
 
-			pathos := being.Being{}.Create(reality.Relation{
+			being := reality.Being{}.Create(&reality.Relation{
 				ID:      name,
 				Impulse: impulse,
-			}).(being.Being)
+			}).(reality.Being)
 
-			var device world.Device
+			var device reality.Reality
 			switch deviceName {
-			case "cli":
-				device = world.NewCLIDevice(name)
+			case "macos":
+				device = mac
 			default:
-				device = llm.Device(deviceName)
+				device = llm.Provider(deviceName)
+				if device == nil {
+					return fmt.Errorf("unknown device %q for being %q", deviceName, name)
+				}
 			}
 
-			if device == nil {
-				return fmt.Errorf("unknown device %q for being %q", deviceName, name)
-			}
+			switch beingType {
+			case "llm":
+				self := &reality.Self{}
+				self = self.Create(&reality.Relation{ID: name}).(*reality.Self)
+				self.Realities["being"] = being
 
-			bw := world.NewBeingWorld(pathos, device)
-			system.Realities[name] = bw
+				think := &reality.Think{Realities: make(map[string]reality.Reality)}
+				think.Realities["device"] = device
+
+				act := &reality.Act{Realities: make(map[string]reality.Reality)}
+				act.Realities["device"] = device
+
+				self.Realities["think"] = think
+				self.Realities["act"] = act
+
+				thread.Beings[name] = self
+
+			case "user":
+				user := &reality.User{}
+				user = user.Create(&reality.Relation{ID: name}).(*reality.User)
+				user.Realities["being"] = being
+				user.Realities["device"] = device
+
+				thread.Beings[name] = user
+			}
 		}
 	}
 	return nil
