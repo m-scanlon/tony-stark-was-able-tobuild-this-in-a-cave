@@ -3,6 +3,7 @@ package reality
 import (
 	"fmt"
 	"skyra-v05/src/debug"
+	"strconv"
 	"strings"
 )
 
@@ -17,6 +18,7 @@ type Conversation struct {
 	Entries []Entry
 	Sender  string
 	Message string
+	Context map[string]string
 }
 
 type Entry struct {
@@ -63,6 +65,56 @@ func (e *Exchange) Realize(r *Relation) string {
 		debug.Log("[exchange]: existing conversation", key, "| entries:", len(conv.Entries))
 	}
 
+	hasRef := false
+	refValue, refErr := Extract(r.Impulse, "~ref", "exchange")
+	if refErr == nil {
+		hasRef = true
+		debug.Log("[exchange]: ~ref found →", refValue)
+		r.Impulse = Strip(r.Impulse, "~ref")
+
+		srcPeer, start, end, parseErr := parseRef(refValue)
+		if parseErr == nil {
+			srcKey := exchangeKey(r.Origin, srcPeer)
+			if srcConv, ok := e.Exchanges[srcKey]; ok {
+				resolved := srcConv.SliceEntries(start, end)
+				debug.Log("[exchange]: resolved ~ref", srcKey, start, "-", end, "→", len(resolved), "entries")
+
+				srcConv.Entries = append(srcConv.Entries, Entry{
+					From:    r.Origin,
+					Content: fmt.Sprintf("[left to talk to %s]", r.ID),
+				})
+				debug.Log("[exchange]: appended departure to", srcKey)
+
+				if conv.Context == nil {
+					conv.Context = make(map[string]string)
+				}
+				conv.Context[r.Origin] = renderRef(srcPeer, start, end, resolved)
+				debug.Log("[exchange]: stored context for", r.Origin, "on", key)
+			} else {
+				debug.Log("[exchange]: ~ref source conversation not found:", srcKey)
+			}
+		} else {
+			debug.Log("[exchange]: ~ref parse error:", parseErr)
+		}
+	}
+
+	if !hasRef && !ok {
+		for existingKey, existingConv := range e.Exchanges {
+			if existingConv.Active && existingKey != key {
+				for _, party := range existingConv.Parties {
+					if party == r.Origin {
+						debug.Log("[exchange]: crossing without ~ref — origin", r.Origin, "has active exchange", existingKey)
+						otherPeer := existingConv.Parties[0]
+						if otherPeer == r.Origin {
+							otherPeer = existingConv.Parties[1]
+						}
+						return fmt.Sprintf("[exchange]: you are leaving your exchange with %s to talk to %s. carry context: ~ref %s:START-END", otherPeer, r.ID, otherPeer)
+					}
+				}
+			}
+		}
+	}
+
 	conv.Sender = r.Origin
 	conv.Message = r.Impulse
 	debug.Log("[exchange]: recording entry from", r.Origin, "→", r.Impulse[:min(len(r.Impulse), 40)])
@@ -71,6 +123,10 @@ func (e *Exchange) Realize(r *Relation) string {
 		Content: r.Impulse,
 	})
 	r.Attach("exchange", conv.Parse)
+	if r.Realities == nil {
+		r.Realities = make(map[string]Reality)
+	}
+	r.Realities["conversation"] = conv
 
 	being, ok := r.Realities[r.ID]
 	if !ok {
@@ -100,6 +156,74 @@ func (c *Conversation) Parse() string {
 		sb.WriteString("message from " + c.Sender + ": " + c.Message + "\n")
 	}
 	return sb.String()
+}
+
+func (c *Conversation) ID() string { return exchangeKey(c.Parties[0], c.Parties[1]) }
+
+func (c *Conversation) Create(r *Relation) Reality { return c }
+
+func (c *Conversation) Realize(r *Relation) string { return "" }
+
+func (c *Conversation) ParseRecent(n int) string {
+	entries := c.Entries
+	if len(entries) > n {
+		entries = entries[len(entries)-n:]
+	}
+	var sb strings.Builder
+	sb.WriteString("recent conversation:\n")
+	for _, entry := range entries {
+		sb.WriteString("  " + entry.From + ": " + entry.Content + "\n")
+	}
+	return sb.String()
+}
+
+func parseRef(value string) (string, int, int, error) {
+	peer, rang, ok := strings.Cut(value, ":")
+	if !ok {
+		return "", 0, 0, fmt.Errorf("ref: missing colon in %q", value)
+	}
+	startStr, endStr, hasRange := strings.Cut(rang, "-")
+	start, err := strconv.Atoi(strings.TrimSpace(startStr))
+	if err != nil {
+		return "", 0, 0, fmt.Errorf("ref: bad start %q", startStr)
+	}
+	if !hasRange {
+		return strings.TrimSpace(peer), start, start, nil
+	}
+	end, err := strconv.Atoi(strings.TrimSpace(endStr))
+	if err != nil {
+		return "", 0, 0, fmt.Errorf("ref: bad end %q", endStr)
+	}
+	return strings.TrimSpace(peer), start, end, nil
+}
+
+func (c *Conversation) SliceEntries(start, end int) []Entry {
+	if start < 0 {
+		start = 0
+	}
+	if end >= len(c.Entries) {
+		end = len(c.Entries) - 1
+	}
+	if start > end || start >= len(c.Entries) {
+		return nil
+	}
+	return c.Entries[start : end+1]
+}
+
+func renderRef(peer string, start, end int, entries []Entry) string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("context brought from %s (entries %d-%d):\n", peer, start, end))
+	for i, entry := range entries {
+		sb.WriteString(fmt.Sprintf("  [%d] %s: %s\n", start+i, entry.From, entry.Content))
+	}
+	return sb.String()
+}
+
+func (c *Conversation) ContextFor(being string) string {
+	if c.Context == nil {
+		return ""
+	}
+	return c.Context[being]
 }
 
 func (e *Exchange) Parse() string {

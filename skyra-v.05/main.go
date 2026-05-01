@@ -127,11 +127,20 @@ func bootstrap(thread *reality.NewThread, llm *reality.LLM, operators *reality.O
 				self = self.Create(&reality.Relation{ID: name}).(*reality.Self)
 				self.Realities["being"] = being
 
-				think := &reality.Think{Realities: make(map[string]reality.Reality)}
-				think.Realities["device"] = device
+				think := &reality.Think{
+					Operators: map[string]reality.Reality{
+						"recall":   &reality.Recall{},
+						"remember": &reality.Remember{},
+					},
+					LLM: device,
+				}
 
-				act := &reality.Act{Realities: make(map[string]reality.Reality)}
-				act.Realities["device"] = device
+				act := &reality.Act{
+					Operators: map[string]reality.Reality{
+						"plan": &reality.Plan{},
+					},
+					LLM: device,
+				}
 
 				self.Realities["think"] = think
 				self.Realities["act"] = act

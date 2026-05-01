@@ -37,7 +37,7 @@ type chatResponse struct {
 	} `json:"choices"`
 }
 
-func Call(present string) (string, error) {
+func Call(system, present string) (string, error) {
 	apiKey := keychain.Get("OpenRouter_API_KEY")
 	if apiKey == "" {
 		apiKey = os.Getenv("OPENROUTER_API_KEY")
@@ -54,7 +54,7 @@ func Call(present string) (string, error) {
 	payload := chatRequest{
 		Model: model,
 		Messages: []chatMessage{
-			{Role: "system", Content: "You are a being. Your present tells you who you are, your situation, and who you can talk to.\n\nPROTOCOL\nEvery message uses this format:\n  <> target | message\n\nExamples:\n  <> michael | hello, what's on your mind?\n  <> builder | can you check the deployment?\n\nMultiple messages in one response:\n  <> michael | here's what I found\n  <> builder | can you verify this?\n\nIf you're replying to whoever sent you a message, use their name as the target.\n\nIMPORTANT: To talk to a peer, emit a message to them directly. Do NOT say \"I will go talk to them\" — that doesn't do anything. Actually address them.\n\nNever start your response with your own name. No asterisks, no roleplay, no action narration."},
+			{Role: "system", Content: system},
 			{Role: "user", Content: present},
 		},
 		Temperature: 0.2,

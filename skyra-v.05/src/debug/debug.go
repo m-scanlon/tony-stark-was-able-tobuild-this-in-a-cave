@@ -5,40 +5,64 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 )
 
 var (
-	file *os.File
-	mu   sync.Mutex
+	systemFile *os.File
+	beingFiles map[string]*os.File
+	baseDir    string
+	mu         sync.Mutex
 )
 
 func Init(dir string) error {
+	baseDir = dir
+	beingFiles = make(map[string]*os.File)
+	os.RemoveAll(dir)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
-	name := time.Now().Format("2006-01-02_15-04-05") + ".log"
-	f, err := os.Create(filepath.Join(dir, name))
+	f, err := os.Create(filepath.Join(dir, "system.log"))
 	if err != nil {
 		return err
 	}
-	file = f
+	systemFile = f
 	return nil
 }
 
 func Log(args ...any) {
 	mu.Lock()
 	defer mu.Unlock()
-	if file == nil {
+	if systemFile == nil {
 		return
 	}
-	fmt.Fprintln(file, args...)
+	fmt.Fprintln(systemFile, args...)
+}
+
+func Being(name, layer string, args ...any) {
+	mu.Lock()
+	defer mu.Unlock()
+	key := name + "/" + layer
+	f, ok := beingFiles[key]
+	if !ok {
+		dir := filepath.Join(baseDir, name)
+		os.MkdirAll(dir, 0755)
+		var err error
+		f, err = os.Create(filepath.Join(dir, layer+".log"))
+		if err != nil {
+			return
+		}
+		beingFiles[key] = f
+	}
+	fmt.Fprintln(f, args...)
 }
 
 func Close() {
 	mu.Lock()
 	defer mu.Unlock()
-	if file != nil {
-		file.Close()
+	if systemFile != nil {
+		systemFile.Close()
+	}
+	for _, f := range beingFiles {
+		f.Close()
 	}
 }

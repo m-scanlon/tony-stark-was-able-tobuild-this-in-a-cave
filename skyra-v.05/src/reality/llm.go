@@ -8,7 +8,7 @@ import (
 type Provider struct {
 	id    string
 	Model string
-	Call  func(present string) (string, error)
+	Call  func(system, present string) (string, error)
 }
 
 func (p *Provider) ID() string { return p.id }
@@ -18,29 +18,43 @@ func (p *Provider) Create(r *Relation) Reality {
 }
 
 func (p *Provider) Realize(r *Relation) string {
-	present := p.derivePresent(r)
-	debug.Log("[provider]: present →")
-	debug.Log(present)
-	debug.Log("[provider]: calling", p.id)
-	response, err := p.Call(present)
+	log := r.Log
+	if log == nil {
+		log = func(args ...any) { debug.Log(args...) }
+	}
+	system, present := p.derivePresent(r)
+	log("[provider]: system →")
+	log(system)
+	log("[provider]: present →")
+	log(present)
+	log("[provider]: calling", p.id)
+	response, err := p.Call(system, present)
 	if err != nil {
 		fmt.Println("provider error:", err)
-		debug.Log("[provider]: error →", err)
+		log("[provider]: error →", err)
 		return ""
 	}
-	debug.Log("[provider]: response →", response)
+	log("[provider]: response →", response)
 	return response
 }
 
-func (p *Provider) derivePresent(r *Relation) string {
+func (p *Provider) derivePresent(r *Relation) (string, string) {
+	system := ""
+	if sp, ok := r.Parsers["system"]; ok {
+		system = sp()
+	}
+
 	result := ""
-	for _, parser := range r.Parsers {
+	for name, parser := range r.Parsers {
+		if name == "system" {
+			continue
+		}
 		result += parser()
 	}
 	if r.Impulse != "" {
 		result += "\nmessage: " + r.Impulse + "\n"
 	}
-	return result
+	return system, result
 }
 
 func (p *Provider) Parse() string {
@@ -84,7 +98,7 @@ func (l *LLM) Provider(name string) Reality {
 	return l.Realities[name]
 }
 
-func (l *LLM) WireCall(name string, call func(string) (string, error)) {
+func (l *LLM) WireCall(name string, call func(string, string) (string, error)) {
 	p, ok := l.Realities[name]
 	if !ok {
 		return

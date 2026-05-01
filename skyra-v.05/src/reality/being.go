@@ -83,3 +83,15 @@ func (b Being) Parse() string {
 	}
 	return sb.String()
 }
+
+func (b Being) ParseInner() string {
+	var sb strings.Builder
+	sb.WriteString("being: " + b.name + "\n")
+	if b.Identity != "" {
+		sb.WriteString("identity: " + b.Identity + "\n")
+	}
+	if b.Purpose != "" {
+		sb.WriteString("purpose: " + b.Purpose + "\n")
+	}
+	return sb.String()
+}

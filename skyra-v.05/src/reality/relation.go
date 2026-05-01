@@ -14,6 +14,7 @@ type Relation struct {
 	Impulse   string
 	Parsers   map[string]Parser
 	Realities map[string]Reality
+	Log       func(args ...any)
 }
 
 func (r *Relation) Attach(name string, parser Parser) {
