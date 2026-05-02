@@ -26,59 +26,38 @@ func main() {
 	}
 
 	llm := reality.NewLLM()
-	operators := reality.NewOperators()
+	exchange := &reality.Exchange{Exchanges: make(map[string]*reality.Conversation)}
 	thread := &reality.NewThread{
-		Beings:  make(map[string]reality.Reality),
-		Access:  map[string]bool{"michael": true},
-		Threads: make(map[string]*reality.Thread),
+		Beings:   make(map[string]reality.Reality),
+		Access:   map[string]bool{"michael": true},
+		Threads:  make(map[string]*reality.Thread),
+		Exchange: exchange,
+		Devices:  make(map[string]reality.Reality),
 	}
 	mac := &reality.MacOS{}
 	mac = mac.Create(&reality.Relation{}).(*reality.MacOS)
 
-	exchange := &reality.Exchange{Exchanges: make(map[string]*reality.Conversation)}
-	operators.Register("exchange", func() reality.Reality {
-		return exchange
-	})
-
-	if err := bootstrap(thread, llm, operators, mac); err != nil {
+	if err := bootstrap(thread, llm, mac); err != nil {
 		fmt.Fprintln(os.Stderr, "bootstrap:", err)
 		os.Exit(1)
 	}
 
 	llm.WireCall("openrouter", inference.Call)
 
+	thread.Devices["macos"] = mac
+	if p := llm.Provider("openrouter"); p != nil {
+		thread.Devices["openrouter"] = p
+	}
+
 	fmt.Println("skyra v.05")
 
 	input := mac.Realize(&reality.Relation{})
 	rel, _ := reality.Impress("michael", input)
 
-	for {
-		debug.Log("main: relation →", rel.Origin, "|", rel.Impulse, "| thread:", rel.ThreadID)
-
-		thread.Realize(rel)
-
-		response := operators.Realize(rel)
-		debug.Log("main: response →", response)
-
-		emissions := thread.Route(rel.Origin, rel.ID, response, rel.ThreadID)
-
-		if len(emissions) == 0 {
-			debug.Log("main: no emissions, waiting for input")
-			input := mac.Realize(&reality.Relation{})
-			rel, _ = reality.Impress("michael", input)
-			continue
-		}
-
-		rel = emissions[0]
-		for _, extra := range emissions[1:] {
-			debug.Log("main: extra emission → from", extra.Origin, "to", extra.ID)
-			thread.Realize(extra)
-			operators.Realize(extra)
-		}
-	}
+	thread.Realize(rel)
 }
 
-func bootstrap(thread *reality.NewThread, llm *reality.LLM, operators *reality.Operators, mac *reality.MacOS) error {
+func bootstrap(thread *reality.NewThread, llm *reality.LLM, mac *reality.MacOS) error {
 	data, err := os.ReadFile("genome.skyra")
 	if err != nil {
 		return err
@@ -131,6 +110,7 @@ func bootstrap(thread *reality.NewThread, llm *reality.LLM, operators *reality.O
 					Operators: map[string]reality.Reality{
 						"recall":   &reality.Recall{},
 						"remember": &reality.Remember{},
+						"skill":    &reality.Skill{},
 					},
 					LLM: device,
 				}

@@ -8,10 +8,12 @@ import (
 )
 
 type NewThread struct {
-	id      string
-	Beings  map[string]Reality
-	Access  map[string]bool
-	Threads map[string]*Thread
+	id       string
+	Beings   map[string]Reality
+	Access   map[string]bool
+	Threads  map[string]*Thread
+	Exchange *Exchange
+	Devices  map[string]Reality
 }
 
 type Thread struct {
@@ -40,43 +42,85 @@ func (t *NewThread) Create(r *Relation) Reality {
 }
 
 func (t *NewThread) Realize(r *Relation) string {
-	if r.ThreadID != "" {
-		th, ok := t.Threads[r.ThreadID]
-		if !ok {
-			debug.Log("[thread]: unknown thread id:", r.ThreadID)
-			return ""
-		}
-		debug.Log("[thread]: passing through existing thread", r.ThreadID)
+	for {
+		var th *Thread
 
-		if r.ID != "" {
-			th.Spread(r.Origin, r.ID)
+		if r.ThreadID != "" {
+			var ok bool
+			th, ok = t.Threads[r.ThreadID]
+			if !ok {
+				debug.Log("[thread]: unknown thread id:", r.ThreadID)
+				return ""
+			}
+			debug.Log("[thread]: existing thread", r.ThreadID)
+		} else {
+			if !t.Access[r.Origin] {
+				debug.Log("[thread]: no thread access for", r.Origin)
+				return ""
+			}
+			th = t.newThread(r.Origin)
+			r.ThreadID = th.id
+			debug.Log("[thread]: created thread", th.id, "for", r.Origin)
+		}
+
+		if r.ID == "" {
+			op, rest := r.Peel()
+			if op == "grow" {
+				msg := t.Grow(rest)
+				debug.Log("[thread]: grow →", msg)
+				if user, ok := t.Beings[r.Origin]; ok {
+					r.Impulse = msg
+					user.Realize(r)
+					r.ID = ""
+					r.Origin = r.Origin
+					r.Parsers = make(map[string]Parser)
+					continue
+				}
+			}
 		}
 
 		r.Attach("thread", th.Parse)
+
+		if r.Realities == nil {
+			r.Realities = make(map[string]Reality)
+		}
 		for name, being := range t.Beings {
 			r.Realities[name] = being
 		}
-		return ""
-	}
 
-	if !t.Access[r.Origin] {
-		debug.Log("[thread]: no thread access for", r.Origin)
-		return ""
-	}
+		debug.Log("[thread]: descending", r.Origin, "→", r.ID, "|", r.Impulse)
 
-	th := t.newThread(r.Origin)
-	r.ThreadID = th.id
-	debug.Log("[thread]: created thread", th.id, "for", r.Origin)
+		response := t.Exchange.Realize(r)
 
-	if r.ID != "" {
+		if response == "" {
+			if errReality, ok := r.Realities["error"]; ok {
+				err := errReality.(*Error)
+				debug.Log("[thread]: exchange error →", err.Message)
+				delete(r.Realities, "error")
+
+				origin := r.Origin
+				errMsg := err.Message
+				r.Attach("exchange-error", func() string { return errMsg })
+
+				if being, ok := t.Beings[origin]; ok {
+					debug.Log("[thread]: routing error back to", origin)
+					response = being.Realize(r)
+					if response != "" {
+						th.Spread(r.Origin, r.ID)
+						r.Parsers = make(map[string]Parser)
+						continue
+					}
+				}
+			}
+			debug.Log("[thread]: empty response")
+			return ""
+		}
+
 		th.Spread(r.Origin, r.ID)
-	}
+		debug.Log("[thread]: routing", r.Origin, "→", r.ID)
 
-	r.Attach("thread", th.Parse)
-	for name, being := range t.Beings {
-		r.Realities[name] = being
+		r.Parsers = make(map[string]Parser)
 	}
-	return ""
 }
 
 func (t *NewThread) newThread(creator string) *Thread {
@@ -116,29 +160,90 @@ func (th *Thread) Parse() string {
 	return sb.String()
 }
 
-func (t *NewThread) Route(origin, target, response, threadID string) []*Relation {
-	relations := ParseResponse(origin, response)
-	debug.Log("[thread]: route — parsed", len(relations), "emissions")
-
-	if len(relations) == 0 && strings.TrimSpace(response) != "" {
-		relations = []*Relation{{
-			Origin:    origin,
-			ID:        target,
-			Impulse:   response,
-			Parsers:   make(map[string]Parser),
-			Realities: make(map[string]Reality),
-		}}
-		debug.Log("[thread]: route — plain text fallback →", origin, "to", target)
+func (t *NewThread) Grow(impulse string) string {
+	name, err := Extract(impulse, "~name", "grow")
+	if err != nil {
+		return "grow: missing ~name"
+	}
+	if _, exists := t.Beings[name]; exists {
+		return "grow: " + name + " already exists"
+	}
+	beingType, err := Extract(impulse, "~type", "grow")
+	if err != nil {
+		return "grow: missing ~type"
+	}
+	deviceName, err := Extract(impulse, "~device", "grow")
+	if err != nil {
+		return "grow: missing ~device"
 	}
 
-	th, ok := t.Threads[threadID]
-	if ok {
-		for _, rel := range relations {
-			rel.ThreadID = threadID
-			th.Spread(origin, rel.ID)
+	device, ok := t.Devices[deviceName]
+	if !ok {
+		return "grow: unknown device " + deviceName
+	}
+
+	being := Being{}.Create(&Relation{
+		ID:      name,
+		Impulse: impulse,
+	}).(Being)
+
+	switch beingType {
+	case "llm":
+		self := &Self{}
+		self = self.Create(&Relation{ID: name}).(*Self)
+		self.Realities["being"] = being
+
+		think := &Think{
+			Operators: map[string]Reality{
+				"recall":   &Recall{},
+				"remember": &Remember{},
+				"skill":    &Skill{},
+			},
+			LLM: device,
+		}
+
+		act := &Act{
+			Operators: map[string]Reality{
+				"plan": &Plan{},
+			},
+			LLM: device,
+		}
+
+		self.Realities["think"] = think
+		self.Realities["act"] = act
+		t.Beings[name] = self
+
+	case "user":
+		user := &User{}
+		user = user.Create(&Relation{ID: name}).(*User)
+		user.Realities["being"] = being
+		user.Realities["device"] = device
+		t.Beings[name] = user
+		t.Access[name] = true
+
+	default:
+		return "grow: unknown type " + beingType
+	}
+
+	for _, peerName := range being.Relationships {
+		if peer, ok := t.Beings[peerName]; ok {
+			switch p := peer.(type) {
+			case *Self:
+				if b, ok := p.Realities["being"].(Being); ok {
+					b.Relationships = append(b.Relationships, name)
+					p.Realities["being"] = b
+				}
+			case *User:
+				if b, ok := p.Realities["being"].(Being); ok {
+					b.Relationships = append(b.Relationships, name)
+					p.Realities["being"] = b
+				}
+			}
 		}
 	}
-	return relations
+
+	debug.Log("[thread]: grew", name, "type:", beingType, "device:", deviceName)
+	return "grew " + name
 }
 
 func (t *NewThread) Parse() string {

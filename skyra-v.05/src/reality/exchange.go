@@ -66,11 +66,11 @@ func (e *Exchange) Realize(r *Relation) string {
 	}
 
 	hasRef := false
-	refValue, refErr := Extract(r.Impulse, "~ref", "exchange")
+	refValue, refErr := ExtractTag(r.Impulse, "ref")
 	if refErr == nil {
 		hasRef = true
-		debug.Log("[exchange]: ~ref found →", refValue)
-		r.Impulse = Strip(r.Impulse, "~ref")
+		debug.Log("[exchange]: <ref> found →", refValue)
+		r.Impulse = StripTag(r.Impulse, "ref")
 
 		srcPeer, start, end, parseErr := parseRef(refValue)
 		if parseErr == nil {
@@ -103,12 +103,16 @@ func (e *Exchange) Realize(r *Relation) string {
 			if existingConv.Active && existingKey != key {
 				for _, party := range existingConv.Parties {
 					if party == r.Origin {
-						debug.Log("[exchange]: crossing without ~ref — origin", r.Origin, "has active exchange", existingKey)
 						otherPeer := existingConv.Parties[0]
 						if otherPeer == r.Origin {
 							otherPeer = existingConv.Parties[1]
 						}
-						return fmt.Sprintf("[exchange]: you are leaving your exchange with %s to talk to %s. carry context: ~ref %s:START-END", otherPeer, r.ID, otherPeer)
+						debug.Log("[exchange]: crossing without ~ref — blocking", r.Origin, "→", r.ID)
+						delete(e.Exchanges, key)
+						r.Realities["error"] = &Error{
+							Message: fmt.Sprintf("you are leaving your exchange with %s to talk to %s without carrying context. use <ref>%s:START-END</ref> inside your tag to bring context from that conversation.", otherPeer, r.ID, otherPeer),
+						}
+						return ""
 					}
 				}
 			}
@@ -123,10 +127,15 @@ func (e *Exchange) Realize(r *Relation) string {
 		Content: r.Impulse,
 	})
 	r.Attach("exchange", conv.Parse)
-	if r.Realities == nil {
-		r.Realities = make(map[string]Reality)
+	r.Attach("conversation", func() string {
+		return conv.ParseRecent(10)
+	})
+	target := r.ID
+	if ctx := conv.ContextFor(target); ctx != "" {
+		r.Attach("ref-context", func() string {
+			return ctx
+		})
 	}
-	r.Realities["conversation"] = conv
 
 	being, ok := r.Realities[r.ID]
 	if !ok {

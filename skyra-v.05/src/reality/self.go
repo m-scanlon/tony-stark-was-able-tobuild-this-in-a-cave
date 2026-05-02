@@ -31,6 +31,16 @@ func (s *Self) Realize(r *Relation) string {
 	r.Parsers = make(map[string]Parser)
 
 	if think, ok := s.Realities["think"]; ok {
+		if t, ok := think.(*Think); ok {
+			if act, ok := s.Realities["act"]; ok {
+				if a, ok := act.(*Act); ok {
+					t.OuterOps = t.OuterOps[:0]
+					for name := range a.Operators {
+						t.OuterOps = append(t.OuterOps, name)
+					}
+				}
+			}
+		}
 		debug.Log("[self]: firing think")
 		inner := think.Realize(r)
 		debug.Log("[self]: think returned:", inner)

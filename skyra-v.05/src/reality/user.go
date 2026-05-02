@@ -31,6 +31,7 @@ func (u *User) Realize(r *Relation) string {
 	result := device.Realize(r)
 	debug.Log("[user]: device returned:", result)
 
+	r.Impulse = result
 	r.ID = r.Origin
 	r.Origin = u.id
 	return result

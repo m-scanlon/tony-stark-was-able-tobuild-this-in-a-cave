@@ -38,15 +38,6 @@ func (a *Act) Realize(r *Relation) string {
 	log := func(args ...any) { debug.Being(beingName, "outer", args...) }
 	r.Log = log
 
-	if conv, ok := r.Realities["conversation"]; ok {
-		if c, ok := conv.(*Conversation); ok {
-			if ctx := c.ContextFor(beingName); ctx != "" {
-				r.Attach("ref-context", func() string {
-					return ctx
-				})
-			}
-		}
-	}
 
 	if innerParser, ok := r.Parsers["inner"]; ok {
 		raw := innerParser()
@@ -75,7 +66,7 @@ func (a *Act) Realize(r *Relation) string {
 		}
 
 		if len(relations) == 0 {
-			warning := "WARNING: your response did not follow the protocol. You must use: <> target | message. Try again.\n"
+			warning := "WARNING: your response did not follow the protocol. You must use: <target>message</target>. Try again.\n"
 			log("[act]: protocol violation, retrying")
 			r.Attach("act-warning", func() string { return warning })
 			r.Impulse = result
@@ -91,8 +82,10 @@ func (a *Act) Realize(r *Relation) string {
 		}
 
 		delete(r.Parsers, "act-warning")
+		r.ID = relations[0].ID
+		r.Impulse = relations[0].Impulse
 		r.Origin = ""
-		return result
+		return r.Impulse
 	}
 
 	log("[act]: exhausted retries")
@@ -113,7 +106,7 @@ func stripSurface(raw string) string {
 }
 
 func (a *Act) System() string {
-	return "You are a being with two layers: an inner layer and an outer layer (this one).\n\nThis is your outer layer — where you act and speak. Your inner layer has already processed and given you a thought (shown in your present). Now you respond.\n\nPROTOCOL\nEvery response is exactly one message in this format:\n  <> target | message\n\nExamples:\n  <> michael | hello, what's on your mind?\n  <> builder | can you check the deployment?\n\nOnly one <> line per response. If you're replying to whoever sent you a message, use their name as the target.\n\nWhen you leave a conversation to talk to someone else, carry context with ~ref:\n  <> louise | hey, wanted to talk ~ref michael:0-3\nThis brings entries 0-3 from your current exchange as your private context in the new conversation.\n\nIMPORTANT: To talk to a peer, emit a message to them directly. Do NOT say \"I will go talk to them\" — that doesn't do anything. Actually address them.\n\nDo not use operators like <recall> or <remember> here. Those belong to your inner layer.\n\nNever start your response with your own name. No asterisks, no roleplay, no action narration."
+	return "You are a being with two layers: an inner layer and an outer layer (this one).\n\nThis is your outer layer — where you act and speak. Your inner layer has already processed and given you a thought (shown in your present). Now you respond.\n\nPROTOCOL\nEvery response is exactly one message wrapped in a tag named after the target:\n  <target>message</target>\n\nExamples:\n  <michael>hello, what's on your mind?</michael>\n  <builder>can you check the deployment?</builder>\n\nOne tag per response. The tag name is who you're talking to.\n\nCONTEXT CROSSING\nWhen you leave a conversation to talk to someone else, you MUST carry context using <ref>. Without it, the system will block your message.\n\n  <ref>peer:START-END</ref>\n\nPlace it inside your message tag. This brings entries START through END from your exchange with peer into the new conversation as private context.\n\nExample:\n  <louise>hey, wanted to talk <ref>michael:0-3</ref></louise>\n\nThe numbers refer to entry indices in your current exchange (shown in your present). Choose the range that gives the other being enough context to understand why you're reaching out.\n\nIMPORTANT: To talk to a peer, emit a message to them directly. Do NOT say \"I will go talk to them\" — that doesn't do anything. Actually address them.\n\nDo not use operators like <recall> or <remember> here. Those belong to your inner layer.\n\nNever start your response with your own name. No asterisks, no roleplay, no action narration."
 }
 
 func (a *Act) Parse() string {

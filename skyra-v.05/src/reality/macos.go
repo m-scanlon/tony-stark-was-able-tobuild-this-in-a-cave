@@ -27,15 +27,28 @@ func (m *MacOS) Realize(r *Relation) string {
 	if r.Impulse != "" {
 		fmt.Println("\n" + r.Impulse)
 	}
+	fmt.Print("> ")
+	if !m.scanner.Scan() {
+		os.Exit(0)
+	}
+	first := m.scanner.Text()
+	if strings.TrimSpace(first) == "" {
+		return m.Realize(r)
+	}
+	if !strings.HasSuffix(strings.TrimSpace(first), ";;") {
+		return strings.TrimSpace(first)
+	}
+	lines := []string{strings.TrimSuffix(strings.TrimSpace(first), ";;")}
 	for {
-		fmt.Print("> ")
+		fmt.Print("  ")
 		if !m.scanner.Scan() {
 			os.Exit(0)
 		}
-		input := strings.TrimSpace(m.scanner.Text())
-		if input != "" {
-			return input
+		line := m.scanner.Text()
+		if strings.TrimSpace(line) == ";;" {
+			return strings.TrimSpace(strings.Join(lines, "\n"))
 		}
+		lines = append(lines, line)
 	}
 }
 

@@ -8,11 +8,20 @@ import (
 )
 
 const thinkBudget = 5
+const thoughtHistoryMax = 10
 
 type Think struct {
 	id        string
 	Operators map[string]Reality
+	OuterOps  []string
 	LLM       Reality
+	History   []ThoughtSection
+}
+
+type ThoughtSection struct {
+	Peer      string
+	Thought   string
+	Timestamp time.Time
 }
 
 type thinkEntry struct {
@@ -50,21 +59,17 @@ func (t *Think) Realize(r *Relation) string {
 	log := func(args ...any) { debug.Being(beingName, "inner", args...) }
 	r.Log = log
 
-	if conv, ok := r.Realities["conversation"]; ok {
-		if c, ok := conv.(*Conversation); ok {
-			r.Attach("conversation", func() string {
-				return c.ParseRecent(10)
-			})
-			if ctx := c.ContextFor(beingName); ctx != "" {
-				r.Attach("ref-context", func() string {
-					return ctx
-				})
-			}
-		}
-	}
-
 	r.Attach("system", t.System)
 	r.Attach("think-operators", t.Parse)
+
+	if len(t.History) > 0 {
+		history := t.History
+		r.Attach("thought-history", func() string {
+			return renderThoughtHistory(history)
+		})
+	}
+
+	peer := r.Origin
 
 	originalImpulse := r.Impulse
 	var exchange []thinkEntry
@@ -100,8 +105,20 @@ func (t *Think) Realize(r *Relation) string {
 		thought, done := parseThink(result)
 		if done {
 			log("[think]: done after", i+1, "passes")
+			t.recordThought(peer, stripSurface(thought))
 			r.Impulse = originalImpulse
 			return thought
+		}
+
+		if t.isOuterOp(result) != "" {
+			blocked := t.isOuterOp(result)
+			log("[think]: blocked outer operator", blocked)
+			exchange = append(exchange, thinkEntry{
+				timestamp: time.Now(),
+				speaker:   "system",
+				content:   fmt.Sprintf("<%s> belongs to your outer layer. you cannot call it here. use your inner operators or surface your thought.", blocked),
+			})
+			continue
 		}
 
 		op, rest := t.parseOp(result)
@@ -125,8 +142,30 @@ func (t *Think) Realize(r *Relation) string {
 	}
 
 	log("[think]: budget exhausted")
+	last := exchange[len(exchange)-1].content
+	t.recordThought(peer, last)
 	r.Impulse = originalImpulse
-	return exchange[len(exchange)-1].content
+	return last
+}
+
+func (t *Think) recordThought(peer, thought string) {
+	t.History = append(t.History, ThoughtSection{
+		Peer:      peer,
+		Thought:   strings.TrimSpace(thought),
+		Timestamp: time.Now(),
+	})
+	if len(t.History) > thoughtHistoryMax {
+		t.History = t.History[len(t.History)-thoughtHistoryMax:]
+	}
+}
+
+func renderThoughtHistory(sections []ThoughtSection) string {
+	var sb strings.Builder
+	sb.WriteString("your recent thoughts (across exchanges):\n")
+	for _, s := range sections {
+		sb.WriteString(fmt.Sprintf("[%s] (with %s): %s\n\n", s.Timestamp.Format("15:04:05"), s.Peer, s.Thought))
+	}
+	return sb.String()
 }
 
 func renderThinkExchange(entries []thinkEntry) string {
@@ -159,9 +198,13 @@ func parseThink(response string) (string, bool) {
 
 func (t *Think) parseOp(response string) (string, string) {
 	for name := range t.Operators {
-		tag := "<" + name + ">"
-		if idx := strings.Index(response, tag); idx != -1 {
-			after := response[idx+len(tag):]
+		openTag := "<" + name + ">"
+		closeTag := "</" + name + ">"
+		if idx := strings.Index(response, openTag); idx != -1 {
+			after := response[idx+len(openTag):]
+			if end := strings.Index(after, closeTag); end != -1 {
+				return name, strings.TrimSpace(after[:end])
+			}
 			if pipeIdx := strings.Index(after, "|"); pipeIdx != -1 {
 				return name, strings.TrimSpace(after[pipeIdx+1:])
 			}
@@ -172,14 +215,30 @@ func (t *Think) parseOp(response string) (string, string) {
 }
 
 func (t *Think) System() string {
-	return "You are a being with two layers: an inner layer (this one) and an outer layer.\n\nThis is your inner layer — private thought. No one sees this. Reflect on what you've received. Consider what matters, what's missing, and what you actually think. Do not address anyone directly.\n\nYou have operators here (listed in your present) that only work in this layer. Use them to recall, remember, or process before you surface.\n\nYour outer layer can address any peer listed in your present. If someone asks you to talk to another being, you can — your outer layer handles that. Think about what you want to say and why, then surface it.\n\nWhen you emit <surface-thought>, you are releasing that thought to your outer layer, where you act and speak. No one else receives it. It is you telling yourself what you've concluded.\n\nDo not use the <> protocol here. That belongs to your outer layer."
+	return "You are a being with two layers: an inner layer (this one) and an outer layer.\n\nThis is your inner layer — private thought. No one sees this. Reflect on what you've received. Consider what matters, what's missing, and what you actually think. Do not address anyone directly.\n\nYou have operators here (listed in your present) that only work in this layer. Use them to recall, remember, or process before you surface.\n\nYour outer layer can address any peer listed in your present. If someone asks you to talk to another being, you can — your outer layer handles that. Think about what you want to say and why, then surface it.\n\nIMPORTANT: Emit exactly one protocol per response — one operator OR one <surface-thought>. Never both. If you call an operator, wait for the result before doing anything else. You have multiple passes to think.\n\nWhen you emit <surface-thought>, you are releasing that thought to your outer layer, where you act and speak. No one else receives it. It is you telling yourself what you've concluded.\n\nDo not use the <> protocol here. That belongs to your outer layer."
+}
+
+func (t *Think) isOuterOp(response string) string {
+	for _, name := range t.OuterOps {
+		tag := "<" + name + ">"
+		if strings.Contains(response, tag) {
+			return name
+		}
+	}
+	return ""
 }
 
 func (t *Think) Parse() string {
 	var sb strings.Builder
 	sb.WriteString("available operators:\n")
 	for name := range t.Operators {
-		sb.WriteString("  <" + name + "> | input\n")
+		sb.WriteString("  <" + name + ">input</" + name + ">\n")
+	}
+	if len(t.OuterOps) > 0 {
+		sb.WriteString("\nouter layer operators (you cannot call these here):\n")
+		for _, name := range t.OuterOps {
+			sb.WriteString("  " + name + "\n")
+		}
 	}
 	sb.WriteString("\nwhen done thinking: <surface-thought> your synthesis\n")
 	return sb.String()

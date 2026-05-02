@@ -38,6 +38,15 @@ func Impress(origin, raw string) (*Relation, error) {
 	}, nil
 }
 
+type Error struct {
+	id      string
+	Message string
+}
+
+func (e *Error) ID() string                  { return e.id }
+func (e *Error) Create(r *Relation) Reality   { return e }
+func (e *Error) Realize(r *Relation) string   { return e.Message }
+
 func (r *Relation) Peel() (string, string) {
 	tokens := strings.Fields(r.Impulse)
 	if len(tokens) == 0 {
@@ -50,28 +59,44 @@ func (r *Relation) Peel() (string, string) {
 
 func ParseResponse(origin, response string) []*Relation {
 	var relations []*Relation
-	parts := strings.Split(response, "<>")
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
+	rest := response
+	for {
+		openStart := strings.Index(rest, "<")
+		if openStart == -1 {
+			break
+		}
+		openEnd := strings.Index(rest[openStart:], ">")
+		if openEnd == -1 {
+			break
+		}
+		target := rest[openStart+1 : openStart+openEnd]
+		if target == "" || strings.ContainsAny(target, " /!?") {
+			rest = rest[openStart+openEnd+1:]
 			continue
 		}
-		target, message, found := strings.Cut(part, "|")
-		if !found {
-			continue
+		closeTag := "</" + target + ">"
+		after := rest[openStart+openEnd+1:]
+		closeIdx := strings.Index(after, closeTag)
+		var message string
+		if closeIdx != -1 {
+			message = strings.TrimSpace(after[:closeIdx])
+			rest = after[closeIdx+len(closeTag):]
+		} else {
+			message = strings.TrimSpace(after)
+			rest = ""
 		}
-		target = strings.TrimSpace(target)
-		message = strings.TrimSpace(message)
-		if target == "" || message == "" {
-			continue
+		if message != "" {
+			relations = append(relations, &Relation{
+				Origin:    origin,
+				ID:        strings.ToLower(target),
+				Impulse:   message,
+				Parsers:   make(map[string]Parser),
+				Realities: make(map[string]Reality),
+			})
 		}
-		relations = append(relations, &Relation{
-			Origin:    origin,
-			ID:        strings.ToLower(target),
-			Impulse:   message,
-			Parsers:   make(map[string]Parser),
-			Realities: make(map[string]Reality),
-		})
+		if rest == "" {
+			break
+		}
 	}
 	return relations
 }

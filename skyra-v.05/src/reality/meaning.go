@@ -34,6 +34,44 @@ func Extract(expression, token, name string, delimiters ...string) (string, erro
 	return value, nil
 }
 
+func ExtractTag(text, tag string) (string, error) {
+	open := "<" + tag + ">"
+	close := "</" + tag + ">"
+	start := strings.Index(text, open)
+	if start == -1 {
+		return "", fmt.Errorf("tag %q not found", tag)
+	}
+	after := text[start+len(open):]
+	end := strings.Index(after, close)
+	if end == -1 {
+		return "", fmt.Errorf("tag %q not closed", tag)
+	}
+	return strings.TrimSpace(after[:end]), nil
+}
+
+func StripTag(text, tag string) string {
+	open := "<" + tag + ">"
+	close := "</" + tag + ">"
+	start := strings.Index(text, open)
+	if start == -1 {
+		return text
+	}
+	after := text[start+len(open):]
+	end := strings.Index(after, close)
+	if end == -1 {
+		return text
+	}
+	before := strings.TrimSpace(text[:start])
+	rest := strings.TrimSpace(after[end+len(close):])
+	if before == "" {
+		return rest
+	}
+	if rest == "" {
+		return before
+	}
+	return before + " " + rest
+}
+
 func Strip(expression, token string) string {
 	idx := strings.Index(expression, token)
 	if idx == -1 {
