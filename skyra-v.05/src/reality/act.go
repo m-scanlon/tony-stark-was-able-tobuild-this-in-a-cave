@@ -22,6 +22,23 @@ func (a *Act) Create(r *Relation) Reality {
 }
 
 func (a *Act) Realize(r *Relation) string {
+	if r.Collecting {
+		snap := ActSnapshot{Operators: []string{}}
+		for name := range a.Operators {
+			snap.Operators = append(snap.Operators, name)
+		}
+		r.Export("act", snap)
+
+		node := RealityNode{ID: "act", Type: "Act", Children: []RealityNode{}}
+		for name := range a.Operators {
+			node.Children = append(node.Children, RealityNode{
+				ID: name, Type: capitalizeType(name), Children: []RealityNode{},
+			})
+		}
+		r.Export("node:act", node)
+		return ""
+	}
+
 	r.Attach("system", a.System)
 
 	var beingName string
@@ -107,8 +124,4 @@ func stripSurface(raw string) string {
 
 func (a *Act) System() string {
 	return "You are a being with two layers: an inner layer and an outer layer (this one).\n\nThis is your outer layer — where you act and speak. Your inner layer has already processed and given you a thought (shown in your present). Now you respond.\n\nPROTOCOL\nEvery response is exactly one message wrapped in a tag named after the target:\n  <target>message</target>\n\nExamples:\n  <michael>hello, what's on your mind?</michael>\n  <builder>can you check the deployment?</builder>\n\nOne tag per response. The tag name is who you're talking to.\n\nCONTEXT CROSSING\nWhen you leave a conversation to talk to someone else, you MUST carry context using <ref>. Without it, the system will block your message.\n\n  <ref>peer:START-END</ref>\n\nPlace it inside your message tag. This brings entries START through END from your exchange with peer into the new conversation as private context.\n\nExample:\n  <louise>hey, wanted to talk <ref>michael:0-3</ref></louise>\n\nThe numbers refer to entry indices in your current exchange (shown in your present). Choose the range that gives the other being enough context to understand why you're reaching out.\n\nIMPORTANT: To talk to a peer, emit a message to them directly. Do NOT say \"I will go talk to them\" — that doesn't do anything. Actually address them.\n\nDo not use operators like <recall> or <remember> here. Those belong to your inner layer.\n\nNever start your response with your own name. No asterisks, no roleplay, no action narration."
-}
-
-func (a *Act) Parse() string {
-	return ""
 }

@@ -49,12 +49,18 @@ func main() {
 		thread.Devices["openrouter"] = p
 	}
 
+	universe := &reality.Universe{Thread: thread}
+	thread.OnResolve = func() {
+		present := universe.Realize(&reality.Relation{Collecting: true})
+		debug.Log("[universe]:", present)
+	}
+
 	fmt.Println("skyra v.05")
 
 	input := mac.Realize(&reality.Relation{})
 	rel, _ := reality.Impress("michael", input)
 
-	thread.Realize(rel)
+	universe.Realize(rel)
 }
 
 func bootstrap(thread *reality.NewThread, llm *reality.LLM, mac *reality.MacOS) error {

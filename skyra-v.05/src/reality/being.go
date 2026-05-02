@@ -28,6 +28,7 @@ type Being struct {
 	Identity      string
 	Purpose       string
 	Relationships []string
+	Device        string
 }
 
 func (b Being) ID() string   { return b.id }
@@ -36,6 +37,7 @@ func (b Being) Name() string { return b.name }
 func (b Being) Create(r *Relation) Reality {
 	identity, _ := Extract(r.Impulse, "~identity", "being")
 	purpose, _ := Extract(r.Impulse, "~purpose", "being")
+	device, _ := Extract(r.Impulse, "~device", "being")
 	relationshipsRaw, _ := Extract(r.Impulse, "~relationships", "being")
 
 	var relationships []string
@@ -56,6 +58,7 @@ func (b Being) Create(r *Relation) Reality {
 		Identity:      identity,
 		Purpose:       purpose,
 		Relationships: relationships,
+		Device:        device,
 	}
 }
 

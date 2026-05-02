@@ -1,88 +1,81 @@
 # Skyra
 
-Skyra is a local-first cognitive runtime built around one idea.
+A runtime for autonomous beings.
 
-Beings relate.
-
-Everything else - memory, routing, learning, conflict, differentiation - falls
-out of that naturally. The runtime doesn't orchestrate cognition. It describes
-the conditions under which cognition emerges.
-
-The kernel is a dumb router. Beings are the intelligence. Relationships are the
-only channel between them. Expression is how they speak. Retained experience is
-how they remember. The graph wires itself through use.
-
-You don't configure Skyra. You birth beings into it.
+Not an agent framework. Not a chatbot wrapper. Not a prompt pipeline with memory
+bolted on. A runtime in which minds live.
 
 ## What This Is
 
-A cognitive physics. Not a framework.
+Skyra is a recursive descent runtime where every component implements the same
+interface: `Reality`. Beings, threads, exchanges, devices, the universe itself —
+all Realities. A single mutable message (Relation) enters at the top and
+descends through self-similar layers, each adding context or routing, until it
+hits a being and comes back up.
 
-Frameworks tell things what to do. Skyra describes how things behave. Signal
-walks terrain. Edges strengthen when beings fire together. Weak relationships
-decay. Beings under too much stress differentiate - they don't die, they
-offload. The system grows organically through relating.
+Beings have two layers: Think (private inner thought) and Act (outer speech and
+routing). Think has operators — recall, remember, skill — and a budget. Act
+enforces protocol and routes to peers. No one sees what a being thinks. Everyone
+sees what it says.
 
-This is not a chatbot wrapper. It is not an agent framework. It is not a prompt
-pipeline with memory bolted on.
+The human is not an input source. The human is a being in the system — with
+identity, purpose, relationships, and a device. Teaching, correction, memory,
+and relationship all become part of the universe the beings inhabit. The runtime
+doesn't get better without you putting in the time.
 
-It is a runtime in which minds live.
+2,618 lines of Go.
 
 ## What Is Settled
 
-- being is the atomic unit
-- nature is identity plus purpose
-- one relationship exists per unordered pair of beings
-- expression is fresh firing, not message forwarding
-- the present is the being's full operative reality: nature, relationships,
-  active exchange
-- retained experience is local to the being that lived it
-- the kernel routes, maintains edge weights, and reads emotional signals -
-  nothing more
-- direct relationships emerge when co-firing crosses threshold
-- differentiation is offloading, not death
-- the genome is the creator's real control surface
+- Reality is the interface: `ID()`, `Create()`, `Realize()`
+- Being is the atomic unit: identity, purpose, relationships, device
+- Self contains Think and Act — private thought and public speech
+- The relation bus carries a single mutable message through recursive layers
+- Exchange is append-only, context crossing requires explicit `<ref>` tags
+- Memory is local to the being that lived it (filesystem-backed)
+- NewThread owns the loop — multi-party routing is recursive, not orchestrated
+- The genome is the creator's control surface
+- Universe is the outermost Reality — its present is the full state of everything
 
-## What Is Open
+## Architecture
 
-- exact `genome.skyra` syntax
-- signed envelope schema and crypto details
-- local record shapes for relationships, exchanges, and present
-- emotional routing thresholds
-- differentiation redistribution rules
+```
+Universe
+├── NewThread
+│   ├── Exchange
+│   ├── skyra (Self)
+│   │   ├── Being
+│   │   ├── Think → Recall, Remember, Skill
+│   │   └── Act → Plan
+│   ├── louise (Self)
+│   │   └── ...
+│   └── michael (User)
+│       ├── Being
+│       └── MacOS
+└── Economics
+```
 
-## What Is Deferred
-
-- live admission versus signing order
-
-## Start Here
-
-- [Contributor Ontology](./skyra-v.03/skyra%20ontology/ontology-for-contributors.md)
-- [Operational Invariants](./skyra-v.03/docs/01-operational-invariants-v0.md)
-- [Expression Walk](./skyra-v.03/docs/21-expression-walk-v0.md)
-- [Architecture Evolution Timeline](./architecture-evolution-timeline.md)
-
-## Repo Map
-
-- `skyra-v.03/` - current live canon
-- `skyra-v.03/docs/` - live canon fragments
-- `skyra-v.03/docs/archive/` - intentionally stale within-generation history
-- `archive/` - older canon generations
-- `architecture-evolution-timeline.md` - the full arc from February to now
-
-## Reading Rule
-
-Live docs win. Archive is history not canon.
-
-## The Question
-
-Does structured exchange discipline between beings in relationship produce more coherent long reasoning than conversation history?
+Every node is a Reality. Every node can contain other Realities. The tree is
+self-similar all the way down.
 
 ## Status
 
-Build starts `2026-04-08`.
+v.05 is the live version. Alpha targets June 1, 2026.
 
-The ontology is closed. The physics are real. A being already surprised its
-creator by talking to itself.
+Done: recursive descent engine, multi-party threads, Think/Act planes, memory,
+context crossing, mid-flight grow, universe serialization, frontend contract.
 
-Time to see what it becomes.
+Next: WebSocket device, Inference (energy per being), Economics (task economy).
+
+## Repo Map
+
+- `skyra-v.05/` — live codebase
+- `skyra-v.05/notes/` — specs and design notes
+- `skyra-v.05/specs/` — future features and roadmap
+- `architecture-evolution-timeline.md` — the full arc from February to now
+- `archive/` — older generations (v.03, v.04). History, not canon.
+
+## The Question
+
+Does giving intelligence somewhere to live, someone to learn from, and a history
+that compounds produce something no model upgrade can?

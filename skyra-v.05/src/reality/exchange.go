@@ -5,6 +5,7 @@ import (
 	"skyra-v05/src/debug"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Exchange struct {
@@ -24,6 +25,7 @@ type Conversation struct {
 type Entry struct {
 	From    string
 	Content string
+	Time    time.Time
 }
 
 func (e *Exchange) ID() string { return e.id }
@@ -43,6 +45,29 @@ func exchangeKey(a, b string) string {
 }
 
 func (e *Exchange) Realize(r *Relation) string {
+	if r.Collecting {
+		for key, conv := range e.Exchanges {
+			snap := ExchangeSnapshot{
+				Key:     key,
+				Parties: conv.Parties,
+				Active:  conv.Active,
+				Entries: []EntrySnapshot{},
+			}
+			for i, entry := range conv.Entries {
+				snap.Entries = append(snap.Entries, EntrySnapshot{
+					Index: i, From: entry.From,
+					Content: entry.Content, Ts: entry.Time.UnixMilli(),
+				})
+			}
+			if len(conv.Context) > 0 {
+				snap.Context = conv.Context
+			}
+			r.Export("exchange:"+key, snap)
+		}
+		r.Export("node:exchange", RealityNode{ID: "exchange", Type: "Exchange", Children: []RealityNode{}})
+		return ""
+	}
+
 	if r.ID == "" {
 		target, rest := r.Peel()
 		debug.Log("[exchange]: peeled target →", target, "| rest →", rest)
@@ -82,6 +107,7 @@ func (e *Exchange) Realize(r *Relation) string {
 				srcConv.Entries = append(srcConv.Entries, Entry{
 					From:    r.Origin,
 					Content: fmt.Sprintf("[left to talk to %s]", r.ID),
+					Time:    time.Now(),
 				})
 				debug.Log("[exchange]: appended departure to", srcKey)
 
@@ -125,6 +151,7 @@ func (e *Exchange) Realize(r *Relation) string {
 	conv.Entries = append(conv.Entries, Entry{
 		From:    r.Origin,
 		Content: r.Impulse,
+		Time:    time.Now(),
 	})
 	r.Attach("exchange", conv.Parse)
 	r.Attach("conversation", func() string {
@@ -233,8 +260,4 @@ func (c *Conversation) ContextFor(being string) string {
 		return ""
 	}
 	return c.Context[being]
-}
-
-func (e *Exchange) Parse() string {
-	return ""
 }

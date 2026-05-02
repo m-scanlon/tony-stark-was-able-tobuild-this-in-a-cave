@@ -17,6 +17,36 @@ func (u *User) Create(r *Relation) Reality {
 }
 
 func (u *User) Realize(r *Relation) string {
+	if r.Collecting {
+		node := RealityNode{ID: u.id, Type: "User", Children: []RealityNode{}}
+		snap := BeingSnapshot{
+			Name: u.id, Type: "user", Status: "idle",
+			Peers:    []string{},
+			Memories: MemorySnapshot{Items: []MemoryItem{}, Skills: []SkillItem{}},
+		}
+
+		if being, ok := u.Realities["being"].(Being); ok {
+			snap.Identity = being.Identity
+			snap.Purpose = being.Purpose
+			if being.Relationships != nil {
+				snap.Peers = being.Relationships
+			}
+			snap.Device = being.Device
+			snap.Memories = snapshotMemories(being.Home)
+			node.Children = append(node.Children, RealityNode{ID: u.id + "-being", Type: "Being", Children: []RealityNode{}})
+		}
+
+		if device, ok := u.Realities["device"]; ok {
+			node.Children = append(node.Children, RealityNode{
+				ID: device.ID(), Type: capitalizeType(device.ID()), Children: []RealityNode{},
+			})
+		}
+
+		r.Export("being:"+u.id, snap)
+		r.Export("node:"+u.id, node)
+		return ""
+	}
+
 	debug.Log("[user]: realizing", u.id)
 
 	if being, ok := u.Realities["being"]; ok {
@@ -35,8 +65,4 @@ func (u *User) Realize(r *Relation) string {
 	r.ID = r.Origin
 	r.Origin = u.id
 	return result
-}
-
-func (u *User) Parse() string {
-	return ""
 }

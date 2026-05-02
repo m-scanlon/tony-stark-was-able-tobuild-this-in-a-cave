@@ -8,13 +8,22 @@ import (
 type Parser func() string
 
 type Relation struct {
-	ID        string
-	Origin    string
-	ThreadID  string
-	Impulse   string
-	Parsers   map[string]Parser
-	Realities map[string]Reality
-	Log       func(args ...any)
+	ID         string
+	Origin     string
+	ThreadID   string
+	Impulse    string
+	Parsers    map[string]Parser
+	Realities  map[string]Reality
+	Log        func(args ...any)
+	Collecting bool
+	Exports    map[string]any
+}
+
+func (r *Relation) Export(key string, value any) {
+	if r.Exports == nil {
+		r.Exports = make(map[string]any)
+	}
+	r.Exports[key] = value
 }
 
 func (r *Relation) Attach(name string, parser Parser) {

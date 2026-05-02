@@ -24,6 +24,9 @@ func (m *MacOS) Create(r *Relation) Reality {
 }
 
 func (m *MacOS) Realize(r *Relation) string {
+	if r.Collecting {
+		return ""
+	}
 	if r.Impulse != "" {
 		fmt.Println("\n" + r.Impulse)
 	}
@@ -50,8 +53,4 @@ func (m *MacOS) Realize(r *Relation) string {
 		}
 		lines = append(lines, line)
 	}
-}
-
-func (m *MacOS) Parse() string {
-	return ""
 }

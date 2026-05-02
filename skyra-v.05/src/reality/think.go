@@ -40,6 +40,32 @@ func (t *Think) Create(r *Relation) Reality {
 }
 
 func (t *Think) Realize(r *Relation) string {
+	if r.Collecting {
+		snap := ThinkSnapshot{
+			Budget:    thinkBudget,
+			Operators: []string{},
+			History:   []ThoughtSnapshot{},
+		}
+		for name := range t.Operators {
+			snap.Operators = append(snap.Operators, name)
+		}
+		for _, h := range t.History {
+			snap.History = append(snap.History, ThoughtSnapshot{
+				Peer: h.Peer, Thought: h.Thought, Ts: h.Timestamp.UnixMilli(),
+			})
+		}
+		r.Export("think", snap)
+
+		node := RealityNode{ID: "think", Type: "Think", Children: []RealityNode{}}
+		for name := range t.Operators {
+			node.Children = append(node.Children, RealityNode{
+				ID: name, Type: capitalizeType(name), Children: []RealityNode{},
+			})
+		}
+		r.Export("node:think", node)
+		return ""
+	}
+
 	if t.LLM == nil {
 		debug.Log("[think]: no llm")
 		return ""

@@ -1462,6 +1462,86 @@ The pattern is recursive composition — worlds contain worlds, terminating at i
 
 The naming settled. The interface is Reality. The method is Realize. The whole system is a relation routing through layers of reality until it hits something real. That's not a technical description. That's what it actually does.
 
+## Phase 20: The Relation Bus — A New Pattern
+
+### Dates
+
+- `2026-04-30` to `2026-05-02`
+
+### Representative docs
+
+- [architecture.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.05/architecture.md)
+- [notes/data-spec.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.05/notes/data-spec.md)
+
+### What happened
+
+The v.05 runtime shipped and stabilized. Multi-party conversation, context crossing, thought continuity, mid-flight being creation, error propagation — all working. The communication layer held under stress testing: 42+ exchange entries, three successful context crossings with ref resolution, persistent thought history across all switches.
+
+During this stabilization work, a pattern emerged that had been implicit in the architecture since the entity collapse but had never been named.
+
+### The pattern
+
+A single mutable object — the Relation — descends recursively through nested layers of Reality. Each layer can read from and write to the Relation as it passes through: attaching parsers, adding realities to the map, mutating the impulse, setting error state. The Relation accumulates context as it descends. Each layer only touches what's relevant to it. The response bubbles back up as a return value through the same recursive call stack.
+
+The descent path:
+
+```
+NewThread (creates thread, checks access, detects grow)
+  → Exchange (finds/creates conversation, enforces ref crossing, records entries)
+    → Self (separates inner/outer, passes being context)
+      → Think (private thought, operators, budget, history)
+      → Act (protocol enforcement, peer addressing)
+        → Provider (derives present from parsers, calls inference)
+```
+
+The Relation enters at the top carrying `Origin`, `ID`, `Impulse`. By the time it reaches the Provider at the bottom, it has accumulated: thread metadata, exchange history, conversation context, being identity, inner thought synthesis, system prompts, operator listings, ref context, time pressure — all attached as parsers by the layers it passed through. The Provider calls `derivePresent`, which evaluates every parser on the Relation into a single string. That string is the LLM's context window. The LLM's response returns as a string back up the call stack.
+
+The Relation is simultaneously the message, the accumulator, and the subject. It does not pass *through* layers the way a request passes through middleware. It descends *into* layers, and each layer is the same kind of thing — a Reality whose `Realize` method receives the Relation, enriches it, and routes it deeper.
+
+### What this is not
+
+This pattern has structural relatives but is not any of them:
+
+- **Not middleware.** Middleware is a flat pipeline. This is recursive and self-similar — each layer can contain worlds that contain worlds.
+- **Not the actor model.** Actors are peers passing messages between each other. This is vertical descent through nested layers, not horizontal message passing.
+- **Not a blackboard.** A blackboard is a shared mutable space that peers read and write. This is a single object descending through a call stack, not sitting in a shared space.
+- **Not chain of responsibility.** Chain of responsibility is linear delegation with no accumulation. This accumulates context at every layer.
+- **Not attribute grammars.** Attribute grammars pass inherited and synthesized attributes through a tree that exists before traversal. Here, the Relation *is* the traversal — there is no pre-existing tree.
+- **Not a Lisp environment.** In a recursive interpreter, the thing being evaluated (the expression) and the thing accumulating context (the environment) are separate objects. Here they are the same object.
+
+The closest structural relative is Linux VFS dispatch — a syscall descends through VFS → filesystem → block layer → driver, carrying a struct that accumulates context. But VFS layers are a fixed stack, not self-similar and unbounded. In Skyra, any Reality can contain any other Reality, and the depth is determined by the composition, not by a fixed architecture.
+
+### Why this is new
+
+The fusion of three properties in one pattern:
+
+1. **Self-similar recursive layers** — every layer is a Reality with the same interface
+2. **Single mutable message-as-entity** — the Relation is both the message and the accumulated context
+3. **Return-value bubbling** — responses propagate back up through the same call stack, not through a separate channel
+
+No existing named pattern in the literature combines all three. Recursive descent exists. Message buses exist. Mutable context objects exist. The combination — where the bus *is* the thing being recursively descended through self-similar layers — does not have a name.
+
+### What this pattern enables
+
+- **The failure surface shrinks.** Each layer can only fail in its own way. Think can't accidentally address a peer. Act can't accidentally call an inner operator. Exchange can't let you cross contexts without a ref. The architecture is the guardrail.
+- **New capabilities are free.** A new Reality that implements `ID`, `Create`, `Realize` drops into any layer. The Relation doesn't change. The layers above and below don't change. The new Reality attaches its own parsers and routes deeper.
+- **The present assembles itself.** No layer builds the full context. Each layer contributes its piece by attaching a parser to the Relation. The Provider at the bottom evaluates all parsers into the final present. The LLM's context window is an emergent property of the descent path, not a constructed object.
+- **600 lines.** The entire runtime — thread management, exchange tracking, two-layer beings with inner thought and outer protocol, context crossing, error propagation, mid-flight being creation — is ~600 lines of Go. The pattern does the work that other systems need thousands of lines, validation layers, and retry logic to accomplish.
+
+### What survived to produce this
+
+Every phase in this timeline contributed something that this pattern absorbed:
+
+- Phase 1's local-first stance — the Relation carries everything, no external state to sync
+- Phase 3's executor loop obsession — the loop exists, it's just recursive now
+- Phase 5's warm context instinct — the Relation *is* warm context, accumulated in flight
+- Phase 6's primitive thinking — Reality is the only primitive
+- Phase 7's episode/retention separation — Think's history is retained, the Relation is ephemeral
+- Phase 11's "beings relate" — the Relation is literally a being relating
+- Phase 19's entity collapse — Reality is the only interface, Realize is the only method
+
+The pattern did not emerge from theory. It emerged from twelve phases of overbuilding and compressing until only the load-bearing structure remained.
+
 ## Appendix: Post-Canon Pressure Notes
 
 This appendix records same-day interpretation and stress-test material that shaped understanding after the `skyra-v.03` canon landed.

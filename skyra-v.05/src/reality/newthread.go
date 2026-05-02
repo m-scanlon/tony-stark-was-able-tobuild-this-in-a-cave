@@ -8,12 +8,13 @@ import (
 )
 
 type NewThread struct {
-	id       string
-	Beings   map[string]Reality
-	Access   map[string]bool
-	Threads  map[string]*Thread
-	Exchange *Exchange
-	Devices  map[string]Reality
+	id        string
+	Beings    map[string]Reality
+	Access    map[string]bool
+	Threads   map[string]*Thread
+	Exchange  *Exchange
+	Devices   map[string]Reality
+	OnResolve func()
 }
 
 type Thread struct {
@@ -22,7 +23,6 @@ type Thread struct {
 	Active    bool
 	Members   map[string]bool
 	Graph     []Edge
-	Queue     []*Relation
 }
 
 type Edge struct {
@@ -42,6 +42,44 @@ func (t *NewThread) Create(r *Relation) Reality {
 }
 
 func (t *NewThread) Realize(r *Relation) string {
+	if r.Collecting {
+		t.Exchange.Realize(r)
+
+		root := RealityNode{ID: "newthread", Type: "NewThread", Children: []RealityNode{}}
+		if node, ok := r.Exports["node:exchange"]; ok {
+			root.Children = append(root.Children, node.(RealityNode))
+			delete(r.Exports, "node:exchange")
+		}
+
+		for name, being := range t.Beings {
+			being.Realize(r)
+			if node, ok := r.Exports["node:"+name]; ok {
+				root.Children = append(root.Children, node.(RealityNode))
+				delete(r.Exports, "node:"+name)
+			}
+		}
+
+		for _, th := range t.Threads {
+			snap := ThreadSnapshot{
+				ID:        th.id,
+				CreatedBy: th.CreatedBy,
+				Active:    th.Active,
+				Members:   []string{},
+				Edges:     []EdgeSnapshot{},
+			}
+			for member := range th.Members {
+				snap.Members = append(snap.Members, member)
+			}
+			for _, edge := range th.Graph {
+				snap.Edges = append(snap.Edges, EdgeSnapshot{From: edge.From, To: edge.To})
+			}
+			r.Export("thread:"+th.id, snap)
+		}
+
+		r.Export("node:root", root)
+		return ""
+	}
+
 	for {
 		var th *Thread
 
@@ -72,7 +110,6 @@ func (t *NewThread) Realize(r *Relation) string {
 					r.Impulse = msg
 					user.Realize(r)
 					r.ID = ""
-					r.Origin = r.Origin
 					r.Parsers = make(map[string]Parser)
 					continue
 				}
@@ -107,6 +144,9 @@ func (t *NewThread) Realize(r *Relation) string {
 					response = being.Realize(r)
 					if response != "" {
 						th.Spread(r.Origin, r.ID)
+						if t.OnResolve != nil {
+							t.OnResolve()
+						}
 						r.Parsers = make(map[string]Parser)
 						continue
 					}
@@ -117,6 +157,9 @@ func (t *NewThread) Realize(r *Relation) string {
 		}
 
 		th.Spread(r.Origin, r.ID)
+		if t.OnResolve != nil {
+			t.OnResolve()
+		}
 		debug.Log("[thread]: routing", r.Origin, "→", r.ID)
 
 		r.Parsers = make(map[string]Parser)
@@ -244,8 +287,4 @@ func (t *NewThread) Grow(impulse string) string {
 
 	debug.Log("[thread]: grew", name, "type:", beingType, "device:", deviceName)
 	return "grew " + name
-}
-
-func (t *NewThread) Parse() string {
-	return ""
 }

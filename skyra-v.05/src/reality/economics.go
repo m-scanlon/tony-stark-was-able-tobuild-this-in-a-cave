@@ -28,6 +28,15 @@ func (e *Economics) Set(field string, value int) {
 }
 
 func (e *Economics) Realize(r *Relation) string {
+	if r.Collecting {
+		fields := make(map[string]int)
+		for k, v := range e.Fields {
+			fields[k] = v
+		}
+		r.Export("economics", fields)
+		return ""
+	}
+
 	if len(e.Fields) == 0 {
 		return ""
 	}
