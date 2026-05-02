@@ -51,6 +51,14 @@ func (t *NewThread) Realize(r *Relation) string {
 			delete(r.Exports, "node:exchange")
 		}
 
+		for name, device := range t.Devices {
+			device.Realize(r)
+			if node, ok := r.Exports["node:"+name]; ok {
+				root.Children = append(root.Children, node.(RealityNode))
+				delete(r.Exports, "node:"+name)
+			}
+		}
+
 		for name, being := range t.Beings {
 			being.Realize(r)
 			if node, ok := r.Exports["node:"+name]; ok {
@@ -215,14 +223,23 @@ func (t *NewThread) Grow(impulse string) string {
 	if err != nil {
 		return "grow: missing ~type"
 	}
-	deviceName, err := Extract(impulse, "~device", "grow")
+	devicesRaw, err := Extract(impulse, "~devices", "grow")
 	if err != nil {
-		return "grow: missing ~device"
+		return "grow: missing ~devices"
 	}
 
-	device, ok := t.Devices[deviceName]
-	if !ok {
-		return "grow: unknown device " + deviceName
+	var device *MacOS
+	for _, devName := range strings.Split(devicesRaw, ",") {
+		devName = strings.TrimSpace(devName)
+		if dev, ok := t.Devices[devName]; ok {
+			if mac, ok := dev.(*MacOS); ok {
+				device = mac
+				break
+			}
+		}
+	}
+	if device == nil {
+		return "grow: no known device in " + devicesRaw
 	}
 
 	being := Being{}.Create(&Relation{
@@ -232,6 +249,17 @@ func (t *NewThread) Grow(impulse string) string {
 
 	switch beingType {
 	case "llm":
+		var llmComp Reality
+		for _, comp := range device.Components {
+			if _, ok := comp.(*Provider); ok {
+				llmComp = comp
+				break
+			}
+		}
+		if llmComp == nil {
+			return "grow: no inference component on device"
+		}
+
 		self := &Self{}
 		self = self.Create(&Relation{ID: name}).(*Self)
 		self.Realities["being"] = being
@@ -242,14 +270,14 @@ func (t *NewThread) Grow(impulse string) string {
 				"remember": &Remember{},
 				"skill":    &Skill{},
 			},
-			LLM: device,
+			LLM: llmComp,
 		}
 
 		act := &Act{
 			Operators: map[string]Reality{
 				"plan": &Plan{},
 			},
-			LLM: device,
+			LLM: llmComp,
 		}
 
 		self.Realities["think"] = think
@@ -285,6 +313,6 @@ func (t *NewThread) Grow(impulse string) string {
 		}
 	}
 
-	debug.Log("[thread]: grew", name, "type:", beingType, "device:", deviceName)
+	debug.Log("[thread]: grew", name, "type:", beingType, "devices:", devicesRaw)
 	return "grew " + name
 }

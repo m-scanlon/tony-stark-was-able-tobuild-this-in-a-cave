@@ -1,56 +1,51 @@
 package reality
 
-import (
-	"bufio"
-	"fmt"
-	"os"
-	"strings"
-)
-
 type MacOS struct {
-	id        string
-	Realities map[string]Reality
-	scanner   *bufio.Scanner
+	id         string
+	Components map[string]Reality
 }
 
 func (m *MacOS) ID() string { return m.id }
 
 func (m *MacOS) Create(r *Relation) Reality {
-	return &MacOS{
-		id:        "macos",
-		Realities: make(map[string]Reality),
-		scanner:   bufio.NewScanner(os.Stdin),
+	id := r.ID
+	if id == "" {
+		id = "macos"
 	}
+	return &MacOS{
+		id:         id,
+		Components: make(map[string]Reality),
+	}
+}
+
+func (m *MacOS) Component(name string) Reality {
+	return m.Components[name]
 }
 
 func (m *MacOS) Realize(r *Relation) string {
 	if r.Collecting {
+		node := RealityNode{ID: m.id, Type: "MacOS", Children: []RealityNode{}}
+		for name, comp := range m.Components {
+			node.Children = append(node.Children, RealityNode{
+				ID: name, Type: capitalizeType(name), Children: []RealityNode{},
+			})
+			comp.Realize(r)
+		}
+		r.Export("node:"+m.id, node)
 		return ""
 	}
-	if r.Impulse != "" {
-		fmt.Println("\n" + r.Impulse)
-	}
-	fmt.Print("> ")
-	if !m.scanner.Scan() {
-		os.Exit(0)
-	}
-	first := m.scanner.Text()
-	if strings.TrimSpace(first) == "" {
-		return m.Realize(r)
-	}
-	if !strings.HasSuffix(strings.TrimSpace(first), ";;") {
-		return strings.TrimSpace(first)
-	}
-	lines := []string{strings.TrimSuffix(strings.TrimSpace(first), ";;")}
-	for {
-		fmt.Print("  ")
-		if !m.scanner.Scan() {
-			os.Exit(0)
+
+	target, ok := r.Parsers["device-target"]
+	if ok {
+		name := target()
+		if comp, exists := m.Components[name]; exists {
+			return comp.Realize(r)
 		}
-		line := m.scanner.Text()
-		if strings.TrimSpace(line) == ";;" {
-			return strings.TrimSpace(strings.Join(lines, "\n"))
-		}
-		lines = append(lines, line)
 	}
+
+	if term, exists := m.Components["terminal"]; exists {
+		return term.Realize(r)
+	}
+
+	return ""
 }

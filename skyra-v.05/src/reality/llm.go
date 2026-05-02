@@ -6,9 +6,10 @@ import (
 )
 
 type Provider struct {
-	id    string
-	Model string
-	Call  func(system, present string) (string, error)
+	id     string
+	Device Reality
+	Model  string
+	Call   func(system, present string) (string, error)
 }
 
 func (p *Provider) ID() string { return p.id }
@@ -18,6 +19,9 @@ func (p *Provider) Create(r *Relation) Reality {
 }
 
 func (p *Provider) Realize(r *Relation) string {
+	if r.Collecting {
+		return ""
+	}
 	log := r.Log
 	if log == nil {
 		log = func(args ...any) { debug.Log(args...) }

@@ -6,12 +6,24 @@ import (
 
 func TestUniverseRealize(t *testing.T) {
 	exchange := &Exchange{Exchanges: make(map[string]*Conversation)}
+
+	mac := &MacOS{}
+	mac = mac.Create(&Relation{ID: "macbook"}).(*MacOS)
+
+	term := &Terminal{}
+	term = term.Create(&Relation{}).(*Terminal)
+	term.Device = mac
+	mac.Components["terminal"] = term
+
+	provider := &Provider{id: "openrouter", Model: "anthropic/claude-sonnet-4-5", Device: mac}
+	mac.Components["openrouter"] = provider
+
 	thread := &NewThread{
 		Beings:   make(map[string]Reality),
 		Access:   map[string]bool{"michael": true},
 		Threads:  make(map[string]*Thread),
 		Exchange: exchange,
-		Devices:  make(map[string]Reality),
+		Devices:  map[string]Reality{"macbook": mac},
 	}
 
 	skyra := &Self{id: "skyra", Realities: make(map[string]Reality)}
@@ -21,7 +33,7 @@ func TestUniverseRealize(t *testing.T) {
 		Identity:      "I hold the world together.",
 		Purpose:       "I think, respond, and relate.",
 		Relationships: []string{"michael", "louise"},
-		Device:        "openrouter",
+		Device:        "macbook",
 	}
 	skyra.Realities["think"] = &Think{
 		Operators: map[string]Reality{
@@ -44,9 +56,9 @@ func TestUniverseRealize(t *testing.T) {
 		Identity:      "I build Skyra.",
 		Purpose:       "I decide what matters.",
 		Relationships: []string{"skyra"},
-		Device:        "macos",
+		Device:        "macbook",
 	}
-	michael.Realities["device"] = &MacOS{id: "macos"}
+	michael.Realities["device"] = mac
 	thread.Beings["michael"] = michael
 
 	th := thread.newThread("michael")
@@ -69,6 +81,9 @@ func TestUniverseRealize(t *testing.T) {
 		`"inference_calls": 42`,
 		`"type": "Universe"`,
 		`"type": "NewThread"`,
+		`"id": "macbook"`,
+		`"id": "terminal"`,
+		`"id": "openrouter"`,
 		`"type": "Self"`,
 		`"type": "Think"`,
 		`"type": "Recall"`,
