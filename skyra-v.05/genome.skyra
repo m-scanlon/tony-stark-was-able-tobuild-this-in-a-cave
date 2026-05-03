@@ -3,6 +3,7 @@ device ~name macbook ~type macos
 
 # components
 component ~name terminal ~type stdin ~device macbook
+component ~name ws ~type websocket ~port 8080 ~device macbook
 component ~name openrouter ~type llm ~model anthropic/claude-sonnet-4-5 ~device macbook
 
 # beings

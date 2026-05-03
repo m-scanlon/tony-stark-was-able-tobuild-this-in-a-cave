@@ -43,6 +43,12 @@ func (m *MacOS) Realize(r *Relation) string {
 		}
 	}
 
+	if ws, exists := m.Components["ws"]; exists {
+		if w, ok := ws.(*WS); ok && w.Connected() {
+			return w.Realize(r)
+		}
+	}
+
 	if term, exists := m.Components["terminal"]; exists {
 		return term.Realize(r)
 	}

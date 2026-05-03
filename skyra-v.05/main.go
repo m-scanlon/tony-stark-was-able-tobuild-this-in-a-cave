@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"strconv"
+
 	"skyra-v05/src/debug"
 	"skyra-v05/src/inference"
 	"skyra-v05/src/reality"
@@ -55,10 +57,21 @@ func main() {
 	mac := devices["macbook"]
 	thread.Devices["macbook"] = mac
 
+	var wsComp *reality.WS
+	for _, comp := range components {
+		if w, ok := comp.(*reality.WS); ok {
+			wsComp = w
+			break
+		}
+	}
+
 	universe := &reality.Universe{Thread: thread}
 	thread.OnResolve = func() {
 		present := universe.Realize(&reality.Relation{Collecting: true})
 		debug.Log("[universe]:", present)
+		if wsComp != nil {
+			wsComp.Broadcast(present)
+		}
 	}
 
 	fmt.Println("skyra v.05")
@@ -120,6 +133,19 @@ func bootstrap(thread *reality.NewThread, devices map[string]*reality.MacOS, com
 				dev.Components[name] = p
 				components[name] = p
 				llmWires[name] = model
+
+			case "websocket":
+				portStr, _ := reality.Extract(impulse, "~port", "component")
+				port, _ := strconv.Atoi(portStr)
+				if port == 0 {
+					port = 8080
+				}
+				ws := &reality.WS{}
+				ws = ws.Create(&reality.Relation{}).(*reality.WS)
+				ws.Device = dev
+				ws.Start(port)
+				dev.Components[name] = ws
+				components[name] = ws
 			}
 
 		case "grow":
