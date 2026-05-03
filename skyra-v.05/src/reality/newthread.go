@@ -14,6 +14,8 @@ type NewThread struct {
 	Threads   map[string]*Thread
 	Exchange  *Exchange
 	Devices   map[string]Reality
+	ThinkOps  map[string]Reality
+	ActOps    map[string]Reality
 	OnResolve func()
 }
 
@@ -131,6 +133,12 @@ func (t *NewThread) Realize(r *Relation) string {
 		}
 		for name, being := range t.Beings {
 			r.Realities[name] = being
+		}
+		for name, op := range t.ThinkOps {
+			r.Realities["think:"+name] = op
+		}
+		for name, op := range t.ActOps {
+			r.Realities["act:"+name] = op
 		}
 
 		debug.Log("[thread]: descending", r.Origin, "→", r.ID, "|", r.Impulse)

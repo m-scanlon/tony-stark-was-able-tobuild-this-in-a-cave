@@ -1,6 +1,9 @@
 package reality
 
-import "skyra-v05/src/debug"
+import (
+	"skyra-v05/src/debug"
+	"strings"
+)
 
 type Self struct {
 	id        string
@@ -32,18 +35,12 @@ func (s *Self) Create(r *Relation) Reality {
 
 	if llm != nil {
 		think := &Think{
-			Operators: map[string]Reality{
-				"recall":   &Recall{},
-				"remember": &Remember{},
-				"skill":    &Skill{},
-			},
-			LLM: llm,
+			Operators: make(map[string]Reality),
+			LLM:      llm,
 		}
 		act := &Act{
-			Operators: map[string]Reality{
-				"plan": &Plan{},
-			},
-			LLM: llm,
+			Operators: make(map[string]Reality),
+			LLM:      llm,
 		}
 		self.Realities["think"] = think
 		self.Realities["act"] = act
@@ -122,11 +119,18 @@ func (s *Self) Realize(r *Relation) string {
 
 		if think, ok := s.Realities["think"]; ok {
 			if t, ok := think.(*Think); ok {
+				t.OuterOps = t.OuterOps[:0]
 				if act, ok := s.Realities["act"]; ok {
 					if a, ok := act.(*Act); ok {
-						t.OuterOps = t.OuterOps[:0]
 						for name := range a.Operators {
 							t.OuterOps = append(t.OuterOps, name)
+						}
+					}
+				}
+				if r.Realities != nil {
+					for key := range r.Realities {
+						if strings.HasPrefix(key, "act:") {
+							t.OuterOps = append(t.OuterOps, strings.TrimPrefix(key, "act:"))
 						}
 					}
 				}

@@ -38,6 +38,16 @@ func main() {
 		Threads:  make(map[string]*reality.Thread),
 		Exchange: exchange,
 		Devices:  make(map[string]reality.Reality),
+		ThinkOps: map[string]reality.Reality{
+			"recall":   &reality.Recall{},
+			"remember": &reality.Remember{},
+			"skill":    &reality.Skill{},
+			"browse":   &reality.Browse{},
+			"search":   &reality.Search{},
+		},
+		ActOps: map[string]reality.Reality{
+			"plan": &reality.Plan{},
+		},
 	}
 
 	if err := bootstrap(thread, devices, components, llmWires); err != nil {

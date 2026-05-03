@@ -71,6 +71,8 @@ func (t *Think) Realize(r *Relation) string {
 		return ""
 	}
 
+	ops := t.collectOps(r)
+
 	var beingName string
 	if being, ok := r.Realities["being"]; ok {
 		if b, ok := being.(Being); ok {
@@ -86,7 +88,8 @@ func (t *Think) Realize(r *Relation) string {
 	r.Log = log
 
 	r.Attach("system", t.System)
-	r.Attach("think-operators", t.Parse)
+	outerOps := t.OuterOps
+	r.Attach("think-operators", func() string { return renderOpsWithOuter(ops, outerOps) })
 
 	if len(t.History) > 0 {
 		history := t.History
@@ -147,9 +150,9 @@ func (t *Think) Realize(r *Relation) string {
 			continue
 		}
 
-		op, rest := t.parseOp(result)
+		op, rest := parseOp(result, ops)
 		if op != "" {
-			if operator, ok := t.Operators[op]; ok {
+			if operator, ok := ops[op]; ok {
 				log("[think]: firing operator", op)
 				r.Impulse = rest
 				opResult := operator.Realize(r)
@@ -222,8 +225,8 @@ func parseThink(response string) (string, bool) {
 	return response, strings.Contains(response, "<surface-thought>")
 }
 
-func (t *Think) parseOp(response string) (string, string) {
-	for name := range t.Operators {
+func parseOp(response string, ops map[string]Reality) (string, string) {
+	for name := range ops {
 		openTag := "<" + name + ">"
 		closeTag := "</" + name + ">"
 		if idx := strings.Index(response, openTag); idx != -1 {
@@ -238,6 +241,48 @@ func (t *Think) parseOp(response string) (string, string) {
 		}
 	}
 	return "", ""
+}
+
+func (t *Think) collectOps(r *Relation) map[string]Reality {
+	ops := make(map[string]Reality)
+	for name, op := range t.Operators {
+		ops[name] = op
+	}
+	if r.Realities != nil {
+		for key, op := range r.Realities {
+			if strings.HasPrefix(key, "think:") {
+				name := strings.TrimPrefix(key, "think:")
+				ops[name] = op
+			}
+		}
+	}
+	return ops
+}
+
+func renderOps(ops map[string]Reality) string {
+	var sb strings.Builder
+	sb.WriteString("available operators:\n")
+	for name := range ops {
+		sb.WriteString("  <" + name + ">input</" + name + ">\n")
+	}
+	sb.WriteString("\nwhen done thinking: <surface-thought> your synthesis\n")
+	return sb.String()
+}
+
+func renderOpsWithOuter(ops map[string]Reality, outerOps []string) string {
+	var sb strings.Builder
+	sb.WriteString("available operators:\n")
+	for name := range ops {
+		sb.WriteString("  <" + name + ">input</" + name + ">\n")
+	}
+	if len(outerOps) > 0 {
+		sb.WriteString("\nouter layer operators (you cannot call these here):\n")
+		for _, name := range outerOps {
+			sb.WriteString("  " + name + "\n")
+		}
+	}
+	sb.WriteString("\nwhen done thinking: <surface-thought> your synthesis\n")
+	return sb.String()
 }
 
 func (t *Think) System() string {
@@ -255,17 +300,5 @@ func (t *Think) isOuterOp(response string) string {
 }
 
 func (t *Think) Parse() string {
-	var sb strings.Builder
-	sb.WriteString("available operators:\n")
-	for name := range t.Operators {
-		sb.WriteString("  <" + name + ">input</" + name + ">\n")
-	}
-	if len(t.OuterOps) > 0 {
-		sb.WriteString("\nouter layer operators (you cannot call these here):\n")
-		for _, name := range t.OuterOps {
-			sb.WriteString("  " + name + "\n")
-		}
-	}
-	sb.WriteString("\nwhen done thinking: <surface-thought> your synthesis\n")
-	return sb.String()
+	return renderOps(t.Operators)
 }

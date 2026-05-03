@@ -39,6 +39,8 @@ func (a *Act) Realize(r *Relation) string {
 		return ""
 	}
 
+	a.collectOps(r)
+
 	r.Attach("system", a.System)
 
 	var beingName string
@@ -142,6 +144,17 @@ func stripSurface(raw string) string {
 		return strings.TrimSpace(after[:end])
 	}
 	return strings.TrimSpace(after)
+}
+
+func (a *Act) collectOps(r *Relation) {
+	if r.Realities != nil {
+		for key, op := range r.Realities {
+			if strings.HasPrefix(key, "act:") {
+				name := strings.TrimPrefix(key, "act:")
+				a.Operators[name] = op
+			}
+		}
+	}
 }
 
 func (a *Act) System() string {
