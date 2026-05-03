@@ -111,7 +111,7 @@ func (t *NewThread) Realize(r *Relation) string {
 
 		if r.ID == "" {
 			op, rest := r.Peel()
-			if op == "grow" {
+			if op == "being" || op == "grow" {
 				msg := t.Grow(rest)
 				debug.Log("[thread]: grow →", msg)
 				if user, ok := t.Beings[r.Origin]; ok {
@@ -212,88 +212,60 @@ func (th *Thread) Parse() string {
 }
 
 func (t *NewThread) Grow(impulse string) string {
-	name, err := Extract(impulse, "~name", "grow")
+	name, err := Extract(impulse, "~name", "being")
 	if err != nil {
-		return "grow: missing ~name"
+		return "being: missing ~name"
 	}
 	if _, exists := t.Beings[name]; exists {
-		return "grow: " + name + " already exists"
+		return "being: " + name + " already exists"
 	}
-	beingType, err := Extract(impulse, "~type", "grow")
+	beingType, err := Extract(impulse, "~type", "being")
 	if err != nil {
-		return "grow: missing ~type"
+		return "being: missing ~type"
 	}
-	devicesRaw, err := Extract(impulse, "~devices", "grow")
+	devicesRaw, err := Extract(impulse, "~devices", "being")
 	if err != nil {
-		return "grow: missing ~devices"
+		return "being: missing ~devices"
 	}
 
-	var device *MacOS
+	ctx := &Relation{ID: name, Impulse: impulse}
+	ctx.Realities = make(map[string]Reality)
+
 	for _, devName := range strings.Split(devicesRaw, ",") {
 		devName = strings.TrimSpace(devName)
 		if dev, ok := t.Devices[devName]; ok {
+			ctx.Realities[devName] = dev
 			if mac, ok := dev.(*MacOS); ok {
-				device = mac
-				break
+				for compName, comp := range mac.Components {
+					ctx.Realities[compName] = comp
+				}
 			}
 		}
 	}
-	if device == nil {
-		return "grow: no known device in " + devicesRaw
-	}
 
-	being := Being{}.Create(&Relation{
-		ID:      name,
-		Impulse: impulse,
-	}).(Being)
-
+	var created Reality
 	switch beingType {
 	case "llm":
-		var llmComp Reality
-		for _, comp := range device.Components {
-			if _, ok := comp.(*Provider); ok {
-				llmComp = comp
-				break
-			}
-		}
-		if llmComp == nil {
-			return "grow: no inference component on device"
-		}
-
-		self := &Self{}
-		self = self.Create(&Relation{ID: name}).(*Self)
-		self.Realities["being"] = being
-
-		think := &Think{
-			Operators: map[string]Reality{
-				"recall":   &Recall{},
-				"remember": &Remember{},
-				"skill":    &Skill{},
-			},
-			LLM: llmComp,
-		}
-
-		act := &Act{
-			Operators: map[string]Reality{
-				"plan": &Plan{},
-			},
-			LLM: llmComp,
-		}
-
-		self.Realities["think"] = think
-		self.Realities["act"] = act
-		t.Beings[name] = self
-
+		created = (&Self{}).Create(ctx)
 	case "user":
-		user := &User{}
-		user = user.Create(&Relation{ID: name}).(*User)
-		user.Realities["being"] = being
-		user.Realities["device"] = device
-		t.Beings[name] = user
+		created = (&User{}).Create(ctx)
 		t.Access[name] = true
-
 	default:
-		return "grow: unknown type " + beingType
+		return "being: unknown type " + beingType
+	}
+
+	t.Beings[name] = created
+
+	var being Being
+	switch c := created.(type) {
+	case *Self:
+		if b, ok := c.Realities["being"].(Being); ok {
+			being = b
+		}
+	case *User:
+		if b, ok := c.Realities["being"].(Being); ok {
+			being = b
+		}
 	}
 
 	for _, peerName := range being.Relationships {
@@ -313,6 +285,6 @@ func (t *NewThread) Grow(impulse string) string {
 		}
 	}
 
-	debug.Log("[thread]: grew", name, "type:", beingType, "devices:", devicesRaw)
-	return "grew " + name
+	debug.Log("[thread]: created", name, "type:", beingType, "devices:", devicesRaw)
+	return "created " + name
 }

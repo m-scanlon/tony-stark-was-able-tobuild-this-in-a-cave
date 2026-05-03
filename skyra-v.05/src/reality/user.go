@@ -10,10 +10,26 @@ type User struct {
 func (u *User) ID() string { return u.id }
 
 func (u *User) Create(r *Relation) Reality {
-	return &User{
+	user := &User{
 		id:        r.ID,
 		Realities: make(map[string]Reality),
 	}
+
+	if r.Impulse != "" {
+		being := Being{}.Create(r).(Being)
+		user.Realities["being"] = being
+	}
+
+	if r.Realities != nil {
+		for _, reality := range r.Realities {
+			if _, ok := reality.(*MacOS); ok {
+				user.Realities["device"] = reality
+				break
+			}
+		}
+	}
+
+	return user
 }
 
 func (u *User) Realize(r *Relation) string {

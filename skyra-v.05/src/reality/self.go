@@ -10,10 +10,46 @@ type Self struct {
 func (s *Self) ID() string { return s.id }
 
 func (s *Self) Create(r *Relation) Reality {
-	return &Self{
+	self := &Self{
 		id:        r.ID,
 		Realities: make(map[string]Reality),
 	}
+
+	if r.Impulse != "" {
+		being := Being{}.Create(r).(Being)
+		self.Realities["being"] = being
+	}
+
+	var llm Reality
+	if r.Realities != nil {
+		for _, reality := range r.Realities {
+			if _, ok := reality.(*Provider); ok {
+				llm = reality
+				break
+			}
+		}
+	}
+
+	if llm != nil {
+		think := &Think{
+			Operators: map[string]Reality{
+				"recall":   &Recall{},
+				"remember": &Remember{},
+				"skill":    &Skill{},
+			},
+			LLM: llm,
+		}
+		act := &Act{
+			Operators: map[string]Reality{
+				"plan": &Plan{},
+			},
+			LLM: llm,
+		}
+		self.Realities["think"] = think
+		self.Realities["act"] = act
+	}
+
+	return self
 }
 
 func (s *Self) Realize(r *Relation) string {

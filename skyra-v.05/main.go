@@ -98,18 +98,16 @@ func bootstrap(thread *reality.NewThread, devices map[string]*reality.MacOS, com
 		if len(tokens) < 2 {
 			continue
 		}
-		operator := tokens[0]
+		verb := tokens[0]
 		impulse := strings.Join(tokens[1:], " ")
+		name, _ := reality.Extract(impulse, "~name", verb)
 
-		switch operator {
+		switch verb {
 		case "device":
-			name, _ := reality.Extract(impulse, "~name", "device")
-			mac := &reality.MacOS{}
-			mac = mac.Create(&reality.Relation{ID: name}).(*reality.MacOS)
+			mac := (&reality.MacOS{}).Create(&reality.Relation{ID: name}).(*reality.MacOS)
 			devices[name] = mac
 
 		case "component":
-			name, _ := reality.Extract(impulse, "~name", "component")
 			compType, _ := reality.Extract(impulse, "~type", "component")
 			deviceName, _ := reality.Extract(impulse, "~device", "component")
 
@@ -118,18 +116,19 @@ func bootstrap(thread *reality.NewThread, devices map[string]*reality.MacOS, com
 				return fmt.Errorf("component %q references unknown device %q", name, deviceName)
 			}
 
+			rel := &reality.Relation{ID: name, Impulse: impulse}
+			rel.Realities = map[string]reality.Reality{"device": dev}
+
 			switch compType {
 			case "stdin":
-				term := &reality.Terminal{}
-				term = term.Create(&reality.Relation{}).(*reality.Terminal)
+				term := (&reality.Terminal{}).Create(rel).(*reality.Terminal)
 				term.Device = dev
 				dev.Components[name] = term
 				components[name] = term
 
 			case "llm":
 				model, _ := reality.Extract(impulse, "~model", "component")
-				p := &reality.Provider{Model: model}
-				p.Device = dev
+				p := &reality.Provider{Model: model, Device: dev}
 				dev.Components[name] = p
 				components[name] = p
 				llmWires[name] = model
@@ -140,75 +139,40 @@ func bootstrap(thread *reality.NewThread, devices map[string]*reality.MacOS, com
 				if port == 0 {
 					port = 8080
 				}
-				ws := &reality.WS{}
-				ws = ws.Create(&reality.Relation{}).(*reality.WS)
+				ws := (&reality.WS{}).Create(rel).(*reality.WS)
 				ws.Device = dev
 				ws.Start(port)
 				dev.Components[name] = ws
 				components[name] = ws
 			}
 
-		case "grow":
-			name, _ := reality.Extract(impulse, "~name", "grow")
-			beingType, _ := reality.Extract(impulse, "~type", "grow")
+		case "being":
+			beingType, _ := reality.Extract(impulse, "~type", "being")
+			devicesRaw, _ := reality.Extract(impulse, "~devices", "being")
 
-			being := reality.Being{}.Create(&reality.Relation{
-				ID:      name,
-				Impulse: impulse,
-			}).(reality.Being)
+			ctx := &reality.Relation{ID: name, Impulse: impulse}
+			ctx.Realities = make(map[string]reality.Reality)
+
+			for _, devName := range strings.Split(devicesRaw, ",") {
+				devName = strings.TrimSpace(devName)
+				if dev, ok := devices[devName]; ok {
+					ctx.Realities[devName] = dev
+					for compName, comp := range dev.Components {
+						ctx.Realities[compName] = comp
+					}
+				}
+			}
 
 			switch beingType {
 			case "llm":
-				self := &reality.Self{}
-				self = self.Create(&reality.Relation{ID: name}).(*reality.Self)
-				self.Realities["being"] = being
-
-				var llmComp reality.Reality
-				for _, comp := range components {
-					if _, ok := comp.(*reality.Provider); ok {
-						llmComp = comp
-						break
-					}
-				}
-
-				think := &reality.Think{
-					Operators: map[string]reality.Reality{
-						"recall":   &reality.Recall{},
-						"remember": &reality.Remember{},
-						"skill":    &reality.Skill{},
-					},
-					LLM: llmComp,
-				}
-
-				act := &reality.Act{
-					Operators: map[string]reality.Reality{
-						"plan": &reality.Plan{},
-					},
-					LLM: llmComp,
-				}
-
-				self.Realities["think"] = think
-				self.Realities["act"] = act
-
+				self := (&reality.Self{}).Create(ctx)
 				thread.Beings[name] = self
+				thread.Access[name] = false
 
 			case "user":
-				devicesRaw, _ := reality.Extract(impulse, "~devices", "grow")
-				var device reality.Reality
-				for _, devName := range strings.Split(devicesRaw, ",") {
-					devName = strings.TrimSpace(devName)
-					if dev, ok := devices[devName]; ok {
-						device = dev
-						break
-					}
-				}
-
-				user := &reality.User{}
-				user = user.Create(&reality.Relation{ID: name}).(*reality.User)
-				user.Realities["being"] = being
-				user.Realities["device"] = device
-
+				user := (&reality.User{}).Create(ctx)
 				thread.Beings[name] = user
+				thread.Access[name] = true
 			}
 		}
 	}
