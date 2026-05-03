@@ -47,6 +47,9 @@ func (u *User) Realize(r *Relation) string {
 			if being.Relationships != nil {
 				snap.Peers = being.Relationships
 			}
+			if being.Entrypoints != nil {
+				snap.Entrypoints = being.Entrypoints
+			}
 			snap.Device = being.Device
 			snap.Memories = snapshotMemories(being.Home)
 			node.Children = append(node.Children, RealityNode{ID: u.id + "-being", Type: "Being", Children: []RealityNode{}})

@@ -28,6 +28,8 @@ type Being struct {
 	Identity      string
 	Purpose       string
 	Relationships []string
+	Entrypoints   []string
+	Mode          string
 	Device        string
 }
 
@@ -39,11 +41,20 @@ func (b Being) Create(r *Relation) Reality {
 	purpose, _ := Extract(r.Impulse, "~purpose", "being")
 	device, _ := Extract(r.Impulse, "~device", "being")
 	relationshipsRaw, _ := Extract(r.Impulse, "~relationships", "being")
+	entrypointsRaw, _ := Extract(r.Impulse, "~entrypoints", "being")
+	mode, _ := Extract(r.Impulse, "~mode", "being")
 
 	var relationships []string
 	if relationshipsRaw != "" {
 		for _, peer := range strings.Split(relationshipsRaw, ",") {
 			relationships = append(relationships, strings.TrimSpace(peer))
+		}
+	}
+
+	var entrypoints []string
+	if entrypointsRaw != "" {
+		for _, ep := range strings.Split(entrypointsRaw, ",") {
+			entrypoints = append(entrypoints, strings.TrimSpace(ep))
 		}
 	}
 
@@ -58,6 +69,8 @@ func (b Being) Create(r *Relation) Reality {
 		Identity:      identity,
 		Purpose:       purpose,
 		Relationships: relationships,
+		Entrypoints:   entrypoints,
+		Mode:          mode,
 		Device:        device,
 	}
 }
@@ -75,6 +88,9 @@ func (b Being) Parse() string {
 	}
 	if b.Purpose != "" {
 		sb.WriteString("purpose: " + b.Purpose + "\n")
+	}
+	if len(b.Entrypoints) > 0 {
+		sb.WriteString("entrypoints: " + strings.Join(b.Entrypoints, ", ") + "\n")
 	}
 	if len(b.Relationships) > 0 {
 		sb.WriteString("peers you can address:\n")

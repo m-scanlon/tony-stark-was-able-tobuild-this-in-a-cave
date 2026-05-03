@@ -65,9 +65,10 @@ type BeingSnapshot struct {
 	Type     string          `json:"type"`
 	Identity string          `json:"identity"`
 	Purpose  string          `json:"purpose"`
-	Peers    []string        `json:"peers"`
-	Status   string          `json:"status"`
-	Device   string          `json:"device"`
+	Peers       []string        `json:"peers"`
+	Entrypoints []string        `json:"entrypoints"`
+	Status      string          `json:"status"`
+	Device      string          `json:"device"`
 	Layers   *LayersSnapshot `json:"layers,omitempty"`
 	Memories MemorySnapshot  `json:"memories"`
 }

@@ -102,6 +102,36 @@ func TestUniverseRealize(t *testing.T) {
 	t.Log(present)
 }
 
+func TestCLIRouting(t *testing.T) {
+	cli := &CLI{id: "linter", Realities: make(map[string]Reality)}
+	cli.Realities["being"] = Being{
+		id:            "linter",
+		name:          "linter",
+		Entrypoints:   []string{"echo"},
+		Relationships: []string{"skyra"},
+	}
+
+	r := &Relation{
+		Origin:    "skyra",
+		ID:        "linter",
+		Impulse:   "check this",
+		Parsers:   make(map[string]Parser),
+		Realities: map[string]Reality{"linter": cli},
+	}
+
+	cli.Realize(r)
+
+	if r.Origin != "linter" {
+		t.Errorf("expected Origin to be 'linter', got %q", r.Origin)
+	}
+	if r.ID != "skyra" {
+		t.Errorf("expected ID to be 'skyra' (route back to sender), got %q", r.ID)
+	}
+	if r.Impulse == "" {
+		t.Errorf("expected Impulse to contain output, got empty")
+	}
+}
+
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && searchString(s, substr)
 }

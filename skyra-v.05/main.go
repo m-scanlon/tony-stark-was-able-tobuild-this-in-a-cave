@@ -173,6 +173,16 @@ func bootstrap(thread *reality.NewThread, devices map[string]*reality.MacOS, com
 				user := (&reality.User{}).Create(ctx)
 				thread.Beings[name] = user
 				thread.Access[name] = true
+
+			case "cli":
+				cli := (&reality.CLI{}).Create(ctx)
+				thread.Beings[name] = cli
+				thread.Access[name] = false
+
+			case "agent":
+				agent := (&reality.Agent{}).Create(ctx)
+				thread.Beings[name] = agent
+				thread.Access[name] = false
 			}
 		}
 	}

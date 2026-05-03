@@ -67,6 +67,9 @@ func (s *Self) Realize(r *Relation) string {
 			if being.Relationships != nil {
 				snap.Peers = being.Relationships
 			}
+			if being.Entrypoints != nil {
+				snap.Entrypoints = being.Entrypoints
+			}
 			snap.Device = being.Device
 			snap.Memories = snapshotMemories(being.Home)
 			node.Children = append(node.Children, RealityNode{ID: s.id + "-being", Type: "Being", Children: []RealityNode{}})
@@ -113,37 +116,46 @@ func (s *Self) Realize(r *Relation) string {
 	}
 
 	outerParsers := r.Parsers
-	r.Parsers = make(map[string]Parser)
 
-	if think, ok := s.Realities["think"]; ok {
-		if t, ok := think.(*Think); ok {
-			if act, ok := s.Realities["act"]; ok {
-				if a, ok := act.(*Act); ok {
-					t.OuterOps = t.OuterOps[:0]
-					for name := range a.Operators {
-						t.OuterOps = append(t.OuterOps, name)
+	for {
+		r.Parsers = make(map[string]Parser)
+
+		if think, ok := s.Realities["think"]; ok {
+			if t, ok := think.(*Think); ok {
+				if act, ok := s.Realities["act"]; ok {
+					if a, ok := act.(*Act); ok {
+						t.OuterOps = t.OuterOps[:0]
+						for name := range a.Operators {
+							t.OuterOps = append(t.OuterOps, name)
+						}
 					}
 				}
 			}
+			debug.Log("[self]: firing think")
+			inner := think.Realize(r)
+			debug.Log("[self]: think returned:", inner)
+
+			r.Parsers = make(map[string]Parser)
+			r.Attach("inner", func() string { return inner })
 		}
-		debug.Log("[self]: firing think")
-		inner := think.Realize(r)
-		debug.Log("[self]: think returned:", inner)
 
-		r.Parsers = make(map[string]Parser)
-		r.Attach("inner", func() string { return inner })
-	}
+		if act, ok := s.Realities["act"]; ok {
+			debug.Log("[self]: firing act")
+			for name, parser := range outerParsers {
+				r.Attach(name, parser)
+			}
+			result := act.Realize(r)
+			debug.Log("[self]: act returned:", result)
 
-	if act, ok := s.Realities["act"]; ok {
-		debug.Log("[self]: firing act")
-		for name, parser := range outerParsers {
-			r.Attach(name, parser)
+			if r.ID == "_think" {
+				debug.Log("[self]: think-back, re-entering think with:", r.Impulse)
+				continue
+			}
+
+			r.Origin = s.id
+			return result
 		}
-		result := act.Realize(r)
-		debug.Log("[self]: act returned:", result)
-		r.Origin = s.id
-		return result
-	}
 
-	return ""
+		return ""
+	}
 }

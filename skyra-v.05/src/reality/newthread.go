@@ -250,41 +250,61 @@ func (t *NewThread) Grow(impulse string) string {
 	case "user":
 		created = (&User{}).Create(ctx)
 		t.Access[name] = true
+	case "cli":
+		created = (&CLI{}).Create(ctx)
+	case "agent":
+		created = (&Agent{}).Create(ctx)
 	default:
 		return "being: unknown type " + beingType
 	}
 
 	t.Beings[name] = created
 
-	var being Being
-	switch c := created.(type) {
-	case *Self:
-		if b, ok := c.Realities["being"].(Being); ok {
-			being = b
-		}
-	case *User:
-		if b, ok := c.Realities["being"].(Being); ok {
-			being = b
-		}
-	}
+	being := extractBeing(created)
 
 	for _, peerName := range being.Relationships {
 		if peer, ok := t.Beings[peerName]; ok {
-			switch p := peer.(type) {
-			case *Self:
-				if b, ok := p.Realities["being"].(Being); ok {
-					b.Relationships = append(b.Relationships, name)
-					p.Realities["being"] = b
-				}
-			case *User:
-				if b, ok := p.Realities["being"].(Being); ok {
-					b.Relationships = append(b.Relationships, name)
-					p.Realities["being"] = b
-				}
-			}
+			peerBeing := extractBeing(peer)
+			peerBeing.Relationships = append(peerBeing.Relationships, name)
+			setBeing(peer, peerBeing)
 		}
 	}
 
 	debug.Log("[thread]: created", name, "type:", beingType, "devices:", devicesRaw)
 	return "created " + name
+}
+
+func extractBeing(r Reality) Being {
+	switch c := r.(type) {
+	case *Self:
+		if b, ok := c.Realities["being"].(Being); ok {
+			return b
+		}
+	case *User:
+		if b, ok := c.Realities["being"].(Being); ok {
+			return b
+		}
+	case *CLI:
+		if b, ok := c.Realities["being"].(Being); ok {
+			return b
+		}
+	case *Agent:
+		if b, ok := c.Realities["being"].(Being); ok {
+			return b
+		}
+	}
+	return Being{}
+}
+
+func setBeing(r Reality, b Being) {
+	switch c := r.(type) {
+	case *Self:
+		c.Realities["being"] = b
+	case *User:
+		c.Realities["being"] = b
+	case *CLI:
+		c.Realities["being"] = b
+	case *Agent:
+		c.Realities["being"] = b
+	}
 }
