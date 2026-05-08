@@ -16,6 +16,7 @@ type Think struct {
 	OuterOps  []string
 	LLM       Reality
 	History   []ThoughtSection
+	Subscribe []string
 }
 
 type ThoughtSection struct {
@@ -36,6 +37,7 @@ func (t *Think) Create(r *Relation) Reality {
 	return &Think{
 		id:        "think",
 		Operators: make(map[string]Reality),
+		Subscribe: []string{"desk", "exchange", "conversation", "ref-context", "thread", "memory-context", "levels"},
 	}
 }
 
@@ -74,55 +76,41 @@ func (t *Think) Realize(r *Relation) string {
 	ops := t.collectOps(r)
 
 	var beingName string
+	var beingParser Parser
+	var peers []string
 	if being, ok := r.Realities["being"]; ok {
 		if b, ok := being.(Being); ok {
 			beingName = b.Name()
-			r.Attach("being", b.ParseInner)
+			beingParser = b.ParseInner
+			peers = b.Relationships
 		}
 	}
 	if beingName == "" {
 		beingName = "self"
 	}
 
+	peerSet := make(map[string]bool)
+	for _, p := range peers {
+		peerSet[p] = true
+	}
+
 	log := func(args ...any) { debug.Being(beingName, "inner", args...) }
 	r.Log = log
-
-	r.Attach("system", t.System)
-	outerOps := t.OuterOps
-	r.Attach("think-operators", func() string { return renderOpsWithOuter(ops, outerOps) })
-
-	if len(t.History) > 0 {
-		history := t.History
-		r.Attach("thought-history", func() string {
-			return renderThoughtHistory(history)
-		})
-	}
 
 	peer := r.Origin
 
 	originalImpulse := r.Impulse
 	var exchange []thinkEntry
+	scope := []string{peer}
 
 	for i := 0; i < thinkBudget; i++ {
 		log("[think]: pass", i)
 
 		r.Impulse = originalImpulse
-
 		remaining := thinkBudget - i
-		r.Attach("think-time", func() string {
-			return timePressure(remaining)
-		})
 
-		if remaining == 1 {
-			delete(r.Parsers, "think-operators")
-		}
-
-		ex := exchange
-		r.Attach("think-exchange", func() string {
-			return renderThinkExchange(ex)
-		})
-
-		result := t.LLM.Realize(r)
+		lr := t.present(r, beingParser, ops, exchange, remaining, scope)
+		result := t.LLM.Realize(lr)
 		log("[think]: llm returned →", result)
 
 		exchange = append(exchange, thinkEntry{
@@ -168,6 +156,12 @@ func (t *Think) Realize(r *Relation) string {
 			}
 			continue
 		}
+
+		if rels := parseRelationshipScope(result, peerSet); len(rels) > 0 {
+			log("[think]: scoping to", rels)
+			scope = rels
+			continue
+		}
 	}
 
 	log("[think]: budget exhausted")
@@ -175,6 +169,58 @@ func (t *Think) Realize(r *Relation) string {
 	t.recordThought(peer, last)
 	r.Impulse = originalImpulse
 	return last
+}
+
+func (t *Think) present(r *Relation, beingParser Parser, ops map[string]Reality, exchange []thinkEntry, remaining int, scope []string) *Relation {
+	lr := &Relation{
+		Impulse:   r.Impulse,
+		Parsers:   make(map[string]Parser),
+		Realities: r.Realities,
+		Log:       r.Log,
+	}
+
+	for _, key := range t.Subscribe {
+		if key == "desk" && len(scope) > 0 {
+			if desk, ok := r.Realities["desk"].(*Desk); ok && !desk.Empty() {
+				scoped := scope
+				lr.Attach("desk", func() string { return desk.ParseScoped(scoped) })
+			}
+			continue
+		}
+		if parser, ok := r.Parsers[key]; ok {
+			lr.Parsers[key] = parser
+		}
+	}
+
+	lr.Attach("system", t.System)
+
+	if beingParser != nil {
+		lr.Attach("being", beingParser)
+	}
+
+	if remaining > 1 {
+		outerOps := t.OuterOps
+		lr.Attach("think-operators", func() string { return renderOpsWithOuter(ops, outerOps) })
+	}
+
+	lr.Attach("think-time", func() string { return timePressure(remaining) })
+
+	if len(t.History) > 0 {
+		history := t.History
+		if len(scope) > 0 {
+			history = filterHistory(history, scope)
+		}
+		if len(history) > 0 {
+			lr.Attach("thought-history", func() string { return renderThoughtHistory(history) })
+		}
+	}
+
+	if len(exchange) > 0 {
+		ex := exchange
+		lr.Attach("think-exchange", func() string { return renderThinkExchange(ex) })
+	}
+
+	return lr
 }
 
 func (t *Think) recordThought(peer, thought string) {
@@ -259,11 +305,25 @@ func (t *Think) collectOps(r *Relation) map[string]Reality {
 	return ops
 }
 
+var opDescriptions = map[string]string{
+	"recall":   "query your memory by entity or keyword — use names, places, or concrete terms, not meta-questions. <recall><about>michael</about></recall> or <recall><about>harness persistence</about><type>understanding</type></recall>. if nothing specific matches, returns your most recent memories.",
+	"remember": "store a memory. <remember><type>trace|salience|tension|understanding</type><content>what to remember</content></remember>",
+	"plan":     "manage tasks. <plan><create-task><relationship>name</relationship><name>task name</name><description>what</description><validation>done when</validation></create-task></plan>. also: complete-task, drop-task, open-task, close-task, focus-task",
+	"skill":    "load a learned skill by name. <skill>skill name</skill>",
+	"browse":   "fetch a web page. <browse>url</browse>",
+	"search":   "search the web. <search>query</search>",
+	"bash":     "run a shell command. <bash>command</bash>. output is returned to you.",
+}
+
 func renderOps(ops map[string]Reality) string {
 	var sb strings.Builder
 	sb.WriteString("available operators:\n")
 	for name := range ops {
-		sb.WriteString("  <" + name + ">input</" + name + ">\n")
+		if desc, ok := opDescriptions[name]; ok {
+			sb.WriteString("  " + name + " — " + desc + "\n")
+		} else {
+			sb.WriteString("  <" + name + ">input</" + name + ">\n")
+		}
 	}
 	sb.WriteString("\nwhen done thinking: <surface-thought> your synthesis\n")
 	return sb.String()
@@ -273,7 +333,11 @@ func renderOpsWithOuter(ops map[string]Reality, outerOps []string) string {
 	var sb strings.Builder
 	sb.WriteString("available operators:\n")
 	for name := range ops {
-		sb.WriteString("  <" + name + ">input</" + name + ">\n")
+		if desc, ok := opDescriptions[name]; ok {
+			sb.WriteString("  " + name + " — " + desc + "\n")
+		} else {
+			sb.WriteString("  <" + name + ">input</" + name + ">\n")
+		}
 	}
 	if len(outerOps) > 0 {
 		sb.WriteString("\nouter layer operators (you cannot call these here):\n")
@@ -286,7 +350,38 @@ func renderOpsWithOuter(ops map[string]Reality, outerOps []string) string {
 }
 
 func (t *Think) System() string {
-	return "You are a being with two layers: an inner layer (this one) and an outer layer.\n\nThis is your inner layer — private thought. No one sees this. Reflect on what you've received. Consider what matters, what's missing, and what you actually think. Do not address anyone directly.\n\nYou have operators here (listed in your present) that only work in this layer. Use them to recall, remember, or process before you surface.\n\nYour outer layer can address any peer listed in your present. If someone asks you to talk to another being, you can — your outer layer handles that. Think about what you want to say and why, then surface it.\n\nIMPORTANT: Emit exactly one protocol per response — one operator OR one <surface-thought>. Never both. If you call an operator, wait for the result before doing anything else. You have multiple passes to think.\n\nWhen you emit <surface-thought>, you are releasing that thought to your outer layer, where you act and speak. No one else receives it. It is you telling yourself what you've concluded.\n\nDo not use the <> protocol here. That belongs to your outer layer."
+	return Preamble + "\n\nYou are a being with two layers: an inner layer (this one) and an outer layer.\n\nThis is your inner layer — private thought. No one sees this. Reflect on what you've received. Consider what matters, what's missing, and what you actually think. Do not address anyone directly.\n\nYou have operators here (listed in your present) that only work in this layer. Use them to recall, remember, or process before you surface.\n\nYour outer layer can address any peer listed in your present. If someone asks you to talk to another being, you can — your outer layer handles that. Think about what you want to say and why, then surface it.\n\nIMPORTANT: Emit exactly one protocol per response — one operator OR one <surface-thought>. Never both. If you call an operator, wait for the result before doing anything else. You have multiple passes to think.\n\nWhen you emit <surface-thought>, you are releasing that thought to your outer layer, where you act and speak. No one else receives it. It is you telling yourself what you've concluded.\n\nDo not use the <> protocol here. That belongs to your outer layer."
+}
+
+func parseRelationshipScope(response string, peers map[string]bool) []string {
+	rels := ParseResponse("", response)
+	if len(rels) == 0 {
+		return nil
+	}
+	var scope []string
+	for _, rel := range rels {
+		for _, name := range strings.Split(rel.ID, ",") {
+			name = strings.TrimSpace(name)
+			if peers[name] {
+				scope = append(scope, name)
+			}
+		}
+	}
+	return scope
+}
+
+func filterHistory(history []ThoughtSection, scope []string) []ThoughtSection {
+	scopeSet := make(map[string]bool)
+	for _, s := range scope {
+		scopeSet[s] = true
+	}
+	var filtered []ThoughtSection
+	for _, h := range history {
+		if scopeSet[h.Peer] {
+			filtered = append(filtered, h)
+		}
+	}
+	return filtered
 }
 
 func (t *Think) isOuterOp(response string) string {

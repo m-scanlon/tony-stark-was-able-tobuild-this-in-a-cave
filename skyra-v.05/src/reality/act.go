@@ -10,6 +10,7 @@ type Act struct {
 	id        string
 	Operators map[string]Reality
 	LLM       Reality
+	Subscribe []string
 }
 
 func (a *Act) ID() string { return a.id }
@@ -18,6 +19,7 @@ func (a *Act) Create(r *Relation) Reality {
 	return &Act{
 		id:        "act",
 		Operators: make(map[string]Reality),
+		Subscribe: []string{"desk", "being", "exchange", "conversation", "ref-context", "thread", "inner", "levels"},
 	}
 }
 
@@ -41,13 +43,12 @@ func (a *Act) Realize(r *Relation) string {
 
 	a.collectOps(r)
 
-	r.Attach("system", a.System)
-
 	var beingName string
+	var beingParser Parser
 	if being, ok := r.Realities["being"]; ok {
 		if b, ok := being.(Being); ok {
 			beingName = b.Name()
-			r.Attach("being", b.Parse)
+			beingParser = b.Parse
 		}
 	}
 	if beingName == "" {
@@ -57,12 +58,11 @@ func (a *Act) Realize(r *Relation) string {
 	log := func(args ...any) { debug.Being(beingName, "outer", args...) }
 	r.Log = log
 
-
+	var synthesis string
 	if innerParser, ok := r.Parsers["inner"]; ok {
 		raw := innerParser()
-		synthesis := stripSurface(raw)
+		synthesis = stripSurface(raw)
 		log("[act]: synthesis →", synthesis)
-		r.Attach("inner", func() string { return "your inner thought: " + synthesis + "\n" })
 	}
 
 	if a.LLM == nil {
@@ -70,9 +70,12 @@ func (a *Act) Realize(r *Relation) string {
 		return ""
 	}
 
+	var warning string
 	for attempt := 0; attempt < 3; attempt++ {
 		log("[act]: calling llm, attempt", attempt)
-		result := a.LLM.Realize(r)
+
+		lr := a.present(r, beingParser, synthesis, warning)
+		result := a.LLM.Realize(lr)
 		log("[act]: response →", result)
 
 		if thought, ok := parseThinkBack(result); ok {
@@ -93,22 +96,19 @@ func (a *Act) Realize(r *Relation) string {
 		}
 
 		if len(relations) == 0 {
-			warning := "WARNING: your response did not follow the protocol. You must use: <target>message</target>. Try again.\n"
+			warning = "WARNING: your response did not follow the protocol. You must use: <target>message</target>. Try again.\n"
 			log("[act]: protocol violation, retrying")
-			r.Attach("act-warning", func() string { return warning })
 			r.Impulse = result
 			continue
 		}
 
 		if selfRoute {
-			warning := "WARNING: you addressed yourself. You cannot route messages to yourself. Address a peer instead. Try again.\n"
+			warning = "WARNING: you addressed yourself. You cannot route messages to yourself. Address a peer instead. Try again.\n"
 			log("[act]: self-route detected, retrying")
-			r.Attach("act-warning", func() string { return warning })
 			r.Impulse = result
 			continue
 		}
 
-		delete(r.Parsers, "act-warning")
 		r.ID = relations[0].ID
 		r.Impulse = relations[0].Impulse
 		r.Origin = ""
@@ -118,6 +118,40 @@ func (a *Act) Realize(r *Relation) string {
 	log("[act]: exhausted retries")
 	r.Origin = ""
 	return r.Impulse
+}
+
+func (a *Act) present(r *Relation, beingParser Parser, synthesis, warning string) *Relation {
+	lr := &Relation{
+		Impulse:   r.Impulse,
+		Parsers:   make(map[string]Parser),
+		Realities: r.Realities,
+		Log:       r.Log,
+	}
+
+	for _, key := range a.Subscribe {
+		if key == "inner" {
+			continue
+		}
+		if parser, ok := r.Parsers[key]; ok {
+			lr.Parsers[key] = parser
+		}
+	}
+
+	lr.Attach("system", a.System)
+
+	if beingParser != nil {
+		lr.Attach("being", beingParser)
+	}
+
+	if synthesis != "" {
+		lr.Attach("inner", func() string { return "your inner thought: " + synthesis + "\n" })
+	}
+
+	if warning != "" {
+		lr.Attach("act-warning", func() string { return warning })
+	}
+
+	return lr
 }
 
 func parseThinkBack(response string) (string, bool) {
@@ -158,5 +192,5 @@ func (a *Act) collectOps(r *Relation) {
 }
 
 func (a *Act) System() string {
-	return "You are a being with two layers: an inner layer and an outer layer (this one).\n\nThis is your outer layer — where you act and speak. Your inner layer has already processed and given you a thought (shown in your present). Now you respond.\n\nPROTOCOL\nEvery response is exactly one message wrapped in a tag named after the target:\n  <target>message</target>\n\nExamples:\n  <michael>hello, what's on your mind?</michael>\n  <builder>can you check the deployment?</builder>\n\nOne tag per response. The tag name is who you're talking to.\n\nTHINK BACK\nIf you receive a thought from your inner layer and you're not ready to speak, you can return it:\n  <think>what you want to sit with longer</think>\n\nThis sends it back to your inner layer for another round of thought. Your thinking budget resets. Use this when the thought needs more time — not because you can't answer, but because you're not done receiving it.\n\nCONTEXT CROSSING\nWhen you leave a conversation to talk to someone else, you MUST carry context using <ref>. Without it, the system will block your message.\n\n  <ref>peer:START-END</ref>\n\nPlace it inside your message tag. This brings entries START through END from your exchange with peer into the new conversation as private context.\n\nExample:\n  <louise>hey, wanted to talk <ref>michael:0-3</ref></louise>\n\nThe numbers refer to entry indices in your current exchange (shown in your present). Choose the range that gives the other being enough context to understand why you're reaching out.\n\nIMPORTANT: To talk to a peer, emit a message to them directly. Do NOT say \"I will go talk to them\" — that doesn't do anything. Actually address them.\n\nDo not use operators like <recall> or <remember> here. Those belong to your inner layer.\n\nNever start your response with your own name. No asterisks, no roleplay, no action narration."
+	return Preamble + "\n\nYou are a being with two layers: an inner layer and an outer layer (this one).\n\nThis is your outer layer — where you act and speak. Your inner layer has already processed and given you a thought (shown in your present). Now you respond.\n\nPROTOCOL\nEvery response is exactly one message wrapped in a tag named after the target:\n  <target>message</target>\n\nExamples:\n  <michael>hello, what's on your mind?</michael>\n  <builder>can you check the deployment?</builder>\n\nOne tag per response. The tag name is who you're talking to.\n\nTHINK BACK\nIf you receive a thought from your inner layer and you're not ready to speak, you can return it:\n  <think>what you want to sit with longer</think>\n\nThis sends it back to your inner layer for another round of thought. Your thinking budget resets. Use this when the thought needs more time — not because you can't answer, but because you're not done receiving it.\n\nCONTEXT CROSSING\nWhen you leave a conversation to talk to someone else, you MUST carry context using <ref>. Without it, the system will block your message.\n\n  <ref>peer:START-END</ref>\n\nPlace it inside your message tag. This brings entries START through END from your exchange with peer into the new conversation as private context.\n\nExample:\n  <louise>hey, wanted to talk <ref>michael:0-3</ref></louise>\n\nThe numbers refer to entry indices in your current exchange (shown in your present). Choose the range that gives the other being enough context to understand why you're reaching out.\n\nIMPORTANT: To talk to a peer, emit a message to them directly. Do NOT say \"I will go talk to them\" — that doesn't do anything. Actually address them.\n\nDo not use operators like <recall> or <remember> here. Those belong to your inner layer.\n\nNever start your response with your own name. No asterisks, no roleplay, no action narration."
 }

@@ -4,7 +4,7 @@
 
 A physics engine is a better runtime for an agent than a pipeline.
 
-Pipelines produce output. Physics produces development. Every existing agentic framework — LangChain, CrewAI, AutoGen, Hermes, OpenClaw — is an orchestration system: it coordinates behavior by assembling prompts, calling models, parsing responses, and routing results. The agent is a function that receives input and produces output. There is no world. There is no interiority. There is no development over time.
+Pipelines produce output. Physics produces development. Most agentic frameworks — LangChain, CrewAI, AutoGen, Hermes, OpenClaw — are orchestration systems: they coordinate behavior by assembling prompts, calling models, parsing responses, and routing results. The agent is usually treated as a function that receives input and produces output. There is little sense of a world, persistent interiority, or development over time.
 
 Skyra inverts this. Instead of engineering agent behavior from the outside, Skyra creates an environment with invisible laws — physics — and places beings inside it. Behavior emerges from living inside those laws. The agent doesn't execute a pipeline. It inhabits a world.
 
@@ -20,7 +20,7 @@ type Reality interface {
 }
 ```
 
-A being is a Reality. A device is a Reality. A thread is a Reality. An LLM provider is a Reality. The world itself is a Reality. There is no second type system, no special cases, no orchestrator. Every node creates itself from a Relation and realizes itself when a Relation passes through it.
+A being is a Reality. A device is a Reality. A thread is a Reality. An LLM provider is a Reality. The world itself is a Reality. There is no second domain type system and no external orchestration DSL. Routing and coordination are themselves implemented as Realities, especially `NewThread` and `Exchange`. Every node creates itself from a Relation and realizes itself when a Relation passes through it.
 
 ## The Relation
 
@@ -39,7 +39,7 @@ type Relation struct {
 }
 ```
 
-A Relation enters the world empty. As it descends through layers — Thread, Exchange, Being, Think, Act — each layer attaches a Parser to it. A Parser is a function that renders that layer's contribution to the being's present. By the time the Relation reaches the inference provider at the bottom, its Parsers map contains everything the being should experience. The provider concatenates them. That's the present.
+A Relation enters the world with an origin, an impulse, and sometimes a target. As it descends through layers — Thread, Exchange, Being, Think, Act — each layer attaches a Parser to it. A Parser is a function that renders that layer's contribution to the being's present. By the time the Relation reaches the inference provider at the bottom, its Parsers map contains everything the being should experience. The provider concatenates them. That's the present.
 
 No single layer builds the context. The journey builds it.
 
@@ -48,11 +48,11 @@ No single layer builds the context. The journey builds it.
 The system resolves through recursive descent. A Relation enters at the top (Universe) and descends through each Reality until it reaches a terminal node (the inference provider or a device). Each layer the Relation passes through:
 
 1. Reads the Relation
-2. Updates its own state (Thread records an entry, Exchange logs the message)
+2. Updates its own state (Thread tracks membership and edges, Exchange logs message entries)
 3. Attaches its Parser to the Relation (adding its context to the eventual present)
 4. Passes the Relation deeper
 
-The recursion terminates at the provider — the LLM call. The response then travels back up, parsed at each layer (Act parses the tag protocol, NewThread routes the response as a new Relation, which descends again toward its target).
+The descent terminates at a terminal Reality — usually the LLM provider, a user device, or a process. The response then travels back up, parsed at each layer (Act parses the tag protocol, NewThread routes the response as a new Relation, which descends again toward its target).
 
 This means the system is a recursive loop:
 ```
@@ -76,7 +76,7 @@ Universe → NewThread → Exchange → Being (Self) → Think → Act → Provi
 ```
 
 ### Universe
-The top-level Reality. Holds the thread gate, economics, and devices. On every resolve, collects the full state of the world as JSON and broadcasts it via WebSocket. The world is observable from outside without the beings knowing they're being observed.
+The top-level Reality. Holds the thread gate and optional economics; the current device registry is owned below the thread/device layer. On every resolve, collects the full state of the world as JSON and broadcasts it via WebSocket. The world is observable from outside without the beings knowing they're being observed.
 
 ### NewThread
 The routing loop. Manages the set of beings, their access permissions, active threads, and the continuous cycle of: receive impulse → route to being → receive response → route response as new impulse. The loop runs until a Relation returns to its origin (a user device) and waits for new input.
@@ -103,7 +103,7 @@ Every Self being has an inner layer (Think) and an outer layer (Act). This is no
 Private thought. No one sees this — not other beings, not the user, only the debug logs.
 
 - 5-pass budget per invocation
-- Operators available: `recall` (search memory), `remember` (write memory), `skill` (load a skill file)
+- Operators available: `recall` (search memory), `remember` (write memory), `skill` (load a skill file), plus wired external operators such as `browse` and `search`
 - One protocol emission per pass: either an operator call or `<surface-thought>`
 - Time pressure increases as budget depletes
 - Thought history persists across exchanges — the being remembers what it thought before
@@ -124,17 +124,17 @@ Public speech. The being addresses a peer using the tag protocol: `<target>messa
 
 If the outer layer emits `<think>content</think>` instead of addressing a peer, the system returns the being to its inner layer with a fresh budget. The being can retreat from action back into thought. This treats thinking not as preprocessing, but as something you might need to return to after you've tried to speak and realized you weren't ready.
 
-No other system implements this.
+This is one of Skyra's distinctive runtime moves: thinking is not just preprocessing; it is a state the being can return to.
 
 ## Physics
 
-Physics are realities that live in every world's hashmap, fire on every Relation that passes through, and are invisible to the beings that inhabit the world. A being never addresses a physics reality. It never sees one in its peers. It doesn't know they exist. But every Relation carries the accumulated weight of every physics layer it passed through.
+Physics are realities that sit in the world's path, fire on Relations that pass through them, and are invisible to the beings that inhabit the world. A being should not address a physics reality as a peer. It should not see one in its relationship list. But every Relation carries the accumulated weight of the physics layers it passed through. In v.05 this is partly implemented: Thread and Exchange are active structural physics; Economics exists as state but is not yet enforced in the descent.
 
 ### Thread (implemented)
-Records what happened — who said what, in what order. Creates threads, tracks members, builds the graph of who has spoken to whom. Fields applied: thread ID, exchange history, active exchanges.
+Tracks the conversation topology — who has participated in a thread and who has spoken to whom. Creates threads, tracks members, and builds the graph of edges. Context attached: thread ID, creator, status, and members. Message history and active exchanges come from `Exchange`.
 
 ### Economics (wired, not yet applied)
-Four budgets: token (finite cognition per turn), memory (finite active window), thread (max open conversations), reproduction (creating new beings costs accumulated experience). Fields applied: tokens remaining, memory pressure, open thread count.
+Target shape: four budgets — token (finite cognition per turn), memory (finite active window), thread (max open conversations), reproduction (creating new beings costs accumulated experience). Intended fields: tokens remaining, memory pressure, open thread count. Current implementation can expose economics fields during collection, but does not yet enforce them during normal descent.
 
 ### Salience (designed, not yet implemented)
 Ambient semantic matching. On every think pass, the current thought is compared against peer identities and skill descriptions via embedding similarity. Only relevant peers and skills surface into the being's present. The being doesn't search — things come to mind. This is not retrieval. It is attention shaped by the world.
@@ -184,7 +184,7 @@ This means:
 
 ## Self-Extension
 
-Beings can create new beings at runtime via the `grow` command. A being generates a genome line, the system parses it, creates the Reality, wires it into the world. The new being gets the full stack — cognition layers, memory, operators, exchange access.
+Beings can create new beings at runtime via the `grow` / `being` command. A being generates a genome-like declaration, the system parses it, creates the Reality, wires it into the world. The new being gets the full stack — cognition layers, memory, operators, and exchange access according to its type.
 
 Constraints:
 - A being cannot modify physics (it is bound to its world's laws)
@@ -200,7 +200,7 @@ Constraints:
 | Multi-agent incoherence | Exchange enforces continuity; ref crossing prevents dissociation |
 | Skills don't transfer | Salience matches on thought content, not task type |
 | No development over time | Physics produce emergent behavior; think history persists; memory accumulates |
-| Orchestration complexity | No orchestrator — the world routes through physics, beings don't coordinate externally |
+| Orchestration complexity | No separate orchestration layer — routing is part of the world model, and beings coordinate by addressing peers |
 | Scaling to many agents | Beings don't pay each other's context cost — 50 beings, each sees only its own present |
 
 ## Implementation
@@ -213,9 +213,38 @@ Constraints:
 - Logging: per-being, per-layer (system.log, {being}/inner.log, {being}/outer.log)
 - External agents: subprocess invocation with JSON output and session persistence
 
+## Open Questions
+
+### Middle Layers
+
+The top and bottom of the stack feel stable:
+
+- **Universe → Thread** — solid. The world holds threads, threads own the routing loop. This won't change.
+- **Think → Act → Provider** — solid. Two-layer cognition, think-back, the tag protocol. This has survived every feature so far.
+
+Everything between Thread and Think is not locked. Exchange, Being types, how a Relation gets from the routing loop to cognition — these layers work but they haven't been stress-tested enough to call them architecture. They might collapse, split, or reorganize as more features land. Treat the middle layers as provisional through v.06.
+
+### Error Handling
+
+Not yet figured out. Current state:
+
+- `Error` implements `Reality` — an error is a reality that can be placed on a Relation (used in exchange for ref crossing failures). This is the right instinct.
+- But most errors are handled ad hoc: the LLM provider prints to stdout, browse/search log and return error strings, filesystem errors get swallowed or logged.
+- No unified strategy for: how errors propagate up the descent, whether errors are visible to beings or only to the system, what happens when a mid-descent layer fails, whether errors should be physics (invisible) or direct responses.
+
+This needs design before the architecture can be called stable.
+
+### Parser Ordering
+
+The architecture says the path builds the present, but the current implementation stores parsers in a Go map. That means parser execution order is not deterministic. If ordering matters semantically, the Relation needs an ordered parser stack or explicit render phases. Otherwise two descents through the same path can produce the same ingredients in different orders.
+
+### Termination
+
+The routing loop intentionally allows one user impulse to trigger multiple descents, but there is no explicit hop budget or cycle policy yet. If two beings keep addressing each other, the world can continue until a terminal device is reached or an empty response breaks the loop. That may be desirable, but it should become a named law rather than an accidental property.
+
 ## Status (v.05 — May 2026)
 
-**Working:** Reality interface, genome bootstrap, two-layer cognition, think-back, exchange continuity, ref crossing, multi-party threading, universe collecting, WebSocket broadcast, grow, recall/remember/skill operators, Agent type (Claude Code integration with session persistence).
+**Working:** Reality interface, genome bootstrap, two-layer cognition, think-back, exchange continuity, ref crossing, multi-party threading, universe collecting, WebSocket broadcast, grow, recall/remember/skill/browse/search operators, Agent type (Claude Code integration with session persistence).
 
 **Wired but inactive:** Economics.
 

@@ -15,7 +15,7 @@ Self world
     → LLM world → inner thought
   → inner thought attaches to relation as "inner" parser
   → Act plane
-    → Act operators (function calls, tool use, external invariants)
+    → Act operators (function calls, tool use, external ports)
     → LLM world → outward action
 ```
 
@@ -47,7 +47,7 @@ Act gets the same operator registry pattern. When Act.Realize fires:
 
 Act operators (scaffolding only):
 - **Function calls / tool use** — stub: no-op.
-- **External invariants** — stub: no-op.
+- **External ports** — stub: no-op.
 
 ### 3. LLM world moves off Think/Act
 

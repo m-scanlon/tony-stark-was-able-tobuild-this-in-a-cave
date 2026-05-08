@@ -13,6 +13,7 @@ type NewThread struct {
 	Access    map[string]bool
 	Threads   map[string]*Thread
 	Exchange  *Exchange
+	Levels    *Levels
 	Devices   map[string]Reality
 	ThinkOps  map[string]Reality
 	ActOps    map[string]Reality
@@ -46,6 +47,9 @@ func (t *NewThread) Create(r *Relation) Reality {
 func (t *NewThread) Realize(r *Relation) string {
 	if r.Collecting {
 		t.Exchange.Realize(r)
+		if t.Levels != nil {
+			t.Levels.Realize(r)
+		}
 
 		root := RealityNode{ID: "newthread", Type: "NewThread", Children: []RealityNode{}}
 		if node, ok := r.Exports["node:exchange"]; ok {
@@ -124,9 +128,27 @@ func (t *NewThread) Realize(r *Relation) string {
 					continue
 				}
 			}
+			if op == "accept" || op == "reject" {
+				msg := t.AcceptReject(op, rest, r.Origin)
+				debug.Log("[thread]:", op, "→", msg)
+				if user, ok := t.Beings[r.Origin]; ok {
+					r.Impulse = msg
+					user.Realize(r)
+					r.ID = ""
+					r.Parsers = make(map[string]Parser)
+					continue
+				}
+			}
 		}
 
 		r.Attach("thread", th.Parse)
+
+		if t.Levels != nil {
+			levels := t.Levels
+			self := r.ID
+			peer := r.Origin
+			r.Attach("levels", func() string { return levels.ParseFor(self, peer) })
+		}
 
 		if r.Realities == nil {
 			r.Realities = make(map[string]Reality)
@@ -217,6 +239,48 @@ func (th *Thread) Parse() string {
 		sb.WriteString("  " + member + "\n")
 	}
 	return sb.String()
+}
+
+func (t *NewThread) AcceptReject(op, rest, origin string) string {
+	tokens := strings.Fields(rest)
+	if len(tokens) < 2 {
+		return op + ": usage: " + op + " <being> <task name>"
+	}
+	beingName := tokens[0]
+	taskName := strings.Join(tokens[1:], " ")
+
+	being, ok := t.Beings[beingName]
+	if !ok {
+		return op + ": being " + beingName + " not found"
+	}
+
+	self, ok := being.(*Self)
+	if !ok {
+		return op + ": " + beingName + " has no desk"
+	}
+
+	desk, ok := self.Realities["desk"].(*Desk)
+	if !ok {
+		return op + ": " + beingName + " has no desk"
+	}
+
+	relationship := origin
+
+	switch op {
+	case "accept":
+		if err := desk.AcceptTask(relationship, taskName, origin); err != nil {
+			return "accept: " + err.Error()
+		}
+		debug.Log("[thread]: accepted", taskName, "on", beingName, "by", origin)
+		return "accepted: " + taskName + " [" + beingName + "]"
+	case "reject":
+		if err := desk.RejectTask(relationship, taskName); err != nil {
+			return "reject: " + err.Error()
+		}
+		debug.Log("[thread]: rejected", taskName, "on", beingName, "by", origin)
+		return "rejected: " + taskName + " [" + beingName + "] — reopened"
+	}
+	return ""
 }
 
 func (t *NewThread) Grow(impulse string) string {

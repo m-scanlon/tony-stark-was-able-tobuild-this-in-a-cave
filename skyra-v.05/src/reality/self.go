@@ -33,15 +33,25 @@ func (s *Self) Create(r *Relation) Reality {
 		}
 	}
 
+	desk := (&Desk{}).Create(&Relation{}).(*Desk)
+	desk.Owner = r.ID
+	self.Realities["desk"] = desk
+
 	if llm != nil {
-		think := &Think{
-			Operators: make(map[string]Reality),
-			LLM:      llm,
+		mem := NewMemory(r.ID)
+		if being, ok := self.Realities["being"].(Being); ok {
+			mem.HomeDir = being.Home
+			mem.Load()
 		}
-		act := &Act{
-			Operators: make(map[string]Reality),
-			LLM:      llm,
-		}
+		self.Realities["memory"] = mem
+
+		ctx := &Context{id: "context", Owner: r.ID, Memory: mem, LLM: llm, Warm: make(map[string][]*MemNode)}
+		self.Realities["context"] = ctx
+
+		think := (&Think{}).Create(&Relation{}).(*Think)
+		think.LLM = llm
+		act := (&Act{}).Create(&Relation{}).(*Act)
+		act.LLM = llm
 		self.Realities["think"] = think
 		self.Realities["act"] = act
 	}
@@ -70,6 +80,15 @@ func (s *Self) Realize(r *Relation) string {
 			snap.Device = being.Device
 			snap.Memories = snapshotMemories(being.Home)
 			node.Children = append(node.Children, RealityNode{ID: s.id + "-being", Type: "Being", Children: []RealityNode{}})
+		}
+
+		if desk, ok := s.Realities["desk"].(*Desk); ok {
+			desk.Realize(r)
+			if ds, ok := r.Exports["desk:"+s.id]; ok {
+				dsnap := ds.(DeskSnapshot)
+				snap.Desk = &dsnap
+				delete(r.Exports, "desk:"+s.id)
+			}
 		}
 
 		layers := &LayersSnapshot{}
@@ -102,21 +121,40 @@ func (s *Self) Realize(r *Relation) string {
 		return ""
 	}
 
-	debug.Log("[self]: realizing", s.id)
+	log := func(args ...any) { debug.Being(s.id, "self", args...) }
+	log("[self]: realizing, origin:", r.Origin, "impulse:", truncate(r.Impulse, 60))
+
+	if r.Realities == nil {
+		r.Realities = make(map[string]Reality)
+	}
 
 	if being, ok := s.Realities["being"]; ok {
-		debug.Log("[self]: passing being to relation")
-		if r.Realities == nil {
-			r.Realities = make(map[string]Reality)
-		}
 		r.Realities["being"] = being
 	}
 
-	outerParsers := r.Parsers
+	if mem, ok := s.Realities["memory"]; ok {
+		r.Realities["memory"] = mem
+	}
+
+	if ctx, ok := s.Realities["context"]; ok {
+		r.Realities["context"] = ctx
+		if c, ok := ctx.(*Context); ok {
+			relationship := r.Origin
+			c.Heat(relationship)
+			parsed := c.Parse(relationship)
+			if parsed != "" {
+				log("[self]: memory context warm for", relationship)
+				r.Attach("memory-context", func() string { return parsed })
+			}
+		}
+	}
+
+	if desk, ok := s.Realities["desk"]; ok {
+		r.Realities["desk"] = desk
+		desk.Realize(r)
+	}
 
 	for {
-		r.Parsers = make(map[string]Parser)
-
 		if think, ok := s.Realities["think"]; ok {
 			if t, ok := think.(*Think); ok {
 				t.OuterOps = t.OuterOps[:0]
@@ -135,24 +173,20 @@ func (s *Self) Realize(r *Relation) string {
 					}
 				}
 			}
-			debug.Log("[self]: firing think")
+			log("[self]: firing think")
 			inner := think.Realize(r)
-			debug.Log("[self]: think returned:", inner)
+			log("[self]: think →", truncate(inner, 80))
 
-			r.Parsers = make(map[string]Parser)
 			r.Attach("inner", func() string { return inner })
 		}
 
 		if act, ok := s.Realities["act"]; ok {
-			debug.Log("[self]: firing act")
-			for name, parser := range outerParsers {
-				r.Attach(name, parser)
-			}
+			log("[self]: firing act")
 			result := act.Realize(r)
-			debug.Log("[self]: act returned:", result)
+			log("[self]: act →", truncate(result, 80))
 
 			if r.ID == "_think" {
-				debug.Log("[self]: think-back, re-entering think with:", r.Impulse)
+				log("[self]: think-back, re-entering")
 				continue
 			}
 

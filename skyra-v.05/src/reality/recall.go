@@ -1,10 +1,6 @@
 package reality
 
-import (
-	"os"
-	"path/filepath"
-	"strings"
-)
+import "strings"
 
 type Recall struct {
 	id string
@@ -17,67 +13,55 @@ func (rc *Recall) Create(r *Relation) Reality {
 }
 
 func (rc *Recall) Realize(r *Relation) string {
-	if r.Log != nil {
-		r.Log("[recall]: searching memories")
+	impulse := strings.TrimSpace(r.Impulse)
+	if impulse == "" {
+		return "no recall query"
 	}
 
-	being, ok := r.Realities["being"]
-	if !ok {
+	ctx := findContext(r)
+	if ctx == nil {
 		if r.Log != nil {
-			r.Log("[recall]: no being on relation")
+			r.Log("[recall]: no context on relation")
 		}
 		return "no memories"
 	}
-	b, ok := being.(Being)
-	if !ok {
-		return "no memories"
+
+	query := impulse
+	if q, err := ExtractTag(impulse, "about"); err == nil {
+		query = q
 	}
 
-	dir := filepath.Join(b.Home, "memories")
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		if r.Log != nil {
-			r.Log("[recall]: no memories directory")
-		}
-		return "no memories yet"
+	relationship := r.Origin
+	if rel, err := ExtractTag(impulse, "relationship"); err == nil {
+		relationship = rel
 	}
 
-	if len(entries) == 0 {
-		return "no memories yet"
-	}
-
-	query := strings.ToLower(strings.TrimSpace(r.Impulse))
-
-	var matches []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		data, err := os.ReadFile(filepath.Join(dir, entry.Name()))
-		if err != nil {
-			continue
-		}
-		content := string(data)
-		if query == "" || strings.Contains(strings.ToLower(content), query) {
-			matches = append(matches, content)
-		}
-	}
-
-	if len(matches) == 0 {
-		if r.Log != nil {
-			r.Log("[recall]: no matches for", query)
-		}
-		return "no relevant memories"
-	}
-
-	var sb strings.Builder
-	sb.WriteString("memories:\n")
-	for _, m := range matches {
-		sb.WriteString("- " + m + "\n")
+	artifactType := ""
+	if t, err := ExtractTag(impulse, "type"); err == nil {
+		artifactType = t
 	}
 
 	if r.Log != nil {
-		r.Log("[recall]: found", len(matches), "memories")
+		r.Log("[recall]: query:", query, "relationship:", relationship, "type:", artifactType)
 	}
-	return sb.String()
+
+	result := ctx.Retrieve(query, relationship, artifactType)
+
+	if r.Log != nil {
+		r.Log("[recall]: →", truncate(result, 80))
+	}
+
+	return result
+}
+
+func findMemory(r *Relation) *Memory {
+	if r.Realities == nil {
+		return nil
+	}
+	if m, ok := r.Realities["memory"]; ok {
+		if mem, ok := m.(*Memory); ok {
+			return mem
+		}
+	}
+	return nil
 }

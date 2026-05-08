@@ -70,7 +70,9 @@ type BeingSnapshot struct {
 	Status      string          `json:"status"`
 	Device      string          `json:"device"`
 	Layers   *LayersSnapshot `json:"layers,omitempty"`
+	Desk     *DeskSnapshot   `json:"desk,omitempty"`
 	Memories MemorySnapshot  `json:"memories"`
+	Level    *LevelSnapshot  `json:"level,omitempty"`
 }
 
 type LayersSnapshot struct {
@@ -92,6 +94,28 @@ type ThoughtSnapshot struct {
 
 type ActSnapshot struct {
 	Operators []string `json:"operators"`
+}
+
+type LevelSnapshot struct {
+	XP    int `json:"xp"`
+	Level int `json:"level"`
+	Next  int `json:"next"`
+}
+
+type DeskSnapshot struct {
+	Tasks map[string][]TaskSnapshot `json:"tasks"`
+	Views map[string]string         `json:"views"`
+}
+
+type TaskSnapshot struct {
+	Name        string         `json:"name"`
+	Description string         `json:"description,omitempty"`
+	Assumptions []string       `json:"assumptions,omitempty"`
+	Commands    []string       `json:"commands,omitempty"`
+	Validation  string         `json:"validation,omitempty"`
+	AcceptedBy  string         `json:"accepted_by,omitempty"`
+	State       string         `json:"state"`
+	Items       []TaskSnapshot `json:"items,omitempty"`
 }
 
 type MemorySnapshot struct {
@@ -177,6 +201,15 @@ func assembleState(exports map[string]any) UniverseState {
 	for i := range u.Beings {
 		if activeBeings[u.Beings[i].Name] {
 			u.Beings[i].Status = "active"
+		}
+	}
+
+	if lvls, ok := exports["levels"]; ok {
+		levels := lvls.(map[string]LevelSnapshot)
+		for i := range u.Beings {
+			if snap, ok := levels[u.Beings[i].Name]; ok {
+				u.Beings[i].Level = &snap
+			}
 		}
 	}
 

@@ -31,12 +31,14 @@ func main() {
 	components := make(map[string]reality.Reality)
 	llmWires := make(map[string]string)
 
-	exchange := &reality.Exchange{Exchanges: make(map[string]*reality.Conversation)}
+	levels := (&reality.Levels{}).Create(&reality.Relation{}).(*reality.Levels)
+	exchange := &reality.Exchange{Exchanges: make(map[string]*reality.Conversation), Levels: levels}
 	thread := &reality.NewThread{
 		Beings:   make(map[string]reality.Reality),
 		Access:   map[string]bool{"michael": true},
 		Threads:  make(map[string]*reality.Thread),
 		Exchange: exchange,
+		Levels:   levels,
 		Devices:  make(map[string]reality.Reality),
 		ThinkOps: map[string]reality.Reality{
 			"recall":   &reality.Recall{},
@@ -44,10 +46,9 @@ func main() {
 			"skill":    &reality.Skill{},
 			"browse":   &reality.Browse{},
 			"search":   &reality.Search{},
+			"plan":     &reality.Plan{},
 		},
-		ActOps: map[string]reality.Reality{
-			"plan": &reality.Plan{},
-		},
+		ActOps: map[string]reality.Reality{},
 	}
 
 	if err := bootstrap(thread, devices, components, llmWires); err != nil {
@@ -176,6 +177,20 @@ func bootstrap(thread *reality.NewThread, devices map[string]*reality.MacOS, com
 			switch beingType {
 			case "llm":
 				self := (&reality.Self{}).Create(ctx)
+				opsRaw, _ := reality.Extract(impulse, "~operators", "being")
+				if opsRaw != "" {
+					if s, ok := self.(*reality.Self); ok {
+						if think, ok := s.Realities["think"].(*reality.Think); ok {
+							for _, opName := range strings.Split(opsRaw, ",") {
+								opName = strings.TrimSpace(opName)
+								switch opName {
+								case "bash":
+									think.Operators["bash"] = (&reality.Bash{}).Create(&reality.Relation{})
+								}
+							}
+						}
+					}
+				}
 				thread.Beings[name] = self
 				thread.Access[name] = false
 
@@ -192,6 +207,18 @@ func bootstrap(thread *reality.NewThread, devices map[string]*reality.MacOS, com
 			case "agent":
 				agent := (&reality.Agent{}).Create(ctx)
 				thread.Beings[name] = agent
+				thread.Access[name] = false
+
+			case "process":
+				entrypoint, _ := reality.Extract(impulse, "~entrypoints", "being")
+				parts := strings.Split(entrypoint, ",")
+				proc := &reality.Process{}
+				proc = proc.Create(&reality.Relation{ID: name}).(*reality.Process)
+				proc.Command = parts[0]
+				if len(parts) > 1 {
+					proc.Args = parts[1:]
+				}
+				thread.Beings[name] = proc
 				thread.Access[name] = false
 			}
 		}

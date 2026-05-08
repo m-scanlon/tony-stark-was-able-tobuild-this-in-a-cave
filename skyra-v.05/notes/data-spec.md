@@ -152,7 +152,7 @@ Currently Economics exists but isn't wired into the main loop. When it is, this 
 
 Source: the recursive composition of all Realities in the system
 
-The thread graph shows relationships (who talked to who). The reality graph shows structure (what contains what). This is the actual shape of the universe — how realities nest inside each other, all the way down to invariants.
+The thread graph shows relationships (who talked to who). The reality graph shows structure (what contains what). This is the actual shape of the universe — how realities nest inside each other, all the way down to ports.
 
 ```
 reality_graph {

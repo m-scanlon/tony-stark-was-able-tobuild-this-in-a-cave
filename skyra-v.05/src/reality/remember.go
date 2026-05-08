@@ -1,12 +1,6 @@
 package reality
 
-import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
-)
+import "strings"
 
 type Remember struct {
 	id string
@@ -19,45 +13,50 @@ func (rm *Remember) Create(r *Relation) Reality {
 }
 
 func (rm *Remember) Realize(r *Relation) string {
-	if r.Log != nil {
-		r.Log("[remember]: writing memory")
-	}
-
-	content := strings.TrimSpace(r.Impulse)
-	if content == "" {
-		if r.Log != nil {
-			r.Log("[remember]: empty content")
-		}
+	impulse := strings.TrimSpace(r.Impulse)
+	if impulse == "" {
 		return "nothing to remember"
 	}
 
-	being, ok := r.Realities["being"]
-	if !ok {
+	ctx := findContext(r)
+	if ctx == nil {
 		if r.Log != nil {
-			r.Log("[remember]: no being on relation")
+			r.Log("[remember]: no context on relation")
 		}
-		return "no being context"
-	}
-	b, ok := being.(Being)
-	if !ok {
-		return "no being context"
+		return "no memory available"
 	}
 
-	dir := filepath.Join(b.Home, "memories")
-	os.MkdirAll(dir, 0755)
+	artifactType := "trace"
+	if t, err := ExtractTag(impulse, "type"); err == nil {
+		artifactType = t
+	}
 
-	filename := fmt.Sprintf("%d.md", time.Now().UnixMilli())
-	path := filepath.Join(dir, filename)
+	content := impulse
+	if c, err := ExtractTag(impulse, "content"); err == nil {
+		content = c
+	}
 
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		if r.Log != nil {
-			r.Log("[remember]: write error:", err)
+	var contextArtifacts []string
+	if ca, err := ExtractTag(impulse, "context"); err == nil {
+		for _, a := range strings.Split(ca, ",") {
+			a = strings.TrimSpace(a)
+			if a != "" {
+				contextArtifacts = append(contextArtifacts, a)
+			}
 		}
-		return "failed to remember"
 	}
+
+	relationship := r.Origin
 
 	if r.Log != nil {
-		r.Log("[remember]: saved to", path)
+		r.Log("[remember]:", artifactType, "for", relationship, "→", truncate(content, 60))
 	}
-	return "remembered"
+
+	result := ctx.Store(content, relationship, artifactType, contextArtifacts)
+
+	if r.Log != nil {
+		r.Log("[remember]: →", result)
+	}
+
+	return result
 }

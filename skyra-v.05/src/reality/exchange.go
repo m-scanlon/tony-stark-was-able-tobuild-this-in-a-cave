@@ -11,6 +11,7 @@ import (
 type Exchange struct {
 	id        string
 	Exchanges map[string]*Conversation
+	Levels    *Levels
 }
 
 type Conversation struct {
@@ -124,7 +125,14 @@ func (e *Exchange) Realize(r *Relation) string {
 		}
 	}
 
-	if !hasRef && !ok {
+	isProcess := false
+	if target, ok := r.Realities[r.ID]; ok {
+		if _, ok := target.(*Process); ok {
+			isProcess = true
+		}
+	}
+
+	if !hasRef && !ok && !isProcess {
 		for existingKey, existingConv := range e.Exchanges {
 			if existingConv.Active && existingKey != key {
 				for _, party := range existingConv.Parties {
@@ -153,6 +161,25 @@ func (e *Exchange) Realize(r *Relation) string {
 		Content: r.Impulse,
 		Time:    time.Now(),
 	})
+
+	if e.Levels != nil {
+		e.Levels.Award(r.Origin, r.ID)
+	}
+
+	const compactThreshold = 20
+	const keepRecent = 10
+	if len(conv.Entries) > compactThreshold {
+		if mem := findMemory(r); mem != nil {
+			older := conv.Entries[:len(conv.Entries)-keepRecent]
+			relationship := r.Origin
+			if relationship == mem.Owner {
+				relationship = r.ID
+			}
+			debug.Log("[exchange]: compacting", len(older), "entries to memory for", relationship)
+			mem.Compress(older, relationship)
+			conv.Entries = conv.Entries[len(conv.Entries)-keepRecent:]
+		}
+	}
 	r.Attach("exchange", conv.Parse)
 	r.Attach("conversation", func() string {
 		return conv.ParseRecent(10)
@@ -172,6 +199,24 @@ func (e *Exchange) Realize(r *Relation) string {
 		}
 		return ""
 	}
+
+	if proc, ok := being.(*Process); ok {
+		debug.Log("[exchange]: direct process call:", r.ID)
+		result := proc.Realize(r)
+		conv.Entries = append(conv.Entries, Entry{
+			From:    r.ID,
+			Content: result,
+			Time:    time.Now(),
+		})
+		r.Origin = r.ID
+		r.ID = conv.Parties[0]
+		if r.ID == r.Origin {
+			r.ID = conv.Parties[1]
+		}
+		r.Impulse = result
+		return result
+	}
+
 	debug.Log("[exchange]: routing to being:", r.ID)
 	return being.Realize(r)
 }

@@ -30,20 +30,20 @@ Superseded by the parser-per-reality model below.
 
 ## Present Derivation — Parser Stack
 
-Every reality is responsible for its own text parser. When a reality contributes data to a relation, it also provides a parser that knows how to render that data as text. Parsers register on the invariant's hashmap at registration time.
+Every reality is responsible for its own text parser. When a reality contributes data to a relation, it also provides a parser that knows how to render that data as text. Parsers register on the port's hashmap at registration time.
 
-When the relation reaches the invariant, the invariant fires its parsers in order — first registered is top of the present, last registered is bottom. The invariant concatenates the output. That's the present.
+When the relation reaches the port, the port fires its parsers in order — first registered is top of the present, last registered is bottom. The port concatenates the output. That's the present.
 
 ### Rules
 
 - Each reality owns its slice end-to-end: data + parser. No central present builder.
 - Parsers are text parsers. Every reality describes itself as text.
 - Order is explicit. Left (first registered) is top, right (last registered) is last.
-- The invariant is dumb. It holds a hashmap of parsers, fires them in order, concatenates.
+- The port is dumb. It holds a hashmap of parsers, fires them in order, concatenates.
 - Adding a new reality means adding a new parser. Nothing else changes.
-- Adding a new invariant means registering parsers on it. Realities don't change.
+- Adding a new port means registering parsers on it. Realities don't change.
 
-### Invariant Types
+### Port Types
 
 - **LLM** — parsers produce the system prompt / context window. Same format for all LLM providers.
 - **Claude Code** — minimal parser or none. Claude manages its own context. Just pass the impulse.
@@ -53,12 +53,12 @@ When the relation reaches the invariant, the invariant fires its parsers in orde
 
 ### The Matrix Problem
 
-Every reality × every invariant type needs a parser. Thread renders as conversation history for an LLM but maybe as nothing for a shell. Economics renders as budget context for an LLM but maybe as an env var for a shell. The parser count is realities × invariant types.
+Every reality × every port type needs a parser. Thread renders as conversation history for an LLM but maybe as nothing for a shell. Economics renders as budget context for an LLM but maybe as an env var for a shell. The parser count is realities × port types.
 
 ### Current State (alpha)
 
-For now, present derivation for LLM beings stays in the LLM's realize method. The parser stack is the target architecture but we're not building the full matrix until we have a second invariant type (shell) that forces the split. When the deployment pipeline lands and we need shell + LLM rendering the same relation differently, the parser stack becomes necessary and the shape will be concrete.
+For now, present derivation for LLM beings stays in the LLM's realize method. The parser stack is the target architecture but we're not building the full matrix until we have a second port type (shell) that forces the split. When the deployment pipeline lands and we need shell + LLM rendering the same relation differently, the parser stack becomes necessary and the shape will be concrete.
 
 ### What This Replaces
 
-The old model had derive present as a single layer between the being and the device. This replaces it with distributed ownership — each reality knows how to present itself, and the invariant is just the ordered stack where those parsers fire.
+The old model had derive present as a single layer between the being and the device. This replaces it with distributed ownership — each reality knows how to present itself, and the port is just the ordered stack where those parsers fire.

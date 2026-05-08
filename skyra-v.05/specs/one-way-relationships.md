@@ -8,7 +8,7 @@ Relationships become directional. A declaring B in its relationship list means A
 
 ## The Problem
 
-Currently, relationships are declared per-entity in the genome but treated as symmetric by convention. If skyra lists builder and builder lists skyra, both can talk. But if skyra lists bash and bash lists skyra, the relationship carries the same weight in both directions — even though bash is a shell invariant that should only respond, never initiate.
+Currently, relationships are declared per-entity in the genome but treated as symmetric by convention. If skyra lists builder and builder lists skyra, both can talk. But if skyra lists bash and bash lists skyra, the relationship carries the same weight in both directions — even though bash is a shell port that should only respond, never initiate.
 
 There's no way to express: "this entity can reach that one, but not the other way around." Every relationship is implicitly bidirectional. That collapses a real distinction. An entity that observes is not the same as an entity that participates. An entity that responds is not the same as an entity that initiates.
 

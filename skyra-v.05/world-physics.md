@@ -2,7 +2,7 @@
 
 Every world boots with the same base realities already in its hashmap. These are the physics — realities that are always present, always firing, invisible to the beings that inhabit the world.
 
-A being never addresses a physics reality. It never sees one in its peers. It doesn't know they exist. But every relation that moves through the world passes through them. Each physics reality updates its own state and applies fields to the relation as it passes. By the time the relation reaches the invariant, it carries the accumulated weight of every layer it passed through.
+A being never addresses a physics reality. It never sees one in its peers. It doesn't know they exist. But every relation that moves through the world passes through them. Each physics reality updates its own state and applies fields to the relation as it passes. By the time the relation reaches the port, it carries the accumulated weight of every layer it passed through.
 
 ## How It Works
 
@@ -12,7 +12,7 @@ A relation enters a world. Before it reaches any being, it passes through every 
 2. Updates its own state (thread appends an entry, economics deducts a cost)
 3. Applies fields to the relation (thread context, budget remaining, memory window)
 
-The relation accumulates fields as it descends. The invariant at the bottom — the LLM call, the shell command, the CLI — receives a relation rich with context it never asked for. `DerivePresent` takes all those fields and renders the present.
+The relation accumulates fields as it descends. The port at the bottom — the LLM call, the shell command, the CLI — receives a relation rich with context it never asked for. `DerivePresent` takes all those fields and renders the present.
 
 The being sees the result. It doesn't see the machinery.
 
