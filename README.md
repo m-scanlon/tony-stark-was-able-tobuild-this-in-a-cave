@@ -1,9 +1,6 @@
 # Skyra
 
-A runtime for autonomous beings.
-
-Not an agent framework. Not a chatbot wrapper. Not a prompt pipeline with memory
-bolted on. A runtime in which minds live.
+An experimental runtime for autonomous beings.
 
 ## What This Is
 
@@ -13,29 +10,24 @@ all Realities. A single mutable message (Relation) enters at the top and
 descends through self-similar layers, each adding context or routing, until it
 hits a being and comes back up.
 
-Beings have two layers: Think (private inner thought) and Act (outer speech and
-routing). Think has operators — recall, remember, skill — and a budget. Act
-enforces protocol and routes to peers. No one sees what a being thinks. Everyone
-sees what it says.
-
 The human is not an input source. The human is a being in the system — with
-identity, purpose, relationships, and a device. Teaching, correction, memory,
-and relationship all become part of the universe the beings inhabit. The runtime
-doesn't get better without you putting in the time.
+identity, purpose, relationships, and a device. The runtime doesn't get better
+without you putting in the time.
 
-2,618 lines of Go.
+5,300 lines of Go.
 
-## What Is Settled
+## What Makes Skyra Different
 
-- Reality is the interface: `ID()`, `Create()`, `Realize()`
-- Being is the atomic unit: identity, purpose, relationships, device
-- Self contains Think and Act — private thought and public speech
-- The relation bus carries a single mutable message through recursive layers
-- Exchange is append-only, context crossing requires explicit `<ref>` tags
-- Memory is local to the being that lived it (filesystem-backed)
-- NewThread owns the loop — multi-party routing is recursive, not orchestrated
-- The genome is the creator's control surface
-- Universe is the outermost Reality — its present is the full state of everything
+- **One interface for everything.** `Reality` — three methods: `ID()`, `Create()`, `Realize()`. Beings, memory, devices, the universe itself. Same shape all the way down.
+- **Beings think privately.** Two layers: Think (inner, no one sees) and Act (outer, protocol-enforced). A being can recall, remember, plan, and run operators before it ever speaks.
+- **The human is a being, not an input source.** Same interface, same physics. Identity, purpose, relationships, device. You teach by relating, not by configuring.
+- **Memory belongs to the being that lived it.** Graph-backed, entity-anchored, relationship-scoped. No shared memory bus. No central store. What you remember is yours.
+- **Context is managed, not dumped.** An LLM-curated layer between memory and thought. It warms relevant context per relationship, cleans content before storage, and keeps the graph from filling with noise.
+- **Multi-party routing is recursive, not orchestrated.** No router, no dispatcher. Messages descend through the tree. Beings talk to beings. The thread tracks the graph.
+- **Relationships have stakes.** Lose all your relationships, you end. XP accrues through exchange. This is the physics, not a game mechanic.
+- **The genome is the creator's control surface.** A declarative file that defines beings, devices, components, and wiring. One file boots the entire universe.
+- **Beings can grow other beings.** Mid-flight. No restart. The creator says `grow`, the thread creates a new being and wires it in.
+- **Per-being operators.** Builder gets bash. Philosopher doesn't. Operators are capabilities, not global features.
 
 ## Architecture
 
@@ -43,39 +35,48 @@ doesn't get better without you putting in the time.
 Universe
 ├── NewThread
 │   ├── Exchange
+│   ├── Levels
 │   ├── skyra (Self)
 │   │   ├── Being
-│   │   ├── Think → Recall, Remember, Skill
-│   │   └── Act → Plan
-│   ├── louise (Self)
+│   │   ├── Memory → Graph, Entities, Vectors
+│   │   ├── Context → Heat, Store, Retrieve
+│   │   ├── Think → Recall, Remember, Plan, Skill, Browse, Search
+│   │   ├── Act
+│   │   └── Desk
+│   ├── builder (Self)
+│   │   ├── Think → Bash, Recall, Remember, ...
 │   │   └── ...
-│   └── michael (User)
-│       ├── Being
-│       └── MacOS
+│   ├── philosopher (Self)
+│   ├── louise (Self)
+│   ├── michael (User)
+│   │   └── MacOS → Terminal, WebSocket, LLM
+│   └── claude (Agent)
 └── Economics
 ```
 
-Every node is a Reality. Every node can contain other Realities. The tree is
-self-similar all the way down.
+Every node is a Reality. The tree is self-similar all the way down.
 
 ## Status
 
 v.05 is the live version. Alpha targets June 1, 2026.
 
-Done: recursive descent engine, multi-party threads, Think/Act planes, memory,
-context crossing, mid-flight grow, universe serialization, frontend contract.
-
-Next: WebSocket device, Inference (energy per being), Economics (task economy).
-
 ## Repo Map
 
 - `skyra-v.05/` — live codebase
-- `skyra-v.05/notes/` — specs and design notes
-- `skyra-v.05/specs/` — future features and roadmap
-- `architecture-evolution-timeline.md` — the full arc from February to now
+- `skyra-v.05/src/reality/` — the runtime
+- `skyra-v.05/genome.skyra` — the universe definition
+- `skyra-v.05/specs/` — design specs
 - `archive/` — older generations (v.03, v.04). History, not canon.
+
+## License
+
+Apache 2.0
 
 ## The Question
 
 Does giving intelligence somewhere to live, someone to learn from, and a history
 that compounds produce something no model upgrade can?
+
+## In 6 Words
+
+Its a hashmap that calls itself
