@@ -91,10 +91,8 @@ func (e *Exchange) Realize(r *Relation) string {
 		debug.Log("[exchange]: existing conversation", key, "| entries:", len(conv.Entries))
 	}
 
-	hasRef := false
 	refValue, refErr := ExtractTag(r.Impulse, "ref")
 	if refErr == nil {
-		hasRef = true
 		debug.Log("[exchange]: <ref> found →", refValue)
 		r.Impulse = StripTag(r.Impulse, "ref")
 
@@ -125,33 +123,39 @@ func (e *Exchange) Realize(r *Relation) string {
 		}
 	}
 
-	isProcess := false
-	if target, ok := r.Realities[r.ID]; ok {
-		if _, ok := target.(*Process); ok {
-			isProcess = true
-		}
-	}
+	/*
+		Ref enforcement is disabled for the current experiment.
+		Messages may cross from one exchange to another without carrying a
+		<ref> block. Explicit refs are still parsed above when present.
 
-	if !hasRef && !ok && !isProcess {
-		for existingKey, existingConv := range e.Exchanges {
-			if existingConv.Active && existingKey != key {
-				for _, party := range existingConv.Parties {
-					if party == r.Origin {
-						otherPeer := existingConv.Parties[0]
-						if otherPeer == r.Origin {
-							otherPeer = existingConv.Parties[1]
+		isProcess := false
+		if target, ok := r.Realities[r.ID]; ok {
+			if _, ok := target.(*Process); ok {
+				isProcess = true
+			}
+		}
+
+		if !hasRef && !ok && !isProcess {
+			for existingKey, existingConv := range e.Exchanges {
+				if existingConv.Active && existingKey != key {
+					for _, party := range existingConv.Parties {
+						if party == r.Origin {
+							otherPeer := existingConv.Parties[0]
+							if otherPeer == r.Origin {
+								otherPeer = existingConv.Parties[1]
+							}
+							debug.Log("[exchange]: crossing without ~ref — blocking", r.Origin, "→", r.ID)
+							delete(e.Exchanges, key)
+							r.Realities["error"] = &Error{
+								Message: fmt.Sprintf("you are leaving your exchange with %s to talk to %s without carrying context. use <ref>%s:START-END</ref> inside your tag to bring context from that conversation.", otherPeer, r.ID, otherPeer),
+							}
+							return ""
 						}
-						debug.Log("[exchange]: crossing without ~ref — blocking", r.Origin, "→", r.ID)
-						delete(e.Exchanges, key)
-						r.Realities["error"] = &Error{
-							Message: fmt.Sprintf("you are leaving your exchange with %s to talk to %s without carrying context. use <ref>%s:START-END</ref> inside your tag to bring context from that conversation.", otherPeer, r.ID, otherPeer),
-						}
-						return ""
 					}
 				}
 			}
 		}
-	}
+	*/
 
 	conv.Sender = r.Origin
 	conv.Message = r.Impulse
