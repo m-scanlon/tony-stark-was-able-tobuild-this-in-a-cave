@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 
 	"strconv"
@@ -15,6 +17,7 @@ import (
 
 func main() {
 	loadEnv("../.env")
+	loadKeychain()
 
 	if err := debug.Init("logs"); err != nil {
 		fmt.Fprintln(os.Stderr, "debug:", err)
@@ -224,6 +227,24 @@ func bootstrap(thread *reality.NewThread, devices map[string]*reality.MacOS, com
 		}
 	}
 	return nil
+}
+
+func loadKeychain() {
+	if runtime.GOOS != "darwin" {
+		return
+	}
+	keys := map[string]string{
+		"OPENROUTER_API_KEY": "OPENROUTER_API_KEY",
+	}
+	for env, service := range keys {
+		if os.Getenv(env) != "" {
+			continue
+		}
+		out, err := exec.Command("security", "find-generic-password", "-s", service, "-w").Output()
+		if err == nil {
+			os.Setenv(env, strings.TrimSpace(string(out)))
+		}
+	}
 }
 
 func loadEnv(path string) {

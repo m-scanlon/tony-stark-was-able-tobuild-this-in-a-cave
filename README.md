@@ -70,7 +70,8 @@ v.05 is the live version. Alpha targets June 1, 2026.
 
 ## License
 
-Apache 2.0
+Functional Source License 1.1 with Apache 2.0 future license (`FSL-1.1-ALv2`).
+Commercial competing use requires a separate license.
 
 ## The Question
 
