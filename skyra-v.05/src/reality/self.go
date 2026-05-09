@@ -42,6 +42,7 @@ func (s *Self) Create(r *Relation) Reality {
 		if being, ok := self.Realities["being"].(Being); ok {
 			mem.HomeDir = being.Home
 			mem.Load()
+			mem.SeedSkills("skills")
 		}
 		self.Realities["memory"] = mem
 

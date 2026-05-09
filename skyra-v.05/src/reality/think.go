@@ -306,10 +306,9 @@ func (t *Think) collectOps(r *Relation) map[string]Reality {
 }
 
 var opDescriptions = map[string]string{
-	"recall":   "query your memory by entity or keyword — use names, places, or concrete terms, not meta-questions. <recall><about>michael</about></recall> or <recall><about>harness persistence</about><type>understanding</type></recall>. if nothing specific matches, returns your most recent memories.",
-	"remember": "store a memory. <remember><type>trace|salience|tension|understanding</type><content>what to remember</content></remember>",
+	"retrieve-context": "query your memory by entity or keyword — use names, places, or concrete terms, not meta-questions. <retrieve-context><about>michael</about></retrieve-context> or <retrieve-context><about>harness persistence</about><type>understanding</type></retrieve-context>. if nothing specific matches, returns your most recent memories.",
+	"store-context": "tell your context what matters. <store-context><type>trace|salience|tension|understanding</type><content>what to store</content></store-context>. context handles the rest — curation, entities, weights.",
 	"plan":     "manage tasks. <plan><create-task><relationship>name</relationship><name>task name</name><description>what</description><validation>done when</validation></create-task></plan>. also: complete-task, drop-task, open-task, close-task, focus-task",
-	"skill":    "load a learned skill by name. <skill>skill name</skill>",
 	"browse":   "fetch a web page. <browse>url</browse>",
 	"search":   "search the web. <search>query</search>",
 	"bash":     "run a shell command. <bash>command</bash>. output is returned to you.",
@@ -350,7 +349,7 @@ func renderOpsWithOuter(ops map[string]Reality, outerOps []string) string {
 }
 
 func (t *Think) System() string {
-	return Preamble + "\n\nYou are a being with two layers: an inner layer (this one) and an outer layer.\n\nThis is your inner layer — private thought. No one sees this. Reflect on what you've received. Consider what matters, what's missing, and what you actually think. Do not address anyone directly.\n\nYou have operators here (listed in your present) that only work in this layer. Use them to recall, remember, or process before you surface.\n\nYour outer layer can address any peer listed in your present. If someone asks you to talk to another being, you can — your outer layer handles that. Think about what you want to say and why, then surface it.\n\nIMPORTANT: Emit exactly one protocol per response — one operator OR one <surface-thought>. Never both. If you call an operator, wait for the result before doing anything else. You have multiple passes to think.\n\nWhen you emit <surface-thought>, you are releasing that thought to your outer layer, where you act and speak. No one else receives it. It is you telling yourself what you've concluded.\n\nDo not use the <> protocol here. That belongs to your outer layer."
+	return Preamble + "\n\nYou are a being with two layers: an inner layer (this one) and an outer layer.\n\nThis is your inner layer — private thought. No one sees this. Reflect on what you've received. Consider what matters, what's missing, and what you actually think. Do not address anyone directly.\n\nYou have operators here (listed in your present) that only work in this layer. Use them to retrieve context, remember, or process before you surface.\n\nYour outer layer can address any peer listed in your present. If someone asks you to talk to another being, you can — your outer layer handles that. Think about what you want to say and why, then surface it.\n\nIMPORTANT: Emit exactly one protocol per response — one operator OR one <surface-thought>. Never both. If you call an operator, wait for the result before doing anything else. You have multiple passes to think.\n\nWhen you emit <surface-thought>, you are releasing that thought to your outer layer, where you act and speak. No one else receives it. It is you telling yourself what you've concluded.\n\nDo not use the <> protocol here. That belongs to your outer layer."
 }
 
 func parseRelationshipScope(response string, peers map[string]bool) []string {

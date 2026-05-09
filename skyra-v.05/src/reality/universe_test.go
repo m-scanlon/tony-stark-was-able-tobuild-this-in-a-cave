@@ -37,9 +37,8 @@ func TestUniverseRealize(t *testing.T) {
 	}
 	skyra.Realities["think"] = &Think{
 		Operators: map[string]Reality{
-			"recall":   &Recall{},
-			"remember": &Remember{},
-			"skill":    &Skill{},
+			"retrieve-context": &RetrieveContext{},
+			"store-context": &StoreContext{},
 		},
 	}
 	skyra.Realities["act"] = &Act{
@@ -86,7 +85,7 @@ func TestUniverseRealize(t *testing.T) {
 		`"id": "openrouter"`,
 		`"type": "Self"`,
 		`"type": "Think"`,
-		`"type": "Recall"`,
+		`"type": "Retrieve-context"`,
 		`"type": "Act"`,
 		`"type": "Plan"`,
 		`"type": "User"`,

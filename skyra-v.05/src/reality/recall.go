@@ -2,26 +2,26 @@ package reality
 
 import "strings"
 
-type Recall struct {
+type RetrieveContext struct {
 	id string
 }
 
-func (rc *Recall) ID() string { return rc.id }
+func (rc *RetrieveContext) ID() string { return rc.id }
 
-func (rc *Recall) Create(r *Relation) Reality {
-	return &Recall{id: "recall"}
+func (rc *RetrieveContext) Create(r *Relation) Reality {
+	return &RetrieveContext{id: "retrieve-context"}
 }
 
-func (rc *Recall) Realize(r *Relation) string {
+func (rc *RetrieveContext) Realize(r *Relation) string {
 	impulse := strings.TrimSpace(r.Impulse)
 	if impulse == "" {
-		return "no recall query"
+		return "no query"
 	}
 
 	ctx := findContext(r)
 	if ctx == nil {
 		if r.Log != nil {
-			r.Log("[recall]: no context on relation")
+			r.Log("[retrieve-context]: no context on relation")
 		}
 		return "no memories"
 	}
@@ -42,26 +42,14 @@ func (rc *Recall) Realize(r *Relation) string {
 	}
 
 	if r.Log != nil {
-		r.Log("[recall]: query:", query, "relationship:", relationship, "type:", artifactType)
+		r.Log("[retrieve-context]: query:", query, "relationship:", relationship, "type:", artifactType)
 	}
 
 	result := ctx.Retrieve(query, relationship, artifactType)
 
 	if r.Log != nil {
-		r.Log("[recall]: →", truncate(result, 80))
+		r.Log("[retrieve-context]: →", truncate(result, 80))
 	}
 
 	return result
-}
-
-func findMemory(r *Relation) *Memory {
-	if r.Realities == nil {
-		return nil
-	}
-	if m, ok := r.Realities["memory"]; ok {
-		if mem, ok := m.(*Memory); ok {
-			return mem
-		}
-	}
-	return nil
 }

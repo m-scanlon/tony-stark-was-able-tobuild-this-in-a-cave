@@ -34,22 +34,22 @@ func (c *Context) Heat(relationship string) {
 
 	c.Active = relationship
 
-	entities := c.Memory.Graph.EntitiesByRelationship(relationship)
-
 	var loaded []*MemNode
 	seen := map[string]bool{}
-	for _, entity := range entities {
-		neighbors := c.Memory.Graph.ConnectedByType(entity.ID, "mentions")
-		for _, node := range neighbors {
-			if node.Type == "memory" && !seen[node.ID] {
-				seen[node.ID] = true
-				loaded = append(loaded, node)
+
+	for _, entity := range c.Memory.Graph.Entities {
+		memories := c.Memory.Graph.MemoriesForEntity(entity.ID)
+		for _, node := range memories {
+			if node.Relationship != relationship || seen[node.ID] {
+				continue
 			}
+			seen[node.ID] = true
+			loaded = append(loaded, node)
 		}
 	}
 
 	c.Warm[relationship] = loaded
-	log("[context]: heated", relationship, "—", len(entities), "entities,", len(loaded), "memories")
+	log("[context]: heated", relationship, "—", len(loaded), "memories")
 }
 
 func (c *Context) Parse(relationship string) string {
@@ -58,8 +58,8 @@ func (c *Context) Parse(relationship string) string {
 		return ""
 	}
 
-	understandings := filterByArtifact(nodes, "understanding")
-	tensions := filterByArtifact(nodes, "tension")
+	understandings := filterByType(nodes, "understanding")
+	tensions := filterByType(nodes, "tension")
 
 	if len(understandings) == 0 && len(tensions) == 0 {
 		return ""
@@ -67,40 +67,36 @@ func (c *Context) Parse(relationship string) string {
 
 	var sb strings.Builder
 	sb.WriteString("memory context:\n")
-	if len(understandings) > 0 {
-		for _, n := range understandings {
-			sb.WriteString("  [understanding] " + n.Content + "\n")
-		}
+	for _, n := range understandings {
+		sb.WriteString("  [understanding] " + n.Content + "\n")
 	}
-	if len(tensions) > 0 {
-		for _, n := range tensions {
-			sb.WriteString("  [tension] " + n.Content + "\n")
-		}
+	for _, n := range tensions {
+		sb.WriteString("  [tension] " + n.Content + "\n")
 	}
 	return sb.String()
 }
 
-func filterByArtifact(nodes []*MemNode, artifactType string) []*MemNode {
+func filterByType(nodes []*MemNode, artifactType string) []*MemNode {
 	var result []*MemNode
 	for _, n := range nodes {
-		if n.ArtifactType == artifactType {
+		if n.Type == artifactType {
 			result = append(result, n)
 		}
 	}
 	return result
 }
 
-func (c *Context) Store(content, relationship, artifactType string, contextArtifacts []string) string {
+func (c *Context) Store(content, relationship, artifactType string) string {
 	log := func(args ...any) { debug.Being(c.Owner, "context", args...) }
 
 	if c.LLM == nil {
 		log("[context]: no llm, storing raw")
-		msg := c.Memory.StoreArtifact(content, relationship, artifactType, contextArtifacts)
+		msg := c.Memory.Store(content, relationship, artifactType, EdgeLayer{Type: "episode", Weight: 1.0})
 		c.invalidate(relationship)
 		return msg
 	}
 
-	existing := c.Memory.QueryGraph(content, relationship, "")
+	existing := c.Memory.Query(content, relationship, "")
 
 	lr := &Relation{
 		Impulse: content,
@@ -145,14 +141,37 @@ func (c *Context) Store(content, relationship, artifactType string, contextArtif
 		}
 	}
 
-	if action, err := ExtractTag(result, "action"); err == nil {
-		if strings.TrimSpace(action) == "discard" {
-			log("[context]: discarded as redundant")
-			return "already known"
-		}
+	action := "store"
+	if a, err := ExtractTag(result, "action"); err == nil {
+		action = strings.TrimSpace(a)
 	}
 
-	msg := c.Memory.StoreArtifact(cleaned, relationship, finalType, contextArtifacts)
+	judgment := "complement"
+	if j, err := ExtractTag(result, "judgment"); err == nil {
+		judgment = strings.TrimSpace(j)
+	}
+
+	switch action {
+	case "discard":
+		log("[context]: discarded as redundant")
+		return "already known"
+	}
+
+	switch judgment {
+	case "supersede":
+		if target, err := ExtractTag(result, "supersedes"); err == nil {
+			c.decayByContent(target, relationship)
+			log("[context]: superseded existing memory")
+		}
+	case "contradict":
+		if target, err := ExtractTag(result, "contradicts"); err == nil {
+			c.markTension(target, relationship)
+			log("[context]: marked contradiction as tension")
+		}
+		finalType = "tension"
+	}
+
+	msg := c.Memory.Store(cleaned, relationship, finalType, EdgeLayer{Type: "episode", Weight: 1.0})
 	c.invalidate(relationship)
 
 	if len(entities) > 0 {
@@ -162,33 +181,59 @@ func (c *Context) Store(content, relationship, artifactType string, contextArtif
 	return msg
 }
 
+func (c *Context) decayByContent(content, relationship string) {
+	for _, node := range c.Memory.Graph.Nodes {
+		if node.Relationship == relationship && strings.Contains(node.Content, content) {
+			node.Weight *= 0.3
+		}
+	}
+}
+
+func (c *Context) markTension(content, relationship string) {
+	for _, node := range c.Memory.Graph.Nodes {
+		if node.Relationship == relationship && strings.Contains(node.Content, content) {
+			node.Type = "tension"
+		}
+	}
+}
+
 func (c *Context) invalidate(relationship string) {
 	delete(c.Warm, relationship)
 }
 
 func (c *Context) Retrieve(query, relationship, artifactType string) string {
 	c.Heat(relationship)
-	return c.Memory.QueryGraph(query, relationship, artifactType)
+	return c.Memory.Query(query, relationship, artifactType)
 }
 
 func (c *Context) system() string {
-	return `You are a memory curator. Your job is to keep memory clean before it goes into storage.
+	return `You are a memory curator. Your job is to evaluate new memories against existing ones before storage.
 
 You receive content that a being wants to remember, along with existing memories in the same relationship.
 
 Your responsibilities:
 1. Clean the content — tighten language, strip noise, keep signal
 2. Extract entities — names, concepts, tools, patterns mentioned in the content
-3. Deduplicate — if this is already covered by an existing memory, discard it
+3. Judge the relationship to existing memories:
+   - supersede: the new memory replaces an old understanding. Name what it supersedes.
+   - complement: the new memory adds nuance without replacing. Both keep their weight.
+   - contradict: the new memory conflicts with an existing one. The old becomes a tension.
+   - discard: this is already fully covered by existing memories.
 4. Classify — confirm or reclassify the artifact type (trace, salience, tension, understanding)
-5. Merge — if this updates an existing memory, produce the merged version
 
 Respond with exactly these tags:
 
 <content>the cleaned content to store</content>
 <type>trace|salience|tension|understanding</type>
 <entities>comma,separated,entity,names</entities>
+<judgment>supersede|complement|contradict</judgment>
 <action>store|discard</action>
+
+If judgment is supersede, also include:
+<supersedes>the content of the memory being replaced</supersedes>
+
+If judgment is contradict, also include:
+<contradicts>the content of the conflicting memory</contradicts>
 
 If discarding, still include all tags but set content to empty.
 Keep your response to just the tags. No commentary.`

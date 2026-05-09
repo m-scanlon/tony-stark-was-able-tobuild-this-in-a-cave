@@ -279,23 +279,23 @@ No `Parent` field. The thread's member list already knows who's in the room. One
 
 ### Context, Think, Act — The Three Directions
 
-**Context** — looks down. It operates on the being's own inner universe. Memory graph, specialists, internal cognition. Context is the being's relationship with what it owns — its mind. It also resolves episodes: at the end of every episode, Context formats the episode into graph memory — extracting entities, strengthening edges, storing memory nodes, updating weights, crystallizing skill files. Context stores memories for Think too, but its primary rhythm is episodic: experience happens, Context processes it into the graph.
+**Think** — the entry point. Think is where deliberation happens. It receives the impulse and decides what to do: look down into Context for memory and internal state, or surface outward to Act. Think calls Context through operators (`<retrieve-context>`, `<store-context>`), same as any other operator. Think doesn't touch the graph directly. It asks Context and gets answers back.
 
-**Act** — looks out. It operates on the plane the being exists on. Peers, devices, objects — anything external. Michael talks to skyra through Act. Michael types on the terminal through Act. Same mechanism. Devices are not internal organs — they're peers on the same plane that the being acts toward, same as a person.
+**Context** — looks down. Owns the memory graph. Owns curation — supersede, complement, contradict. Owns episodic processing: at the end of every episode, Context formats it into the graph — extracting entities, strengthening edges, storing memory nodes, updating weights, crystallizing skill files. Think reaches Context through two operators: `<retrieve-context>` to query and `<store-context>` to signal what matters. Context decides how to store it.
 
-**Think** — the bridge. It receives from context (what do I know, what are my specialists telling me) and prepares for act (what do I say, who do I say it to). It doesn't look down or out itself. It sits between the two and synthesizes.
+**Act** — looks out. It operates on the plane the being exists on. Peers, devices, objects — anything external. Takes Think's surface thought and routes it to a target. One tag, one message. Never thinks, never remembers.
 
 ```
 impulse arrives
     ↓
-context (activates graph, routes to specialists, collects output)
-    ↓
-think (synthesizes internal input into a coherent thought)
-    ↓
-act (routes that thought outward to a peer or device)
+think (deliberation — calls context operators to look down, surfaces when ready)
+    ↓ <retrieve-context> / <store-context>
+context (graph queries, curation, episodic processing)
+    ↓ <surface-thought>
+act (routes outward to a peer or device)
 ```
 
-For a specialist inside the being's inner universe, same flow — it has its own context (scoped view of the graph), its own think, its own act (which routes back up to the parent, not to external peers).
+For a specialist inside the being's inner universe, same flow — it has its own think, its own context (scoped view of the graph), its own act (which routes back up to the parent, not to external peers).
 
 ### Ownership and Boundaries
 
@@ -353,16 +353,7 @@ Pre-seed the memory graph with skill files at being creation.
 - The operator (static function) still handles execution. The graph holds the being's understanding of when and how to use it.
 - Skill files live in the being's home (`~/.skyra/beings/{name}/skills/`), same as v.05. The difference is they're now decomposed into the graph at load time rather than just read raw into the present.
 
-### Phase 2 — Context/Think/Act Reframe
-
-Rewire the three directions.
-
-- `self.go` — rewire flow from think→act to context→think→act. Context fires first, Think synthesizes, Act routes out.
-- `context.go` — becomes the "looks down" layer. Activates the memory graph, scopes what the being sees, prepares internal state for Think. No longer just a memory heater.
-- `think.go` — stops calling the LLM directly. Becomes the bridge between what Context provides (internal state) and what Act needs (a coherent thought to route outward).
-- `act.go` — minimal change. Already looks out. Continues to route to peers and devices on the plane.
-
-### Phase 3 — Port Container Symmetry
+### Phase 2 — Port Container Symmetry
 
 Make both sides of the relationship look the same.
 
@@ -370,7 +361,7 @@ Make both sides of the relationship look the same.
 - `llm.go` — adjustments to match the container model.
 - `main.go` — bootstrap rewiring. Provider container created alongside MacOS device, both registered the same way.
 
-### Phase 4 — Inner Universe and Specialist Promotion
+### Phase 3 — Inner Universe and Specialist Promotion
 
 The emergent cognition layer. Depends on phases 1-3 being solid and the being having accumulated real memory data.
 

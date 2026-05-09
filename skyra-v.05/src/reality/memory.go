@@ -2,6 +2,7 @@ package reality
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"skyra-v05/src/debug"
 	"sort"
@@ -15,8 +16,6 @@ type Memory struct {
 	Graph     *MemoryGraph
 	Extractor *Extractor
 	Resolver  *Resolver
-	Vectors   *VecIndex
-	Embed     func(string) ([]float64, error)
 	HomeDir   string
 }
 
@@ -27,7 +26,6 @@ func NewMemory(owner string) *Memory {
 		Graph:     NewMemoryGraph(),
 		Extractor: NewExtractor(),
 		Resolver:  NewResolver(),
-		Vectors:   NewVecIndex(),
 	}
 }
 
@@ -38,17 +36,13 @@ func (m *Memory) Create(r *Relation) Reality {
 }
 
 func (m *Memory) Realize(r *Relation) string {
-	if r.Collecting {
-		return ""
-	}
 	return ""
 }
 
-func (m *Memory) StoreArtifact(content, relationship, artifactType string, contextArtifacts []string) string {
+func (m *Memory) Store(content, relationship, artifactType string, layer EdgeLayer) string {
 	log := func(args ...any) { debug.Being(m.Owner, "memory", args...) }
 
 	entities := m.Extractor.Extract(content)
-
 	resolved := make([]string, 0, len(entities))
 	for _, e := range entities {
 		resolved = append(resolved, m.Resolver.Resolve(e))
@@ -56,59 +50,48 @@ func (m *Memory) StoreArtifact(content, relationship, artifactType string, conte
 
 	now := time.Now()
 
-	for _, e := range resolved {
-		entityID := "entity:" + relationship + ":" + e
-		if existing := m.Graph.GetNode(entityID); existing != nil {
+	for _, name := range resolved {
+		entityID := "entity:" + name
+		if existing := m.Graph.GetEntity(entityID); existing != nil {
 			existing.Weight += 0.1
 			existing.LastSeen = now
 		} else {
-			m.Graph.AddNode(&MemNode{
-				ID:           entityID,
-				Type:         "entity",
-				Content:      e,
-				Weight:       1.0,
-				Relationship: relationship,
-				CreatedAt:    now,
-				LastSeen:     now,
+			m.Graph.AddEntity(&Entity{
+				ID:        entityID,
+				Name:      name,
+				Weight:    1.0,
+				CreatedAt: now,
+				LastSeen:  now,
 			})
-			m.Extractor.Learn(e)
-			m.Resolver.AddAlias(e, e)
+			m.Extractor.Learn(name)
+			m.Resolver.AddAlias(name, name)
 		}
 	}
 
 	memID := fmt.Sprintf("mem:%d", now.UnixNano())
-	memNode := &MemNode{
-		ID:               memID,
-		Type:             "memory",
-		Content:          content,
-		ArtifactType:     artifactType,
-		Relationship:     relationship,
-		AnchorEntities:   resolved,
-		ContextArtifacts: contextArtifacts,
-		Weight:           artifactWeight(artifactType),
-		CreatedAt:        now,
-		LastSeen:         now,
+	node := &MemNode{
+		ID:             memID,
+		Content:        content,
+		Type:           artifactType,
+		Weight:         artifactWeight(artifactType),
+		Relationship:   relationship,
+		AnchorEntities: resolved,
+		CreatedAt:      now,
+		LastActivated:  now,
+	}
+	m.Graph.AddNode(node)
+
+	for _, name := range resolved {
+		entityID := "entity:" + name
+		m.Graph.AddAnchor(memID, entityID)
 	}
 
-	if m.Embed != nil {
-		if vec, err := m.Embed(content); err == nil {
-			memNode.Vector = vec
-			m.Vectors.Add(memID, vec)
+	for i := 0; i < len(resolved); i++ {
+		for j := i + 1; j < len(resolved); j++ {
+			fromID := "entity:" + resolved[i]
+			toID := "entity:" + resolved[j]
+			m.Graph.StrengthenEdge(fromID, toID, layer)
 		}
-	}
-
-	m.Graph.AddNode(memNode)
-
-	for _, e := range resolved {
-		entityID := "entity:" + relationship + ":" + e
-		m.Graph.AddEdge(&MemEdge{
-			From:      memID,
-			To:        entityID,
-			Type:      "mentions",
-			Weight:    1.0,
-			CreatedAt: now,
-			LastSeen:  now,
-		})
 	}
 
 	log("[memory]: stored", artifactType, "in", relationship, "entities:", resolved)
@@ -116,7 +99,7 @@ func (m *Memory) StoreArtifact(content, relationship, artifactType string, conte
 	return fmt.Sprintf("remembered [%s]: %s", artifactType, truncate(content, 60))
 }
 
-func (m *Memory) QueryGraph(query, relationship, artifactType string) string {
+func (m *Memory) Query(query, relationship, artifactType string) string {
 	log := func(args ...any) { debug.Being(m.Owner, "memory", args...) }
 
 	entities := m.Extractor.Extract(query)
@@ -134,39 +117,20 @@ func (m *Memory) QueryGraph(query, relationship, artifactType string) string {
 
 	for _, e := range entities {
 		resolved := m.Resolver.Resolve(e)
-		entityID := "entity:" + relationship + ":" + resolved
-		connected := m.Graph.ConnectedByType(entityID, "mentions")
-		for _, node := range connected {
-			if node.Type != "memory" || seen[node.ID] {
+		entityID := "entity:" + resolved
+		memories := m.Graph.MemoriesForEntity(entityID)
+		for _, node := range memories {
+			if seen[node.ID] {
 				continue
 			}
-			if node.Relationship != relationship {
+			if relationship != "" && node.Relationship != relationship {
 				continue
 			}
-			if artifactType != "" && node.ArtifactType != artifactType {
+			if artifactType != "" && node.Type != artifactType {
 				continue
 			}
 			seen[node.ID] = true
 			results = append(results, node)
-		}
-	}
-
-	if m.Embed != nil && len(m.Vectors.Vectors) > 0 {
-		if queryVec, err := m.Embed(query); err == nil {
-			vecResults := m.Vectors.Search(queryVec, 5)
-			for _, vr := range vecResults {
-				if seen[vr.ID] || vr.Score < 0.7 {
-					continue
-				}
-				if node := m.Graph.GetNode(vr.ID); node != nil {
-					if node.Relationship == relationship && node.Type == "memory" {
-						if artifactType == "" || node.ArtifactType == artifactType {
-							seen[vr.ID] = true
-							results = append(results, node)
-						}
-					}
-				}
-			}
 		}
 	}
 
@@ -175,7 +139,7 @@ func (m *Memory) QueryGraph(query, relationship, artifactType string) string {
 		if artifactType != "" {
 			var filtered []*MemNode
 			for _, n := range all {
-				if n.ArtifactType == artifactType {
+				if n.Type == artifactType {
 					filtered = append(filtered, n)
 				}
 			}
@@ -194,7 +158,7 @@ func (m *Memory) QueryGraph(query, relationship, artifactType string) string {
 		if artifactType != "" {
 			var filtered []*MemNode
 			for _, n := range all {
-				if n.ArtifactType == artifactType {
+				if n.Type == artifactType {
 					filtered = append(filtered, n)
 				}
 			}
@@ -232,7 +196,7 @@ func (m *Memory) QueryGraph(query, relationship, artifactType string) string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("recalled %d memories:\n", len(results)))
 	for _, node := range results {
-		sb.WriteString(fmt.Sprintf("[%s] %s\n", node.ArtifactType, node.Content))
+		sb.WriteString(fmt.Sprintf("[%s] %s\n", node.Type, node.Content))
 	}
 	return sb.String()
 }
@@ -244,9 +208,8 @@ func (m *Memory) Compress(entries []Entry, relationship string) {
 	for _, e := range entries {
 		sb.WriteString(fmt.Sprintf("%s: %s\n", e.From, e.Content))
 	}
-	content := sb.String()
 
-	m.StoreArtifact(content, relationship, "trace", nil)
+	m.Store(sb.String(), relationship, "trace", EdgeLayer{Type: "episode", Weight: 1.0})
 	log("[memory]: compressed", len(entries), "entries into trace for", relationship)
 }
 
@@ -257,14 +220,50 @@ func (m *Memory) Load() {
 	dir := filepath.Join(m.HomeDir, "memory")
 	m.Graph = LoadMemoryGraph(dir)
 
-	for _, node := range m.Graph.Nodes {
-		if node.Type == "entity" {
-			m.Extractor.Learn(node.Content)
-			m.Resolver.AddAlias(node.Content, node.Content)
+	for _, entity := range m.Graph.Entities {
+		m.Extractor.Learn(entity.Name)
+		m.Resolver.AddAlias(entity.Name, entity.Name)
+	}
+}
+
+func (m *Memory) SeedSkills(skillsDir string) {
+	log := func(args ...any) { debug.Being(m.Owner, "memory", args...) }
+
+	entries, err := os.ReadDir(skillsDir)
+	if err != nil {
+		log("[memory]: no skills dir:", skillsDir)
+		return
+	}
+
+	seeded := 0
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
+			continue
 		}
-		if node.Vector != nil && len(node.Vector) > 0 {
-			m.Vectors.Add(node.ID, node.Vector)
+
+		data, err := os.ReadFile(filepath.Join(skillsDir, entry.Name()))
+		if err != nil {
+			continue
 		}
+
+		content := string(data)
+		name := strings.TrimSuffix(entry.Name(), ".md")
+
+		entityID := "entity:" + name
+		if m.Graph.GetEntity(entityID) != nil {
+			continue
+		}
+
+		m.Store(content, "self", "understanding", EdgeLayer{
+			Type:   "skill",
+			Ref:    name,
+			Weight: 1.0,
+		})
+		seeded++
+	}
+
+	if seeded > 0 {
+		log("[memory]: seeded", seeded, "skills from", skillsDir)
 	}
 }
 
@@ -277,17 +276,7 @@ func (m *Memory) save() {
 }
 
 func (m *Memory) GraphStats() (int, int, int) {
-	entities := 0
-	memories := 0
-	for _, node := range m.Graph.Nodes {
-		switch node.Type {
-		case "entity":
-			entities++
-		case "memory":
-			memories++
-		}
-	}
-	return entities, memories, m.Graph.EdgeCount()
+	return m.Graph.EntityCount(), m.Graph.NodeCount(), m.Graph.EdgeCount()
 }
 
 func artifactWeight(artifactType string) float64 {
@@ -305,9 +294,14 @@ func artifactWeight(artifactType string) float64 {
 	}
 }
 
-func truncate(s string, n int) string {
-	if len(s) <= n {
-		return s
+func findMemory(r *Relation) *Memory {
+	if r.Realities == nil {
+		return nil
 	}
-	return s[:n] + "..."
+	if m, ok := r.Realities["memory"]; ok {
+		if mem, ok := m.(*Memory); ok {
+			return mem
+		}
+	}
+	return nil
 }

@@ -44,9 +44,8 @@ func main() {
 		Levels:   levels,
 		Devices:  make(map[string]reality.Reality),
 		ThinkOps: map[string]reality.Reality{
-			"recall":   &reality.Recall{},
-			"remember": &reality.Remember{},
-			"skill":    &reality.Skill{},
+			"retrieve-context": &reality.RetrieveContext{},
+			"store-context": &reality.StoreContext{},
 			"browse":   &reality.Browse{},
 			"search":   &reality.Search{},
 			"plan":     &reality.Plan{},

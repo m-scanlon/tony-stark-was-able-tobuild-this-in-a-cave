@@ -2,26 +2,26 @@ package reality
 
 import "strings"
 
-type Remember struct {
+type StoreContext struct {
 	id string
 }
 
-func (rm *Remember) ID() string { return rm.id }
+func (sc *StoreContext) ID() string { return sc.id }
 
-func (rm *Remember) Create(r *Relation) Reality {
-	return &Remember{id: "remember"}
+func (sc *StoreContext) Create(r *Relation) Reality {
+	return &StoreContext{id: "store-context"}
 }
 
-func (rm *Remember) Realize(r *Relation) string {
+func (sc *StoreContext) Realize(r *Relation) string {
 	impulse := strings.TrimSpace(r.Impulse)
 	if impulse == "" {
-		return "nothing to remember"
+		return "nothing to store"
 	}
 
 	ctx := findContext(r)
 	if ctx == nil {
 		if r.Log != nil {
-			r.Log("[remember]: no context on relation")
+			r.Log("[store-context]: no context on relation")
 		}
 		return "no memory available"
 	}
@@ -36,26 +36,16 @@ func (rm *Remember) Realize(r *Relation) string {
 		content = c
 	}
 
-	var contextArtifacts []string
-	if ca, err := ExtractTag(impulse, "context"); err == nil {
-		for _, a := range strings.Split(ca, ",") {
-			a = strings.TrimSpace(a)
-			if a != "" {
-				contextArtifacts = append(contextArtifacts, a)
-			}
-		}
-	}
-
 	relationship := r.Origin
 
 	if r.Log != nil {
-		r.Log("[remember]:", artifactType, "for", relationship, "→", truncate(content, 60))
+		r.Log("[store-context]:", artifactType, "for", relationship, "→", truncate(content, 60))
 	}
 
-	result := ctx.Store(content, relationship, artifactType, contextArtifacts)
+	result := ctx.Store(content, relationship, artifactType)
 
 	if r.Log != nil {
-		r.Log("[remember]: →", result)
+		r.Log("[store-context]: →", result)
 	}
 
 	return result
