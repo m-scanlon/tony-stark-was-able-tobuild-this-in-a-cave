@@ -265,20 +265,17 @@ A mature being: Context activates the inner universe, relations descend through 
 
 When clusters promote, a Universe struct appears on Self. It's the same Universe — same Thread, same Exchange, same routing. Specialists are beings inside it. The memory graph is the shared substrate.
 
-The inner universe holds a reference to its parent — the being that owns it. The parent is not a being inside the inner universe. It's the one who asked and the one who receives. When synthesis resolves, the result flows back up to the parent's Think, which hands it to Act.
+The parent is not a permanent fixture in the inner universe. It enters by opening a thread — the same thread mechanics that handle michael → skyra on the outer plane handle the parent → specialists on the inner plane. Opening a thread inserts the parent into the inner universe's routing table. Closing the thread removes it. The parent is just a being that opened a thread.
 
 ```go
 type Universe struct {
     id     string
     Thread *NewThread
     Econ   *Economics
-    Parent Reality      // nil for the outer universe
 }
 ```
 
-Outer universe: Parent is nil. Relations resolve to the user through the terminal.
-
-Inner universe: Parent is the being that owns it. Relations resolve back up to that being's Think→Act flow.
+No `Parent` field. The thread's member list already knows who's in the room. One mechanism at every scale — outer universe and inner universe use the same thread mechanics for presence, routing, and resolution.
 
 ### Context, Think, Act — The Three Directions
 
@@ -347,6 +344,15 @@ The foundation. Everything else depends on this.
 - `extract.go` — entity resolution changes when budget is full: new concepts absorb into nearest existing entity via resolver.
 - `recall.go`, `remember.go` — adjust to match new graph shape (global entities, co-occurrence traversal).
 
+### Phase 1b — Skill Seeding
+
+Pre-seed the memory graph with skill files at being creation.
+
+- Each skill (browse, search, bash, recall, remember, plan) gets a markdown file describing how to use it — what it crosses, what input it takes, what output it returns.
+- On being creation, Context loads each skill file, extracts entities, creates entity-to-entity co-occurrence edges typed as skill edges (with ref pointing to the skill file), and stores a memory node anchoring the content.
+- The operator (static function) still handles execution. The graph holds the being's understanding of when and how to use it.
+- Skill files live in the being's home (`~/.skyra/beings/{name}/skills/`), same as v.05. The difference is they're now decomposed into the graph at load time rather than just read raw into the present.
+
 ### Phase 2 — Context/Think/Act Reframe
 
 Rewire the three directions.
@@ -369,9 +375,9 @@ Make both sides of the relationship look the same.
 The emergent cognition layer. Depends on phases 1-3 being solid and the being having accumulated real memory data.
 
 - Universe field on Self (optional, nil for young beings).
-- Parent field on Universe (nil for the outer universe, reference to owning being for inner universes).
 - Cluster detection on the memory graph — measure density of entity subgraphs (entity count + edge weight sum + memory node count).
 - Promotion threshold — when density crosses it, create a specialist being inside the inner universe with a scoped view into that region of the graph.
+- Thread-based presence — the parent enters its inner universe by opening a thread, becoming a participant in the routing table. Same thread mechanics as the outer plane. Closing the thread removes the parent. No special Parent field needed.
 - Routing through inner universe — Context activates specialists based on which entity clusters the incoming relation touches. Specialists fire, surface-thoughts collect, synthesis produces final input for Think.
 - Recursive promotion — a specialist's own dense clusters can promote into sub-specialists. Same mechanism, one level deeper.
 
@@ -379,21 +385,33 @@ The emergent cognition layer. Depends on phases 1-3 being solid and the being ha
 
 A skill is how a being communicates with something. Not the capability itself — the crossing. Bash isn't "run shell commands." Bash is how the being talks to the shell. Browse is how it talks to the internet. The skill is the method of crossing a bridge (port), not the bridge.
 
+### Seeding
+
+Every skill the being starts with — browse, search, bash, recall, remember, plan — is pre-seeded into the memory graph at birth. The skill file (the markdown document describing how to use the skill) is kept as a top-level artifact. Context decomposes it into entities and edges on first load:
+
+- Entities are extracted from the skill description — the nouns of the skill's domain (url, query, command, shell, web page, search results, memory, etc.)
+- Entity-to-entity edges are created for co-occurring concepts, typed as skill edges with a ref pointing back to the skill file
+- A memory node anchors the skill file's content to those entities
+
+The skill file is the source of truth. The graph is the being's internalized understanding of it. When the being uses the skill, new experience strengthens those edges and adds new memories to the same region. The seeded structure grows from use.
+
+This means a newborn being doesn't start with an empty graph. It starts with the shape of its capabilities already sketched in — light edges, minimal weight, but structurally present. The genome gives identity. The skill seeds give initial graph topology.
+
 ### Three Stages
 
 Skills mature through three stages, driven by the same edge-weight mechanism as everything else:
 
-**Operator** — a static function. The being calls it, gets a result. No memory, no growth. This is what v.05 has now. It works, but it doesn't learn.
+**Skill file** — the starting point. A markdown document describing how to communicate with something, decomposed into the graph as entities and skill edges. Context pulls the skill file during interactions — it's a cache, a pointer from the graph back to the full document. The operator (static function) still handles execution, but the being's understanding of when and how to use it lives in the graph.
 
-**Skill file** — when the edge weight between the being and a particular skill pattern crosses a threshold, Context crystallizes that region of the graph into a skill file. A compressed summary of what the being knows about how to communicate this way. Context creates these summaries and calls them during future interactions. It's a cache for memory — instead of traversing the graph every time, Context pulls the skill file. Cache hit.
+**Matured skill** — as the being uses the skill, experience accumulates on the same edges. The seeded entities gain new memories, new co-occurrences, new context. The skill file gets rewritten by Context to reflect what the being has actually learned — not just the original documentation, but patterns, preferences, failures. The cache updates.
 
-**Specialist being** — when the skill file keeps getting hit and the underlying graph region keeps growing, the skill promotes into a being. It has its own purpose ("I know how to talk to the shell"), its own memory, its own Context/Think/Act. It lives in the inner universe. It grows. A mature bash specialist knows the user's directory structure, knows which commands break, knows patterns. It doesn't look up how — it *knows*.
+**Specialist being** — when the skill region keeps growing and its density crosses the promotion threshold, the skill promotes into a being. It has its own purpose ("I know how to talk to the shell"), its own memory, its own Context/Think/Act. It lives in the inner universe. It grows. A mature bash specialist knows the user's directory structure, knows which commands break, knows patterns. It doesn't look up how — it *knows*.
 
 ```
-operator (static function)
-    ↓ edge weight crosses threshold
-skill file (Context cache, compressed graph summary)
-    ↓ continued density growth
+skill file (seeded at birth, decomposed into graph, operator handles execution)
+    ↓ experience accumulates on skill edges
+matured skill (Context rewrites the file from lived experience)
+    ↓ density crosses promotion threshold
 specialist being (inner universe, full Self, grows from experience)
 ```
 
