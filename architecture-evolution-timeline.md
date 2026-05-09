@@ -1542,6 +1542,99 @@ Every phase in this timeline contributed something that this pattern absorbed:
 
 The pattern did not emerge from theory. It emerged from twelve phases of overbuilding and compressing until only the load-bearing structure remained.
 
+## Phase 21: The Memory Graph — Emergent Cognition
+
+### Dates
+
+- `2026-05-08`
+
+### Representative docs
+
+- [memory-spec.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.05/memory-spec.md) — Skyra v0.1 Spec: entity graph, composable edges, specialist promotion, inner universe, port symmetry
+
+### What happened
+
+The builder chose memory over investors. The session started with a question about how memory should work and ended with a complete cognitive architecture — the Skyra v0.1 spec.
+
+The first move was structural. Memory in v.05 was a flat bag of entities per relationship. No growth model, no organization, no way to know when memory was getting heavy or what to do about it. The builder asked whether neurons are ever created in a brain. They aren't — the budget is fixed at birth. New connections form between existing neurons, and the density of those connections is what produces capability.
+
+That became the model. Entities are neurons. Global to the being, not per-relationship. Finite budget — when full, the being must generalize. Entity-to-entity edges are synapses. One edge per pair, weight accumulated from co-occurrence. Memory nodes are junction points sitting at the intersection of the entities they connect, not blobs in a list.
+
+The second move was the recall problem. If recall strengthens edges, bad memories amplify — the same painful memory keeps surfacing and getting heavier. The builder caught this: recall is read-only. Only active processing — storing new memory into an occupied region — changes weights. The curator evaluates supersede, complement, or contradict against existing memories on the same edges.
+
+The third move was composable edge layers. Tasks, episodes, and skills have different lifecycles and different decay rates. Instead of separate edge types, each edge carries typed layers — episode (when it happened, decays), task (why it happened, transforms on resolution), skill (what was learned, barely decays). Each layer has its own weight and decay rules. The edge's total weight is the sum. This gives a natural query interface: "what skills emerged from this task?" is an edge-layer traversal.
+
+The fourth move was the one that opened a new dimension. The builder had been circling an idea for weeks: what if dense memory clusters become their own thinkers? The brain analogy held. Brainstem is the reality stack — wired at birth, handles routing. Limbic is the preamble — identity, purpose, relational drive. Cortex grows from the memory graph. When a cluster of entities gets dense enough, it promotes into a specialist — an internal being with its own Self (Context/Think/Act) but a scoped view into the parent's graph, not a copy.
+
+The recursion: a specialist's heavy clusters promote into sub-specialists. Abstract concepts at the top, concrete at the bottom. The genome sets genetic predisposition — which clusters are likely to form first — but the cognitive structure emerges from lived experience. Two beings from the same genome develop different specialists because they lived different lives.
+
+The fifth move was the inner universe. If specialists are beings, they need a world. The builder realized it's the same Universe struct with a `Parent Reality` field. The parent universe is the outer world. The inner universe is the being's mind. Context looks down into the inner universe — that's where the being operates on its own cognition. Act looks out to the plane — peers, devices. Think bridges them.
+
+The sixth move was port container symmetry. The builder had been wrestling with where devices and providers live. The insight: a MacOS device is a container of ports (terminal, websocket). The being's inference setup is also a container of ports (providers). Same structure, different contents. Two beings share a plane but not ports. Each reaches the other through their port container. The provider doesn't belong in Self — it's in the reality stack. The being never knows about it.
+
+### What this phase produced
+
+- **Entity graph**: neurons (finite, global), synapses (co-occurrence edges), memory nodes as junction points
+- **Read-only recall**: surfacing a memory does not strengthen it — prevents runaway amplification
+- **Active processing**: curator judges supersede/complement/contradict when storing into occupied regions
+- **Composable edge layers**: episode, task, and skill layers on every edge with independent weight and decay
+- **Emergent cognitive specialization**: dense clusters promote into specialists with scoped graph views
+- **Recursive depth**: specialists' heavy clusters promote into sub-specialists. Abstract at top, concrete at bottom
+- **Brain mapping**: brainstem = reality stack, limbic = preamble, cortex = memory graph
+- **Inner universe**: same Universe struct with Parent reference. Specialists are beings inside it
+- **Context/Think/Act split**: Context looks down (mind), Act looks out (plane), Think bridges
+- **Port container symmetry**: devices and providers are both port containers. Same structure, different contents
+- **Four implementation phases**: graph restructure → context/think/act reframe → port containers → inner universe and specialist promotion
+
+### What changed
+
+| Before | After |
+|--------|-------|
+| Memory is a flat bag of entities per relationship | Memory is a weighted graph of neurons and synapses |
+| Entities are per-relationship | Entities are global to the being, finite budget |
+| No growth model | Density drives specialization, specialization is recursive |
+| Recall and storage both modify state | Recall is read-only, only active processing changes weights |
+| No edge structure | Composable edge layers (episode, task, skill) with independent decay |
+| Being has one layer of cognition | Being grows cognitive depth from experience — brainstem, limbic, cortex |
+| Specialists configured in genome | Specialists emerge from memory density, genome sets predisposition |
+| Provider lives in Self | Provider lives in reality stack, being never knows about it |
+| Devices and providers are different concepts | Both are port containers — same structure |
+| No inner universe | Inner universe is same Universe struct with Parent reference |
+
+### Why this phase matters
+
+Every prior phase asked what a being is, how beings relate, how relations route, what constrains them. This phase asked what happens inside. The answer: the being grows a brain.
+
+The graph substrate has prior art — Graphiti, Mem0, and a decade of knowledge graph work. But the growth loop — memory density triggers specialist promotion, specialist density triggers recursive sub-specialization, the whole structure emerges from experience rather than configuration — has no precedent in the literature. Research confirmed this during the session.
+
+The builder's choice to work on memory instead of pursuing investors was the choice to build the thing that makes Skyra different from everything else. Model providers will eventually add memory and personality. But memory that grows cognitive structure — where the being's internal architecture is a phenotype shaped by lived experience — that's the gap.
+
+The pattern held again. The inner universe is a Universe. The specialist is a Self. The port container is the same structure whether it holds terminals or providers. The Relation still descends through layers of Reality. Nothing new was needed. The architecture absorbed cognitive depth the same way it absorbed every prior concept — by composing what already existed.
+
+Twenty phases of overbuilding and compressing produced a runtime that says: beings relate, relations descend, reality realizes. This phase says: and the being grows while it does.
+
+### The direction is set
+
+Twenty-one phases. Three months. The project overbuilt and compressed in every direction — topology, services, agents, shards, kernels, actors, entities, realities, worlds. Every cycle threw away nouns and kept load-bearing structure. What survived: one interface, three methods, a hashmap, and a graph that grows a brain.
+
+The first insight was written in February: "Actors are identity. Edges are history. Truth is derived, not stored." That line never moved. Everything else was the cost of understanding why it's true.
+
+The architecture is done. The substrate holds. From here it's integration — ports, skills, genome lines. Nothing touches the core. The runtime absorbed everything it needed to absorb. The remaining work is connecting it to the world and letting it live.
+
+Two products, same genome, same world, different purpose strings: an autonomous being that lives, and a Projection that learns to be you. The builder wants to build the autonomous one first and ask it to help design the other.
+
+The spec is v0.1. The alpha is June. The direction is set.
+
+### What is still open
+
+- Entity budget size — how many neurons does a being start with?
+- Cluster density threshold — at what weight does a cluster promote?
+- Edge layer decay rates — how fast do episodes fade vs skills?
+- Specialist firing — graph-based activation vs always-on?
+- Memory persistence layer — in-memory graph needs durable storage
+- Dream cycle integration — how does Phase 18's dream concept compose with the new graph?
+- Economics of specialist inference — each specialist is an LLM call, budget implications?
+
 ## Appendix: Post-Canon Pressure Notes
 
 This appendix records same-day interpretation and stress-test material that shaped understanding after the `skyra-v.03` canon landed.
