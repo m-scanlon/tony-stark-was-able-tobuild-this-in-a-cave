@@ -5,17 +5,40 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
-	"strconv"
+	tea "github.com/charmbracelet/bubbletea"
 
 	"skyra-v05/src/debug"
 	"skyra-v05/src/inference"
 	"skyra-v05/src/reality"
+	"skyra-v05/src/tui"
 )
 
+func projectRoot() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return "."
+	}
+	dir := filepath.Dir(exe)
+	if _, err := os.Stat(filepath.Join(dir, "genome.skyra")); err == nil {
+		return dir
+	}
+	for _, candidate := range []string{".", "../..", filepath.Join(dir, "../..")} {
+		if _, err := os.Stat(filepath.Join(candidate, "genome.skyra")); err == nil {
+			return candidate
+		}
+	}
+	return "."
+}
+
 func main() {
+	root := projectRoot()
+	os.Chdir(root)
+
 	loadEnv("../.env")
 	loadKeychain()
 
@@ -45,10 +68,10 @@ func main() {
 		Devices:  make(map[string]reality.Reality),
 		ThinkOps: map[string]reality.Reality{
 			"retrieve-context": &reality.RetrieveContext{},
-			"store-context": &reality.StoreContext{},
-			"browse":   &reality.Browse{},
-			"search":   &reality.Search{},
-			"plan":     &reality.Plan{},
+			"store-context":    &reality.StoreContext{},
+			"browse":           &reality.Browse{},
+			"search":           &reality.Search{},
+			"plan":             &reality.Plan{},
 		},
 		ActOps: map[string]reality.Reality{},
 	}
@@ -62,7 +85,7 @@ func main() {
 		if comp, ok := components[name]; ok {
 			if p, ok := comp.(*reality.Provider); ok {
 				p.Model = model
-				p.Call = inference.CallDeepSeek
+				p.Call = inference.Call
 			}
 		}
 	}
@@ -78,22 +101,42 @@ func main() {
 		}
 	}
 
+	tuiComp := (&reality.TUITerm{}).Create(&reality.Relation{}).(*reality.TUITerm)
+	tuiComp.Device = mac
+	mac.Components["terminal"] = tuiComp
+
 	universe := &reality.Universe{Thread: thread}
 	thread.OnResolve = func() {
 		present := universe.Realize(&reality.Relation{Collecting: true})
 		debug.Log("[universe]:", present)
+		tuiComp.Broadcast(present)
 		if wsComp != nil {
 			wsComp.Broadcast(present)
 		}
 	}
 
-	fmt.Println("skyra v.05")
+	go func() {
+		for {
+			input := tuiComp.Realize(&reality.Relation{})
+			rel, err := reality.Impress("michael", input)
+			if err != nil {
+				debug.Log("[tui]: impress error:", err)
+				continue
+			}
+			universe.Realize(rel)
+		}
+	}()
 
-	term := mac.Component("terminal")
-	input := term.Realize(&reality.Relation{})
-	rel, _ := reality.Impress("michael", input)
+	p := tea.NewProgram(
+		tui.New(tuiComp),
+		tea.WithAltScreen(),
+		tea.WithMouseAllMotion(),
+	)
 
-	universe.Realize(rel)
+	if _, err := p.Run(); err != nil {
+		fmt.Fprintln(os.Stderr, "tui:", err)
+		os.Exit(1)
+	}
 }
 
 func bootstrap(thread *reality.NewThread, devices map[string]*reality.MacOS, components map[string]reality.Reality, llmWires map[string]string) error {
@@ -134,10 +177,8 @@ func bootstrap(thread *reality.NewThread, devices map[string]*reality.MacOS, com
 
 			switch compType {
 			case "stdin":
-				term := (&reality.Terminal{}).Create(rel).(*reality.Terminal)
-				term.Device = dev
-				dev.Components[name] = term
-				components[name] = term
+				// TUI replaces terminal — skip stdin creation
+				components[name] = nil
 
 			case "llm":
 				model, _ := reality.Extract(impulse, "~model", "component")

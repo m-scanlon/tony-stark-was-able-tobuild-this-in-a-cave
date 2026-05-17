@@ -39,13 +39,19 @@ func (m *Memory) Realize(r *Relation) string {
 	return ""
 }
 
-func (m *Memory) Store(content, relationship, artifactType string, layer EdgeLayer) string {
+func (m *Memory) Store(content, relationship, artifactType string, layer EdgeLayer, entities []string) string {
 	log := func(args ...any) { debug.Being(m.Owner, "memory", args...) }
 
-	entities := m.Extractor.Extract(content)
-	resolved := make([]string, 0, len(entities))
-	for _, e := range entities {
-		resolved = append(resolved, m.Resolver.Resolve(e))
+	var resolved []string
+	if len(entities) > 0 {
+		for _, e := range entities {
+			resolved = append(resolved, m.Resolver.Resolve(e))
+		}
+	} else {
+		extracted := m.Extractor.Extract(content)
+		for _, e := range extracted {
+			resolved = append(resolved, m.Resolver.Resolve(e))
+		}
 	}
 
 	now := time.Now()
@@ -209,7 +215,7 @@ func (m *Memory) Compress(entries []Entry, relationship string) {
 		sb.WriteString(fmt.Sprintf("%s: %s\n", e.From, e.Content))
 	}
 
-	m.Store(sb.String(), relationship, "trace", EdgeLayer{Type: "episode", Weight: 1.0})
+	m.Store(sb.String(), relationship, "trace", EdgeLayer{Type: "episode", Weight: 1.0}, nil)
 	log("[memory]: compressed", len(entries), "entries into trace for", relationship)
 }
 
@@ -241,24 +247,43 @@ func (m *Memory) SeedSkills(skillsDir string) {
 			continue
 		}
 
+		name := strings.TrimSuffix(entry.Name(), ".md")
+		ref := "skill:" + name
+
+		already := false
+		for _, node := range m.Graph.Nodes {
+			if node.SourceRef == ref {
+				already = true
+				break
+			}
+		}
+		if already {
+			continue
+		}
+
 		data, err := os.ReadFile(filepath.Join(skillsDir, entry.Name()))
 		if err != nil {
 			continue
 		}
 
-		content := string(data)
-		name := strings.TrimSuffix(entry.Name(), ".md")
-
-		entityID := "entity:" + name
-		if m.Graph.GetEntity(entityID) != nil {
-			continue
-		}
-
-		m.Store(content, "self", "understanding", EdgeLayer{
+		m.Store(string(data), "self", "understanding", EdgeLayer{
 			Type:   "skill",
 			Ref:    name,
 			Weight: 1.0,
-		})
+		}, nil)
+
+		var newest *MemNode
+		for _, node := range m.Graph.Nodes {
+			if node.SourceRef == "" && node.Type == "understanding" && node.Relationship == "self" {
+				if newest == nil || node.CreatedAt.After(newest.CreatedAt) {
+					newest = node
+				}
+			}
+		}
+		if newest != nil {
+			newest.SourceRef = ref
+			m.save()
+		}
 		seeded++
 	}
 

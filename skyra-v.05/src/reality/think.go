@@ -14,7 +14,7 @@ type Think struct {
 	id        string
 	Operators map[string]Reality
 	OuterOps  []string
-	LLM       Reality
+	Providers map[string]Reality
 	History   []ThoughtSection
 	Subscribe []string
 }
@@ -68,8 +68,9 @@ func (t *Think) Realize(r *Relation) string {
 		return ""
 	}
 
-	if t.LLM == nil {
-		debug.Log("[think]: no llm")
+	provider := t.provider()
+	if provider == nil {
+		debug.Log("[think]: no provider")
 		return ""
 	}
 
@@ -110,7 +111,7 @@ func (t *Think) Realize(r *Relation) string {
 		remaining := thinkBudget - i
 
 		lr := t.present(r, beingParser, ops, exchange, remaining, scope)
-		result := t.LLM.Realize(lr)
+		result := provider.Realize(lr)
 		log("[think]: llm returned →", result)
 
 		exchange = append(exchange, thinkEntry{
@@ -206,13 +207,15 @@ func (t *Think) present(r *Relation, beingParser Parser, ops map[string]Reality,
 	lr.Attach("think-time", func() string { return timePressure(remaining) })
 
 	if len(t.History) > 0 {
-		history := t.History
-		if len(scope) > 0 {
-			history = filterHistory(history, scope)
+		recent := t.History
+		if len(recent) > 5 {
+			recent = recent[len(recent)-5:]
 		}
-		if len(history) > 0 {
-			lr.Attach("thought-history", func() string { return renderThoughtHistory(history) })
-		}
+		scoped := filterHistory(t.History, scope)
+
+		lr.Attach("thought-history", func() string {
+			return renderThoughtHistoryWithRecent(scoped, recent)
+		})
 	}
 
 	if len(exchange) > 0 {
@@ -240,6 +243,38 @@ func renderThoughtHistory(sections []ThoughtSection) string {
 	for _, s := range sections {
 		sb.WriteString(fmt.Sprintf("[%s] (with %s): %s\n\n", s.Timestamp.Format("15:04:05"), s.Peer, s.Thought))
 	}
+	return sb.String()
+}
+
+func renderThoughtHistoryWithRecent(scoped, recent []ThoughtSection) string {
+	var sb strings.Builder
+
+	seen := make(map[string]bool)
+
+	if len(scoped) > 0 {
+		sb.WriteString("your thoughts with this peer:\n")
+		for _, s := range scoped {
+			key := s.Timestamp.Format("15:04:05.000") + s.Peer
+			seen[key] = true
+			sb.WriteString(fmt.Sprintf("[%s] (with %s): %s\n\n", s.Timestamp.Format("15:04:05"), s.Peer, s.Thought))
+		}
+	}
+
+	var unseen []ThoughtSection
+	for _, s := range recent {
+		key := s.Timestamp.Format("15:04:05.000") + s.Peer
+		if !seen[key] {
+			unseen = append(unseen, s)
+		}
+	}
+
+	if len(unseen) > 0 {
+		sb.WriteString("your recent thoughts (other exchanges):\n")
+		for _, s := range unseen {
+			sb.WriteString(fmt.Sprintf("[%s] (with %s): %s\n\n", s.Timestamp.Format("15:04:05"), s.Peer, s.Thought))
+		}
+	}
+
 	return sb.String()
 }
 
@@ -391,6 +426,13 @@ func (t *Think) isOuterOp(response string) string {
 		}
 	}
 	return ""
+}
+
+func (t *Think) provider() Reality {
+	for _, p := range t.Providers {
+		return p
+	}
+	return nil
 }
 
 func (t *Think) Parse() string {

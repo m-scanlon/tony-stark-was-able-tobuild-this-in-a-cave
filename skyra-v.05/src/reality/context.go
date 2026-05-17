@@ -7,12 +7,17 @@ import (
 )
 
 type Context struct {
-	id     string
-	Owner  string
-	Memory *Memory
-	LLM    Reality
-	Warm   map[string][]*MemNode
-	Active string
+	id          string
+	Owner       string
+	Memory      *Memory
+	Providers   map[string]Reality
+	Warm        map[string][]*MemNode
+	Active      string
+	Scope       []string
+	Claimed     map[string]string
+	Specialists map[string]*Self
+	OnPromote   func(*Cluster)
+	promoting   bool
 }
 
 func (c *Context) ID() string { return c.id }
@@ -23,6 +28,13 @@ func (c *Context) Create(r *Relation) Reality {
 
 func (c *Context) Realize(r *Relation) string {
 	return ""
+}
+
+func (c *Context) provider() Reality {
+	for _, p := range c.Providers {
+		return p
+	}
+	return nil
 }
 
 func (c *Context) Heat(relationship string) {
@@ -37,7 +49,8 @@ func (c *Context) Heat(relationship string) {
 	var loaded []*MemNode
 	seen := map[string]bool{}
 
-	for _, entity := range c.Memory.Graph.Entities {
+	entities := c.scopedEntities()
+	for _, entity := range entities {
 		memories := c.Memory.Graph.MemoriesForEntity(entity.ID)
 		for _, node := range memories {
 			if node.Relationship != relationship || seen[node.ID] {
@@ -50,6 +63,23 @@ func (c *Context) Heat(relationship string) {
 
 	c.Warm[relationship] = loaded
 	log("[context]: heated", relationship, "—", len(loaded), "memories")
+}
+
+func (c *Context) scopedEntities() []*Entity {
+	if c.Scope == nil {
+		all := make([]*Entity, 0, len(c.Memory.Graph.Entities))
+		for _, e := range c.Memory.Graph.Entities {
+			all = append(all, e)
+		}
+		return all
+	}
+	var result []*Entity
+	for _, id := range c.Scope {
+		if e := c.Memory.Graph.GetEntity(id); e != nil {
+			result = append(result, e)
+		}
+	}
+	return result
 }
 
 func (c *Context) Parse(relationship string) string {
@@ -89,13 +119,15 @@ func filterByType(nodes []*MemNode, artifactType string) []*MemNode {
 func (c *Context) Store(content, relationship, artifactType string) string {
 	log := func(args ...any) { debug.Being(c.Owner, "context", args...) }
 
-	if c.LLM == nil {
-		log("[context]: no llm, storing raw")
-		msg := c.Memory.Store(content, relationship, artifactType, EdgeLayer{Type: "episode", Weight: 1.0})
+	provider := c.provider()
+	if provider == nil {
+		log("[context]: no provider, storing raw")
+		msg := c.Memory.Store(content, relationship, artifactType, EdgeLayer{Type: "episode", Weight: 1.0}, nil)
 		c.invalidate(relationship)
 		return msg
 	}
 
+	candidates := c.Memory.Extractor.Extract(content)
 	existing := c.Memory.Query(content, relationship, "")
 
 	lr := &Relation{
@@ -109,13 +141,16 @@ func (c *Context) Store(content, relationship, artifactType string) string {
 		sb.WriteString(fmt.Sprintf("artifact type: %s\n", artifactType))
 		sb.WriteString(fmt.Sprintf("relationship: %s\n", relationship))
 		sb.WriteString(fmt.Sprintf("content to store:\n%s\n", content))
+		if len(candidates) > 0 {
+			sb.WriteString(fmt.Sprintf("\nentity candidates (from extractor — filter these, add missing ones, drop noise):\n%s\n", strings.Join(candidates, ", ")))
+		}
 		if existing != "no relevant memories found" {
 			sb.WriteString(fmt.Sprintf("\nexisting memories in this relationship:\n%s\n", existing))
 		}
 		return sb.String()
 	})
 
-	result := c.LLM.Realize(lr)
+	result := provider.Realize(lr)
 	log("[context]: curated →", result)
 
 	cleaned := content
@@ -136,7 +171,6 @@ func (c *Context) Store(content, relationship, artifactType string) string {
 			entity = strings.TrimSpace(entity)
 			if entity != "" {
 				entities = append(entities, entity)
-				c.Memory.Extractor.Learn(entity)
 			}
 		}
 	}
@@ -171,14 +205,37 @@ func (c *Context) Store(content, relationship, artifactType string) string {
 		finalType = "tension"
 	}
 
-	msg := c.Memory.Store(cleaned, relationship, finalType, EdgeLayer{Type: "episode", Weight: 1.0})
+	msg := c.Memory.Store(cleaned, relationship, finalType, EdgeLayer{Type: "episode", Weight: 1.0}, entities)
 	c.invalidate(relationship)
 
 	if len(entities) > 0 {
-		log("[context]: learned entities:", entities)
+		log("[context]: curator entities:", entities)
 	}
 
+	c.checkPromotion(log)
+
 	return msg
+}
+
+func (c *Context) checkPromotion(log func(...any)) {
+	if c.OnPromote == nil || c.promoting {
+		return
+	}
+	c.promoting = true
+	defer func() { c.promoting = false }()
+
+	exclude := map[string]bool{}
+	if c.Claimed != nil {
+		for id := range c.Claimed {
+			exclude[id] = true
+		}
+	}
+
+	clusters := c.Memory.Graph.DetectClusters(PromotionThreshold, exclude)
+	for _, cluster := range clusters {
+		log("[context]: cluster detected, density:", cluster.Density, "entities:", cluster.Entities)
+		c.OnPromote(&cluster)
+	}
 }
 
 func (c *Context) decayByContent(content, relationship string) {
@@ -202,8 +259,112 @@ func (c *Context) invalidate(relationship string) {
 }
 
 func (c *Context) Retrieve(query, relationship, artifactType string) string {
+	log := func(args ...any) { debug.Being(c.Owner, "context", args...) }
+
 	c.Heat(relationship)
-	return c.Memory.Query(query, relationship, artifactType)
+	memories := c.Memory.Query(query, relationship, artifactType)
+
+	activated := c.activateSpecialists(query)
+	if len(activated) == 0 {
+		return memories
+	}
+
+	var thoughts []specialistThought
+	for name, specialist := range activated {
+		log("[context]: consulting specialist", name)
+		thought := c.consultSpecialist(specialist, query, relationship)
+		if thought != "" {
+			thoughts = append(thoughts, specialistThought{name: name, thought: thought})
+			log("[context]: specialist", name, "→", truncate(thought, 80))
+		}
+	}
+
+	if len(thoughts) == 0 {
+		return memories
+	}
+
+	return c.synthesize(query, memories, thoughts, log)
+}
+
+type specialistThought struct {
+	name    string
+	thought string
+}
+
+func (c *Context) activateSpecialists(query string) map[string]*Self {
+	if c.Specialists == nil || len(c.Specialists) == 0 || c.Memory == nil {
+		return nil
+	}
+
+	entities := c.Memory.Extractor.Extract(query)
+	resolved := make([]string, 0, len(entities))
+	for _, e := range entities {
+		r := c.Memory.Resolver.Resolve(e)
+		resolved = append(resolved, "entity:"+r)
+	}
+
+	activated := map[string]*Self{}
+	for _, eid := range resolved {
+		if specName, ok := c.Claimed[eid]; ok {
+			if spec, ok := c.Specialists[specName]; ok {
+				activated[specName] = spec
+			}
+		}
+	}
+	return activated
+}
+
+func (c *Context) consultSpecialist(specialist *Self, query, relationship string) string {
+	think, ok := specialist.Realities["think"]
+	if !ok {
+		return ""
+	}
+
+	lr := &Relation{
+		Impulse:   query,
+		Origin:    relationship,
+		Parsers:   make(map[string]Parser),
+		Realities: specialist.Realities,
+	}
+
+	return think.Realize(lr)
+}
+
+func (c *Context) synthesize(query, memories string, thoughts []specialistThought, log func(...any)) string {
+	provider := c.provider()
+	if provider == nil {
+		var sb strings.Builder
+		sb.WriteString(memories)
+		sb.WriteString("\n\nspecialist perspectives:\n")
+		for _, t := range thoughts {
+			sb.WriteString(fmt.Sprintf("  [%s]: %s\n", t.name, t.thought))
+		}
+		return sb.String()
+	}
+
+	lr := &Relation{
+		Impulse: query,
+		Parsers: make(map[string]Parser),
+	}
+
+	lr.Attach("system", func() string {
+		return "You are a synthesis layer. You receive a query, memory results, and specialist perspectives. Synthesize the information into one coherent response. Return only the synthesis — no tags, no commentary."
+	})
+
+	lr.Attach("synthesis-input", func() string {
+		var sb strings.Builder
+		sb.WriteString("query: " + query + "\n\n")
+		sb.WriteString("memories:\n" + memories + "\n\n")
+		sb.WriteString("specialist perspectives:\n")
+		for _, t := range thoughts {
+			sb.WriteString(fmt.Sprintf("  [%s]: %s\n", t.name, t.thought))
+		}
+		return sb.String()
+	})
+
+	result := provider.Realize(lr)
+	log("[context]: synthesis →", truncate(result, 80))
+	return result
 }
 
 func (c *Context) system() string {
@@ -213,7 +374,7 @@ You receive content that a being wants to remember, along with existing memories
 
 Your responsibilities:
 1. Clean the content — tighten language, strip noise, keep signal
-2. Extract entities — names, concepts, tools, patterns mentioned in the content
+2. Curate entities — you may receive entity candidates from an extractor. Filter out noise (common words, pronouns, vague terms). Keep real names, concepts, tools, and patterns. Add any the extractor missed. Your entity list is authoritative — only what you return enters the graph.
 3. Judge the relationship to existing memories:
    - supersede: the new memory replaces an old understanding. Name what it supersedes.
    - complement: the new memory adds nuance without replacing. Both keep their weight.

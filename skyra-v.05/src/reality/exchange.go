@@ -75,7 +75,14 @@ func (e *Exchange) Realize(r *Relation) string {
 		r.ID = target
 		r.Impulse = rest
 	} else {
-		debug.Log("[exchange]: target already set →", r.ID)
+		candidate, rest := r.Peel()
+		if candidate != r.ID && isBeing(r.Realities[candidate]) {
+			debug.Log("[exchange]: explicit redirect", r.ID, "→", candidate)
+			r.ID = candidate
+			r.Impulse = rest
+		} else {
+			debug.Log("[exchange]: target already set →", r.ID)
+		}
 	}
 
 	key := exchangeKey(r.Origin, r.ID)
@@ -222,7 +229,17 @@ func (e *Exchange) Realize(r *Relation) string {
 	}
 
 	debug.Log("[exchange]: routing to being:", r.ID)
-	return being.Realize(r)
+	result := being.Realize(r)
+
+	if r.Exports != nil {
+		if _, ok := r.Exports["close-exchange"]; ok {
+			conv.Active = false
+			delete(r.Exports, "close-exchange")
+			debug.Log("[exchange]: closed", key)
+		}
+	}
+
+	return result
 }
 
 func (c *Conversation) Parse() string {
@@ -302,6 +319,17 @@ func renderRef(peer string, start, end int, entries []Entry) string {
 		sb.WriteString(fmt.Sprintf("  [%d] %s: %s\n", start+i, entry.From, entry.Content))
 	}
 	return sb.String()
+}
+
+func isBeing(r Reality) bool {
+	if r == nil {
+		return false
+	}
+	switch r.(type) {
+	case *Self, *User, *Agent, *CLI, *Process:
+		return true
+	}
+	return false
 }
 
 func (c *Conversation) ContextFor(being string) string {

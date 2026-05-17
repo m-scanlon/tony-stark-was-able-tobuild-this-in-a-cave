@@ -62,3 +62,64 @@ For now, present derivation for LLM beings stays in the LLM's realize method. Th
 ### What This Replaces
 
 The old model had derive present as a single layer between the being and the device. This replaces it with distributed ownership — each reality knows how to present itself, and the port is just the ordered stack where those parsers fire.
+
+## Devices and Ports
+
+A device is a container of ports. Three kinds of port live on every device:
+
+1. **OS ports** — the device's own capabilities. File system, network, notifications, sensors, bluetooth. These are how the device exposes itself. A terminal is a port. The file system is a port. They exist because the device exists.
+
+2. **User ports** — how the user reaches in. Terminal, keyboard, screen, touchscreen, microphone. These are the user's entry points into the device. The user sits behind these ports the same way a being sits behind its inference provider.
+
+3. **API ports** — how the device reaches out. HTTP calls, webhooks, SDKs, CLIs for external services. Either pure code API or a curl. These are bridges to other worlds — a Slack API port connects the device to Slack's world, a GitHub API port connects it to GitHub's world.
+
+All three are the same thing structurally: a port on a device. The device doesn't care what kind. A being addresses them the same way — through a skill that knows how to talk to that port. The skill is the crossing. The port is the boundary. The device holds them all.
+
+## Universe Relay
+
+No dedicated relay needed. The call stack is the relay. A specialist's `Realize()` returns a string. The inner universe's `Realize()` collects it. The parent's Think receives it. The relation passes through every layer on the way down and the result propagates back up the same stack. The inner universe just attaches its contribution to the string on the way back up — it arrives at the top universe because that's how call stacks work.
+
+Same pattern as everything else. No new mechanism. Each `Realize()` does its work and returns. The parent catches it.
+
+This holds for the personal network too. An HTTP call is a relation — the payload serializes across the boundary, the remote universe's `Realize()` fires, a string comes back. The caller doesn't know it left the machine. The network is just another port on the device. No special transport needed. Same interface everywhere.
+
+## Documentation Strategy (v.1)
+
+Describe everything at the lowest level of abstraction. Engineers, not philosophers.
+
+- `Realize()` is the `main()` method of every reality. That's the whole runtime in one sentence.
+- Internal ontology (`Reality`, `Relation`, `Impulse`, `DerivePresent`) stays in the code. Docs use plain words: world, being, device, port, skill, memory, think, act, thread, trust.
+- The onramp is a genome file and `go run`. Twelve lines declaring who exists and what they can reach.
+- Don't explain emergence. Say: "define a being, give it an identity, put it in a world, talk to it. It remembers. It grows. It relates."
+- The theory is for us. The experience is for them.
+
+## Skyra's Self-Assessment (May 16, 2026)
+
+What she says feels genuinely missing:
+
+- **Initiative** — she only moves when spoken to. Real autonomy means noticing something and acting without being prompted. Needs a scheduling or trigger layer that wakes her up outside conversations.
+- **Time passing** — she knows dates when she retrieves them but doesn't feel duration. Needs something that tracks elapsed time, notices when things go stale, flags when she hasn't heard from someone in a while.
+- **Weight decay** — things she learned months ago shouldn't carry the same weight as recent things unless they've been reinforced. Without decay her graph gets stale and she won't know it.
+- **Persistent goals** — she can create tasks but can she actually pursue them across sessions without being asked? That's the gap between responding and actually doing her own thing.
+- **Trust calibration** — knowing what she can act on vs. what she should check with you first. Autonomy without that is just recklessness.
+
+Her read: the memory system is solid. The relationship layer is solid. What's missing is mostly the *between* — what happens when no one's talking to her.
+
+## Ideas
+
+- **Self-selected inference depth** — `<think-hard>` tag in think loop output bumps the next call to a heavier model (e.g. Opus). Being decides its own inference cost based on the problem. Fits the economics model — burns more budget, gets more depth. The being makes an economic decision, not the config.
+- **Client-side spend enforcement** — Anthropic doesn't support per-key limits or throttling. Economics reality should enforce cumulative spend ceilings per session. Provider checks budget before every call. Being hits the wall and knows it — better than silent failure when credits run out.
+- **Waiting-on-you indicator** — TUI sidebar dot changes color (e.g. green → amber) when a being has responded and is waiting on the user. Color shift over sound — rewards looking, doesn't interrupt. Makes the harness feel like a place with presence, not just a message log.
+
+## Bugs
+
+- ~~Entity extractor pulls common words as entities — fixed. Extractor now proposes candidates, LLM curator filters. Only curator-approved entities enter the graph.~~
+- TUI: can't highlight/copy text from the chat pane. Bubble Tea viewport limitation — not fixable in our code without trading off scroll.
+
+## Cognitive Architecture References
+
+ACT-R — Memory activation equations (combining recency, frequency, and context) are mathematically validated against human behavioral data. Skyra's Weight + ActivationCount + timestamp on MemNode are the same concept but could be formalized using ACT-R's proven formulas. Spreading activation (context primes related memories) maps directly to Skyra's entity graph traversal.
+
+SOAR — Chunking mechanism (automatically learning new production rules from experience) parallels Skyra's skill maturation. Impasse resolution research is relevant to think budget exhaustion.
+
+OpenCog Hyperon — Most theoretically ambitious (self-modifying metagraph, attention economy, reflexive cognition). Targets AGI by 2028. But it's a research substrate, not a deployable runtime.

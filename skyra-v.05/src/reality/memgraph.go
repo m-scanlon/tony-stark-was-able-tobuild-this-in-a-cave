@@ -39,6 +39,7 @@ type MemNode struct {
 	ActivationCount int       `json:"activation_count"`
 	Relationship    string    `json:"relationship"`
 	AnchorEntities  []string  `json:"anchor_entities,omitempty"`
+	SourceRef       string    `json:"source_ref,omitempty"`
 	CreatedAt       time.Time `json:"created_at"`
 	LastActivated   time.Time `json:"last_activated"`
 }
@@ -54,6 +55,7 @@ type MemoryGraph struct {
 	EntityEdges map[string]*EntityEdge `json:"entity_edges"`
 	Nodes       map[string]*MemNode    `json:"nodes"`
 	Anchors     []*MemEdge             `json:"anchors"`
+	Claimed     map[string]string      `json:"claimed,omitempty"`
 	anchorAdj   map[string][]string
 }
 
@@ -63,6 +65,7 @@ func NewMemoryGraph() *MemoryGraph {
 		EntityEdges: make(map[string]*EntityEdge),
 		Nodes:       make(map[string]*MemNode),
 		Anchors:     []*MemEdge{},
+		Claimed:     make(map[string]string),
 		anchorAdj:   make(map[string][]string),
 	}
 }
@@ -256,6 +259,9 @@ func LoadMemoryGraph(dir string) *MemoryGraph {
 	if g.Anchors == nil {
 		g.Anchors = []*MemEdge{}
 	}
+	if g.Claimed == nil {
+		g.Claimed = make(map[string]string)
+	}
 	g.rebuildAdj()
 	return g
 }
@@ -265,5 +271,95 @@ func (g *MemoryGraph) rebuildAdj() {
 	for _, anchor := range g.Anchors {
 		g.anchorAdj[anchor.To] = append(g.anchorAdj[anchor.To], anchor.From)
 		g.anchorAdj[anchor.From] = append(g.anchorAdj[anchor.From], anchor.To)
+	}
+}
+
+const PromotionThreshold = 75.0
+
+type Cluster struct {
+	Entities      []string
+	EdgeWeightSum float64
+	MemoryCount   int
+	Density       float64
+}
+
+func (g *MemoryGraph) DetectClusters(threshold float64, exclude map[string]bool) []Cluster {
+	if exclude == nil {
+		exclude = map[string]bool{}
+	}
+
+	seen := map[string]bool{}
+	var clusters []Cluster
+
+	for id := range g.Entities {
+		if exclude[id] || seen[id] {
+			continue
+		}
+		cluster := g.clusterAround(id, exclude)
+		if cluster == nil || cluster.Density < threshold {
+			continue
+		}
+		for _, eid := range cluster.Entities {
+			seen[eid] = true
+		}
+		clusters = append(clusters, *cluster)
+	}
+
+	sort.Slice(clusters, func(i, j int) bool {
+		return clusters[i].Density > clusters[j].Density
+	})
+	return clusters
+}
+
+func (g *MemoryGraph) clusterAround(entityID string, exclude map[string]bool) *Cluster {
+	members := map[string]bool{entityID: true}
+	neighbors := g.Neighbors(entityID)
+	for _, n := range neighbors {
+		if !exclude[n.ID] {
+			members[n.ID] = true
+		}
+	}
+
+	if len(members) < 2 {
+		return nil
+	}
+
+	ids := make([]string, 0, len(members))
+	for id := range members {
+		ids = append(ids, id)
+	}
+
+	var edgeWeightSum float64
+	for i := 0; i < len(ids); i++ {
+		for j := i + 1; j < len(ids); j++ {
+			if edge := g.GetEdge(ids[i], ids[j]); edge != nil {
+				edgeWeightSum += edge.Weight
+			}
+		}
+	}
+
+	memSeen := map[string]bool{}
+	memoryCount := 0
+	for _, id := range ids {
+		for _, node := range g.MemoriesForEntity(id) {
+			if !memSeen[node.ID] {
+				memSeen[node.ID] = true
+				memoryCount++
+			}
+		}
+	}
+
+	entityCount := float64(len(ids))
+	possibleEdges := entityCount * (entityCount - 1) / 2
+	if possibleEdges < 1 {
+		possibleEdges = 1
+	}
+	density := entityCount * (edgeWeightSum / possibleEdges) * float64(memoryCount)
+
+	return &Cluster{
+		Entities:      ids,
+		EdgeWeightSum: edgeWeightSum,
+		MemoryCount:   memoryCount,
+		Density:       density,
 	}
 }

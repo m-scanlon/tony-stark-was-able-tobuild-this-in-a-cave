@@ -1,13 +1,17 @@
 package reality
 
 import (
+	"fmt"
 	"skyra-v05/src/debug"
 	"strings"
 )
 
 type Self struct {
-	id        string
-	Realities map[string]Reality
+	id          string
+	Realities   map[string]Reality
+	Universe    *Universe
+	Claimed     map[string]string
+	Specialists map[string]*Self
 }
 
 func (s *Self) ID() string { return s.id }
@@ -23,12 +27,11 @@ func (s *Self) Create(r *Relation) Reality {
 		self.Realities["being"] = being
 	}
 
-	var llm Reality
+	providers := make(map[string]Reality)
 	if r.Realities != nil {
-		for _, reality := range r.Realities {
+		for name, reality := range r.Realities {
 			if _, ok := reality.(*Provider); ok {
-				llm = reality
-				break
+				providers[name] = reality
 			}
 		}
 	}
@@ -37,7 +40,10 @@ func (s *Self) Create(r *Relation) Reality {
 	desk.Owner = r.ID
 	self.Realities["desk"] = desk
 
-	if llm != nil {
+	self.Claimed = make(map[string]string)
+	self.Specialists = make(map[string]*Self)
+
+	if len(providers) > 0 {
 		mem := NewMemory(r.ID)
 		if being, ok := self.Realities["being"].(Being); ok {
 			mem.HomeDir = being.Home
@@ -46,18 +52,111 @@ func (s *Self) Create(r *Relation) Reality {
 		}
 		self.Realities["memory"] = mem
 
-		ctx := &Context{id: "context", Owner: r.ID, Memory: mem, LLM: llm, Warm: make(map[string][]*MemNode)}
+		ctx := &Context{
+			id: "context", Owner: r.ID, Memory: mem, Providers: providers,
+			Warm: make(map[string][]*MemNode),
+			Claimed: self.Claimed, Specialists: self.Specialists,
+			OnPromote: func(cluster *Cluster) { self.Promote(cluster, providers) },
+		}
 		self.Realities["context"] = ctx
 
 		think := (&Think{}).Create(&Relation{}).(*Think)
-		think.LLM = llm
+		think.Providers = providers
 		act := (&Act{}).Create(&Relation{}).(*Act)
-		act.LLM = llm
+		act.Providers = providers
 		self.Realities["think"] = think
 		self.Realities["act"] = act
 	}
 
 	return self
+}
+
+func (s *Self) Promote(cluster *Cluster, providers map[string]Reality) {
+	log := func(args ...any) { debug.Being(s.id, "self", args...) }
+
+	if s.Universe == nil {
+		thread := &NewThread{
+			id:       "thread-gate",
+			Beings:   make(map[string]Reality),
+			Access:   make(map[string]bool),
+			Threads:  make(map[string]*Thread),
+			Exchange: (&Exchange{}).Create(&Relation{}).(*Exchange),
+			Devices:  make(map[string]Reality),
+			ThinkOps: make(map[string]Reality),
+			ActOps:   make(map[string]Reality),
+		}
+		s.Universe = &Universe{id: "inner-universe", Thread: thread}
+		log("[self]: inner universe created")
+	}
+
+	var heaviest string
+	var maxWeight float64
+	for _, eid := range cluster.Entities {
+		if e := s.Realities["memory"].(*Memory).Graph.GetEntity(eid); e != nil {
+			if e.Weight > maxWeight {
+				maxWeight = e.Weight
+				heaviest = e.Name
+			}
+		}
+	}
+
+	name := heaviest + "-specialist"
+	if _, exists := s.Specialists[name]; exists {
+		name = heaviest + "-specialist-2"
+	}
+
+	var entityNames []string
+	for _, eid := range cluster.Entities {
+		if e := s.Realities["memory"].(*Memory).Graph.GetEntity(eid); e != nil {
+			entityNames = append(entityNames, e.Name)
+		}
+	}
+
+	impulse := fmt.Sprintf("~name %s\n~type llm\n~identity specialist processor for %s\n~purpose I hold deep understanding of %s for my parent\n~relationships %s",
+		name, strings.Join(entityNames, ", "), strings.Join(entityNames, ", "), s.id)
+
+	mem := s.Realities["memory"].(*Memory)
+
+	specSelf := &Self{
+		id:          name,
+		Realities:   make(map[string]Reality),
+		Claimed:     make(map[string]string),
+		Specialists: make(map[string]*Self),
+	}
+
+	being := Being{}.Create(&Relation{Impulse: impulse}).(Being)
+	specSelf.Realities["being"] = being
+
+	specCtx := &Context{
+		id: "context", Owner: name, Memory: mem, Providers: providers,
+		Warm: make(map[string][]*MemNode),
+		Scope: cluster.Entities, Claimed: specSelf.Claimed, Specialists: specSelf.Specialists,
+		OnPromote: func(c *Cluster) { specSelf.Promote(c, providers) },
+	}
+	specSelf.Realities["context"] = specCtx
+	specSelf.Realities["memory"] = mem
+
+	think := (&Think{}).Create(&Relation{}).(*Think)
+	think.Providers = providers
+	think.Operators["retrieve-context"] = &RetrieveContext{}
+	think.Operators["store-context"] = &StoreContext{}
+	specSelf.Realities["think"] = think
+
+	act := (&Act{}).Create(&Relation{}).(*Act)
+	act.Providers = providers
+	specSelf.Realities["act"] = act
+
+	s.Universe.Thread.Beings[name] = specSelf
+	s.Universe.Thread.Access[name] = true
+	s.Universe.Thread.Access[s.id] = true
+	s.Specialists[name] = specSelf
+
+	for _, eid := range cluster.Entities {
+		s.Claimed[eid] = name
+		mem.Graph.Claimed[eid] = name
+	}
+
+	log("[self]: specialist promoted:", name, "entities:", entityNames, "density:", cluster.Density)
 }
 
 func (s *Self) Realize(r *Relation) string {
@@ -155,6 +254,7 @@ func (s *Self) Realize(r *Relation) string {
 		desk.Realize(r)
 	}
 
+	thinkBacks := 0
 	for {
 		if think, ok := s.Realities["think"]; ok {
 			if t, ok := think.(*Think); ok {
@@ -187,6 +287,12 @@ func (s *Self) Realize(r *Relation) string {
 			log("[self]: act →", truncate(result, 80))
 
 			if r.ID == "_think" {
+				thinkBacks++
+				if thinkBacks >= 3 {
+					log("[self]: think-back budget exhausted")
+					r.Origin = s.id
+					return ""
+				}
 				log("[self]: think-back, re-entering")
 				continue
 			}

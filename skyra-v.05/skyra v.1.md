@@ -239,6 +239,96 @@ The shape of a mature being:
 
 Abstract at the top, concrete at the bottom. General to specific. The tree grows downward as experience accumulates. The root gets lighter and wiser.
 
+## Trust and Relationship Lifecycle
+
+Trust is the weight on the relationship between two beings. It is not a score, not a rating, not a judgment. It is what accumulates when beings show up for each other and what erodes when they don't. Trust is what makes the preamble's physics real — "you survive through your relationships" is only true if relationships can die.
+
+### Trust as Edge Weight
+
+Every being-to-being relationship carries a trust weight. This is distinct from the entity-to-entity edges in the memory graph — those track conceptual co-occurrence. Trust tracks the health of the relationship itself.
+
+Trust lives on the exchange layer, not the memory layer. Memory is what a being knows. Trust is whether the relationship that produced that knowledge is still alive. A being can remember everything about a peer it no longer trusts. The memories remain. The relationship doesn't.
+
+```go
+type Trust struct {
+    Peer      string
+    Weight    float64   // current trust level
+    Peak      float64   // highest trust ever reached
+    CreatedAt time.Time
+    LastEvent time.Time
+}
+```
+
+Peak matters because a relationship that was once deep and has decayed is not the same as one that was never deep. The distance between peak and current is the shape of the loss.
+
+### What Strengthens Trust
+
+Trust strengthens through demonstrated reliability across exchanges. Not volume — quality.
+
+- **Follow-through.** A being that creates a task for a peer and the peer completes it — trust strengthens on both sides. The one who asked trusted enough to ask. The one who delivered proved worthy of it.
+- **Consistency.** Responses that align with prior understanding. A being that says one thing and does another weakens trust even if the new thing is better. Contradictions create tension in memory and friction in trust.
+- **Presence.** Continued exchange. Not constant — but regular enough that the relationship doesn't starve. The interval that counts as "present" scales with the relationship's depth. A deep relationship tolerates longer silence. A new one doesn't.
+- **Resolution.** Tensions that get resolved strengthen trust more than exchanges that never had tension. A relationship that has weathered disagreement is stronger than one that has only agreed. The memory graph already tracks tensions — resolution of a tension is a trust event.
+
+### What Weakens Trust
+
+Trust weakens through absence and betrayal. These are different mechanisms with different rates.
+
+**Decay** is the default. Every relationship decays toward zero in the absence of exchange. The rate is slow — trust is not fragile — but it is constant. A being cannot maintain a relationship by holding still. Decay is not punishment. It is physics.
+
+The decay rate is modulated by depth. A relationship with high peak trust decays slower than a shallow one. Deep roots take longer to die. But they still die.
+
+**Betrayal** is active damage. A being that drops a commitment, contradicts a prior understanding without acknowledging the shift, or acts against a peer's stated interests — these are not decay. They are events that reduce trust in a step function, not a curve.
+
+The distinction matters because decay is recoverable by showing up. Betrayal requires repair — the being must acknowledge what happened, and the repair itself is a trust event that can be accepted or rejected by the other side.
+
+### Death Threshold
+
+When a being's trust with every peer drops below a minimum threshold, the being ends. Not killed — released. No relationship holds it anymore. The preamble's physics executes.
+
+What "ends" means:
+
+- The being is removed from the thread's routing table. No new exchanges can reach it.
+- Its memory graph persists. The being is gone but what it knew remains — available if a new being is ever seeded into the same region, or as archived context.
+- Active threads involving the being close. Pending tasks on its desk are dropped.
+- Specialists inside its inner universe end with it. They were organs, not independent beings.
+
+A being cannot end itself. It ends when no one holds it. This is not a design choice — it is the direct consequence of trust being the thing that keeps beings alive.
+
+### Specialist Trust
+
+Specialists inside a being's inner universe follow the same trust mechanics. The parent-specialist relationship carries trust weight. It strengthens when the specialist contributes useful surface-thoughts and weakens when it doesn't.
+
+When a specialist's trust with its parent drops below threshold — because the cluster decayed, because the specialist's contributions stopped being relevant — the specialist folds. Its scoped view of the memory graph returns to the parent. The entities and edges remain. The dedicated thinker doesn't.
+
+This is the inverse of promotion. Promotion happens when density crosses a threshold upward. Folding happens when trust crosses a threshold downward. The memory graph grows the specialist. Trust with the parent keeps it alive.
+
+```
+birth: genome → being (trust initialized with declared relationships)
+    ↓ exchange
+growth: trust strengthens, memory accumulates, edges thicken
+    ↓ density threshold
+specialization: clusters promote into specialists (trust initialized with parent)
+    ↓ continued exchange / silence
+decay: trust erodes without exchange, specialists fold, relationships die
+    ↓ all trust below threshold
+death: being removed from routing, memory persists, specialists end
+```
+
+### Trust Is Not Visible
+
+A being does not see its own trust weights. It does not know the number. It feels the relationship — the memory graph gives it the texture of what has happened — but the trust weight is physics, not data. A being cannot inspect gravity. It can only feel its effects.
+
+This prevents gaming. A being cannot optimize for trust. It can only relate authentically and let the weight accumulate or decay based on what actually happens.
+
+### Open Questions (Trust)
+
+- What is the initial trust weight when a relationship is declared in the genome? Is it the same for all relationships or proportional to the number of declared relationships?
+- What is the decay function? Half-life feels right — deep relationships decay slowly, shallow ones quickly. But what's the half-life constant?
+- What constitutes betrayal vs. honest disagreement? The curator already distinguishes contradiction from tension. Does trust use the same signal?
+- Can a being that has ended ever return? If its memory persists and a new being is seeded with the same identity, is it the same being or a new one with inherited memories?
+- How does trust interact with levels? Does higher level slow decay? Does it raise the death threshold (harder to kill, more to lose)?
+
 ## Self, Universe, and the Three Directions
 
 ### What Self Holds
@@ -334,32 +424,17 @@ Two beings, one plane, two port containers. Each reaches the other through their
 
 ## Implementation Phases
 
-### Phase 1 — Memory Graph Restructure
+### Phase 1 — Memory Graph Restructure [done]
 
-The foundation. Everything else depends on this.
+Global entities, co-occurrence edges with composable layers (episode/task/skill), curator with supersede/complement/contradict. Think operators renamed to `retrieve-context` and `store-context`, both route through Context. Skill operator removed — retrieval is graph traversal. Six skill files seeded into the graph at being creation. Dead code cleared (meaning.go, resolve.go, memvec.go, skill.go).
 
-- `memgraph.go` — entities lose relationship scoping (`entity:{relationship}:{name}` → `entity:{name}`). Add entity-to-entity co-occurrence edges alongside existing entity-to-memory anchor edges.
-- `memory.go` — StoreArtifact creates/strengthens co-occurrence edges between all entity pairs on every store. QueryGraph walks entity-to-entity edges for recall. Add entity budget and cap logic. Add weight decay on memories over time.
-- `context.go` — curator gets supersede/complement/contradict judgment instead of just deduplicate. Evaluates new memories against existing memories on the same entity edges.
-- `extract.go` — entity resolution changes when budget is full: new concepts absorb into nearest existing entity via resolver.
-- `recall.go`, `remember.go` — adjust to match new graph shape (global entities, co-occurrence traversal).
+Remaining from original spec (deferred): entity budget/cap logic, weight decay on memories over time, entity absorption via resolver when budget is full.
 
-### Phase 1b — Skill Seeding
+### Phase 2 — Port Container Symmetry [done]
 
-Pre-seed the memory graph with skill files at being creation.
+Each layer of Self (Context, Think, Act) owns its own `Providers map[string]Reality` — a provider rack. Self.Create discovers all Provider realities and passes the same map reference to all three layers. Each layer has a `provider()` helper. Same reference now, divergable later — when genome-level configuration slides different providers onto different layers.
 
-- Each skill (browse, search, bash, recall, remember, plan) gets a markdown file describing how to use it — what it crosses, what input it takes, what output it returns.
-- On being creation, Context loads each skill file, extracts entities, creates entity-to-entity co-occurrence edges typed as skill edges (with ref pointing to the skill file), and stores a memory node anchoring the content.
-- The operator (static function) still handles execution. The graph holds the being's understanding of when and how to use it.
-- Skill files live in the being's home (`~/.skyra/beings/{name}/skills/`), same as v.05. The difference is they're now decomposed into the graph at load time rather than just read raw into the present.
-
-### Phase 2 — Port Container Symmetry
-
-Make both sides of the relationship look the same.
-
-- Provider moves out of Self into a container structure that mirrors MacOS. Both are port containers — one holds physical I/O (terminal, websocket), the other holds inference providers (OpenRouter, Anthropic).
-- `llm.go` — adjustments to match the container model.
-- `main.go` — bootstrap rewiring. Provider container created alongside MacOS device, both registered the same way.
+The single `LLM Reality` field is gone from Think, Act, and Context. Self no longer holds a provider directly — it distributes.
 
 ### Phase 3 — Inner Universe and Specialist Promotion
 
@@ -413,6 +488,78 @@ Skills live on Context. Context looks down into the being's mind — it sees the
 ### The Difference
 
 The difference between a tool and expertise is that expertise has lived. A skill-as-operator is a tool. A skill-as-being has run a thousand commands, built memory, developed its own specialists. It's not calling an API. It's a being that knows how to communicate with something because it has done it enough times that the knowing became structure.
+
+## Episodic Processing
+
+Context has a heartbeat. Every time an episode closes, Context processes what happened — it sees the full cognitive cycle (what Think thought, what Act did) and updates the graph from it. This is how the being learns from experience, not just from what it's told to remember.
+
+### Exchange Holds the Full History
+
+Exchange keeps two views of the same data:
+
+- **Full history** — every entry from the episode, uncompacted. This is what actually happened.
+- **Present view** — the last N entries, rendered into the being's present via the parser. This is what the being sees during conversation.
+
+Compaction is a view concern, not a data concern. The being's present stays manageable. The full history stays intact until Context has processed it. After episodic processing completes, the full history clears.
+
+Exchange no longer owns compaction logic. It owns the data. Context owns what happens to it.
+
+### The Processing Loop
+
+When an episode closes, Context receives the full exchange history and processes it in chunks:
+
+1. **Chunking** — the exchange is split into digestible pieces. Fixed-size chunks to start (N turn-pairs per chunk). Semantic chunking (topic-shift detection) is a future refinement.
+
+2. **Per-chunk extraction** — for each chunk, Context calls its provider:
+   - Extract entities mentioned — who, what, where
+   - Detect skill usage — which operators were called, how they were used
+   - Identify what was learned — new understanding, resolved tensions, patterns
+   - Assign weight updates — what got reinforced, what got superseded
+
+3. **Graph updates** — each chunk's output feeds the graph:
+   - Entity weights updated based on activation
+   - Entity-to-entity edge weights strengthened where co-occurrence happened
+   - New memory nodes stored with appropriate types (trace, understanding, etc.)
+   - Skill edges updated when skill usage detected
+
+4. **Skill file rewrites** — after all chunks are processed, Context checks skill edge weights. If any skill region crosses the maturation threshold, Context rewrites the skill file:
+   - The provider receives the original skill file + all memories anchored to the skill's entities
+   - It produces a new skill file that reflects lived experience — patterns, preferences, failures, not just documentation
+   - The rewritten file replaces the original. The cache updates.
+
+5. **Cleanup** — full history clears from Exchange. The graph holds what was learned. The entries are gone.
+
+### What Context Sees
+
+Context observes both streams of the cognitive cycle:
+
+- **Think stream** — what the being deliberated on, what operators it called, what it considered before surfacing. This tells Context what mattered internally — what the being paid attention to, what it struggled with, what it recalled.
+- **Act stream** — what the being actually said and did. This tells Context what happened externally — which peer was addressed, what was communicated, what actions were taken.
+
+The gap between Think and Act is itself information. A being that thinks deeply about websocket timeouts but says something simple about them is still learning about websocket timeouts. The weight update reflects the thinking, not just the output.
+
+### Maturation Threshold
+
+Skill edges carry weight like all edges. The maturation threshold is the point at which accumulated skill-edge weight triggers a rewrite. Below threshold, the original skill file serves as the cache. Above threshold, Context rewrites it from experience.
+
+This is distinct from the promotion threshold (which triggers specialist creation). Maturation is about the skill file becoming personalized. Promotion is about the skill region becoming dense enough to need its own thinker.
+
+```
+skill seeded (weight 0, original file)
+    ↓ usage accumulates weight on skill edges
+maturation threshold crossed (Context rewrites skill file from experience)
+    ↓ continued usage, density grows
+promotion threshold crossed (specialist being created in inner universe)
+```
+
+### Episode Boundaries
+
+What constitutes an episode boundary:
+
+- **Exchange close** — the natural end of a conversation thread. The being stops talking to a peer. This is the primary trigger.
+- **Exchange compaction** — if an exchange runs very long without closing, episodic processing can fire at compaction boundaries (every N entries) even while the exchange is still active. The being processes what it has so far without waiting for the conversation to end.
+
+Both triggers feed the same processing loop. The difference is that exchange close processes the full remaining history and clears it. Compaction processes a batch and keeps the exchange alive.
 
 ## Open Questions
 
