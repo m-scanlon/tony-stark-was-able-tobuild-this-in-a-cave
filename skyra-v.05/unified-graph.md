@@ -45,11 +45,11 @@ This is why the same graph produces different behavior for different beings. Dif
 
 ### Quantum-Formal Math
 
-The metaphor becomes more than metaphor if the Relation carries not only accumulated history, but a live field of potential over the graph. In that framing, the wavefunction is not the node. The wavefunction is the Relation's current potential across the graph.
+The metaphor becomes more than metaphor if the Relation carries not only accumulated history, but a live field of potential over the graph. In that framing, the wavefunction is not the reality. The wavefunction is the Relation's current potential across the graph.
 
 ```
-wavefunction  ≈ Relation state over possible graph nodes
-amplitudes    ≈ weighted activations on those possible nodes/edges
+wavefunction  ≈ Relation state over possible graph realities
+amplitudes    ≈ weighted activations on those possible realities/edges
 observation   ≈ Realize(relation)
 collapse      ≈ one or more potential paths becoming concrete
 ```
@@ -63,13 +63,13 @@ Relation {
     ID           string
     Parsers      map[string]Parser
     Trace        []RealizedStep
-    State        map[NodeID]Activation
+    State        map[RealityID]Activation
 }
 
 Activation {
     Amplitude    float64      // or complex128 later
     Phase        float64      // optional; useful if interference matters
-    Source       string       // why this node is active
+    Source       string       // why this reality is active
 }
 ```
 
@@ -77,7 +77,7 @@ At each step, the graph and current context transform the Relation's state:
 
 ```
 S      = current Relation state vector
-G      = graph transition matrix from current node/region
+G      = graph transition matrix from current reality/region
 C      = context operator derived from impulse, memory, parsers, trace
 S'     = C * G * S
 ```
@@ -86,14 +86,14 @@ In plain architecture terms:
 
 ```
 prior Relation state
-  → graph topology proposes possible next nodes
+  → graph topology proposes possible next realities
   → current context reshapes their activations
   → activations become amplitudes
   → Realize collapses the field into concrete traversal/output
   → Relation carries the collapsed result forward
 ```
 
-For a candidate next node `i`, activation can start as:
+For a candidate next reality `i`, activation can start as:
 
 ```
 activation_i =
@@ -108,11 +108,11 @@ activation_i =
 Where:
 
 - `edge_weight_i` is the base learned strength of this edge.
-- `relevance_i` is how much the node matches the Relation's current content.
-- `recency_i` boosts recently activated or recently updated nodes.
-- `trust_i` represents whether this being should rely on this node.
-- `relationship_weight_i` is the per-being relationship to that node.
-- `context_fit_i` is how well the node fits the accumulated trace.
+- `relevance_i` is how much the reality matches the Relation's current content.
+- `recency_i` boosts recently activated or recently updated realities.
+- `trust_i` represents whether this being should rely on this reality.
+- `relationship_weight_i` is the per-being relationship to that reality.
+- `context_fit_i` is how well the reality fits the accumulated trace.
 
 The simplest probability rule is Born-like:
 
@@ -120,7 +120,7 @@ The simplest probability rule is Born-like:
 probability_i = |activation_i|^2 / Σ |activation_j|^2
 ```
 
-Squaring matters. It makes strong activations disproportionately more likely without deleting weak possibilities. A node twice as activated becomes four times as likely. This matches the intuition of cognition: strong associations dominate, but faint associations can still surface.
+Squaring matters. It makes strong activations disproportionately more likely without deleting weak possibilities. A reality twice as activated becomes four times as likely. This matches the intuition of cognition: strong associations dominate, but faint associations can still surface.
 
 There are two useful collapse modes.
 
@@ -146,7 +146,7 @@ Temperature controls how exploratory the collapse is:
 probability_i = softmax(|activation_i|^2 / temperature)
 ```
 
-Low temperature sharpens collapse toward the strongest node. High temperature flattens the distribution and lets weaker nodes compete. This gives the system a cognitive dial:
+Low temperature sharpens collapse toward the strongest reality. High temperature flattens the distribution and lets weaker realities compete. This gives the system a cognitive dial:
 
 - low temperature for execution
 - medium temperature for ordinary recall
@@ -155,7 +155,7 @@ Low temperature sharpens collapse toward the strongest node. High temperature fl
 Top-k and thresholding can coexist with this:
 
 ```
-candidates = nodes where activation_i >= threshold
+candidates = realities where activation_i >= threshold
 candidates = top_k(candidates)
 probability_i = normalize(|activation_i|^2 over candidates)
 ```
@@ -184,10 +184,10 @@ destructive interference:
 
 This does not need to be implemented first. Real-valued activations are enough for the initial graph. But the math leaves room for richer cognition later: contradiction, ambiguity, resonance, and uncertainty can become first-class dynamics instead of prompt text.
 
-Collapse can also be partial. Think retrieval should not always collapse to one node. It may collapse a region:
+Collapse can also be partial. Think retrieval should not always collapse to one reality. It may collapse a region:
 
 ```
-collapsed_region = top nodes whose combined probability mass <= budget
+collapsed_region = top realities whose combined probability mass <= budget
 ```
 
 Memory retrieval especially wants partial collapse. A thought does not recall exactly one memory; it activates a neighborhood. The Relation descends through that neighborhood, accumulates content, and then inference compresses what surfaced.
@@ -195,7 +195,7 @@ Memory retrieval especially wants partial collapse. A thought does not recall ex
 Act is more often single collapse:
 
 ```
-target = chosen traversable node
+target = chosen traversable reality
 Realize(target)
 ```
 
@@ -232,7 +232,7 @@ Think has hardcoded operators (retrieve-context, store-context, browse, search, 
 - **Act** — initiates traversal along activated edges. The act of making contact with another entity.
 - **Reality** — the traversal itself. `Realize()` all the way down to a base case (provider, terminal, process, shell).
 
-Operators aren't tools. They're entities. Bash is an entity the being has a relationship with. The being talks to bash the same way it talks to michael. The operator is just the interface at the boundary — the way the relation crosses into that entity's reality. The graph doesn't need a special "operator" node type. It just has entities and relationships between them.
+Operators aren't tools. They're entities. Bash is an entity the being has a relationship with. The being talks to bash the same way it talks to michael. The operator is just the interface at the boundary — the way the relation crosses into that entity's reality. The graph doesn't need a special "operator" reality type. It just has entities and relationships between them.
 
 Act isn't a layer. It's the transition from intent to traversal. The being decides to make contact and the relation enters reality. Act is the door between the being's inner world and the physics of the system.
 
@@ -289,36 +289,36 @@ The surface thought is the soul of the intent graph. The targets and `then` are 
 
 ### The Graph
 
-#### One Node Type
+#### One Reality Type
 
-Everything is a node with a shared shape. The `type` field determines invocation behavior. Same interface, structural separation through type.
+Everything is a Reality with a shared shape. The `type` field determines invocation behavior. Same interface, structural separation through type.
 
 ```
-Node {
+Reality {
     ID        string
     Type      string    // being, skill, operator, memory
     Content   string    // what it holds (skill doc, memory, description)
     Weight    float64   // base activation weight
-    Invoke    Reality   // Realize() — what happens when you traverse it
+    Realize    Reality   // Realize() — what happens when you traverse it
 }
 ```
 
-A memory node has content and no invoke — it informs the present. A skill node has content (the skill doc) and no invoke — it teaches. An operator node has invoke (bash, search, browse) — it executes via `Realize()`. A being node has invoke (its Self) — it thinks and acts. The graph doesn't care about the difference. It returns nodes ranked by weight. The runtime checks: does this node have `Invoke`? Then it's traversable. Just content? Then it informs.
+A memory reality has content and no realize — it informs the present. A skill reality has content (the skill doc) and no realize — it teaches. An operator reality has realize (bash, search, browse) — it executes via `Realize()`. A being reality has realize (its Self) — it thinks and acts. The graph doesn't care about the difference. It returns realities ranked by weight. The runtime checks: does this reality have `Realize`? Then it's traversable. Just content? Then it informs.
 
 #### Per-Being Edges
 
-Edge weights are per-being. The same node exists once in the graph, but the edge from each being to that node carries its own weight.
+Edge weights are per-being. The same reality exists once in the graph, but the edge from each being to that reality carries its own weight.
 
 ```
 Edge {
     From      string    // being
-    To        string    // any node
-    Weight    float64   // this being's relationship to this node
+    To        string    // any reality
+    Weight    float64   // this being's relationship to this reality
     Usage     int       // activation count
 }
 ```
 
-Skyra's edge to bash: weight 0.3, used 5 times. Builder's edge to bash: weight 0.9, used 200 times. Same bash node. Different relationship. The edge is the per-being weight.
+Skyra's edge to bash: weight 0.3, used 5 times. Builder's edge to bash: weight 0.9, used 200 times. Same bash reality. Different relationship. The edge is the per-being weight.
 
 #### Weighted Traversal
 
@@ -330,7 +330,7 @@ Universe → NewThread → Exchange → Self → Think → Provider
 
 The current hashmap model is a graph with all edges at weight 1 and fixed adjacency. The new model makes the weights real and lets them determine adjacency dynamically.
 
-Each `Realize()` updates reality — the current state of the relation as it descends. The weights of the outgoing edges from the current node determine where traversal goes next. The path through reality isn't hardcoded. It's the highest-weighted edges from wherever you are.
+Each `Realize()` updates reality — the current state of the relation as it descends. The weights of the outgoing edges from the current reality determine where traversal goes next. The path through reality isn't hardcoded. It's the highest-weighted edges from wherever you are.
 
 ```
 Self.Realize()
@@ -346,10 +346,10 @@ The structure of the descent is emergent. A being with heavy weights toward bash
 
 #### What Collapses
 
-The current `Entity` + `MemNode` + `EntityEdge` collapse into `Node` + `Edge`. One graph.
+The current `Entity` + `MemNode` + `EntityEdge` collapse into `Reality` + `Edge`. One graph.
 
 These go away entirely:
-- `Think.Operators map[string]Reality` — operators live in the graph as nodes
+- `Think.Operators map[string]Reality` — operators live in the graph as realities
 - `Act.Operators map[string]Reality` — same
 - `NewThread.ThinkOps / ActOps` — thread-level operator injection, replaced by graph retrieval
 - `Self.Realities` as a fixed hashmap — the being's realities are its graph edges
@@ -359,20 +359,20 @@ These go away entirely:
 
 A relation descends until it hits something solid. If that something solid is another being — the descent stops, the being responds, the relation carries the response back up. That's act. But memory isn't solid. Memory doesn't stop the descent.
 
-When a relation enters the memory region of the graph, it keeps flowing. Each memory node it passes through adds to what the relation is carrying — accumulating content along weighted edges. The relation follows the heaviest associations between memory nodes, picking up context as it goes. When the edges get too weak — activation fades below threshold — the descent stops naturally. The relation ran out of steam.
+When a relation enters the memory region of the graph, it keeps flowing. Each memory reality it passes through adds to what the relation is carrying — accumulating content along weighted edges. The relation follows the heaviest associations between memory realities, picking up context as it goes. When the edges get too weak — activation fades below threshold — the descent stops naturally. The relation ran out of steam.
 
 Then on the way back up, inference fires. The relation accumulated everything the graph surfaced — raw, noisy, associative. An inference step compresses that into what actually matters for this thought. One step for simple recall. Two or three for something deep where associations went wide. This is the being's mind making sense of what came up. Not returning raw results. Synthesizing.
 
 ```
 thought activates memory region
-  → relation descends through memory nodes along weighted edges
-  → each node adds its content to the relation
+  → relation descends through memory realities along weighted edges
+  → each reality adds its content to the relation
   → edges weaken as activation spreads → descent stops
   → inference compresses accumulated content (one or more passes)
   → synthesized memory returns to Think as context
 ```
 
-The weights ahead aren't static. As the relation accumulates content, it reshapes the activation landscape in front of it. Each memory node the relation passes through updates the edge weights of what's connected — based on what the relation is now carrying. The relation observes the next edges, and they collapse from potential into specific weights.
+The weights ahead aren't static. As the relation accumulates content, it reshapes the activation landscape in front of it. Each memory reality the relation passes through updates the edge weights of what's connected — based on what the relation is now carrying. The relation observes the next edges, and they collapse from potential into specific weights.
 
 This is true superposition realization. Before the relation arrives, the edges ahead exist in potential — all possible next steps. The relation, carrying everything it's accumulated so far, collapses them into actual weights. Different content on the relation, different collapse, different path. The same graph produces different traversals every time because the observer is different every time.
 
@@ -380,7 +380,7 @@ This is how recall works. You try to remember where you put your keys. You think
 
 ```
 relation carries: [server]
-  → passes through "deployment" node → accumulates
+  → passes through "deployment" reality → accumulates
   → relation now carries: [server, deployment]
   → edge to "3am outage" was 0.2, recalculates to 0.7 given current content
   → relation descends into "3am outage" → accumulates
@@ -403,7 +403,7 @@ A memory doesn't have one fixed output. It has potential. How it realizes depend
 
 **Creative mode** — the relation is carrying high temperature. Memory realizes as loose associations. Stochastic collapse. Weaker edges get a chance to fire. The neighborhood goes wider than recall would allow. Synthesis on the way back is lighter — less filtering, more raw material. Think gets a broader, noisier present to work with.
 
-The compression on recursion back is critical. A deep memory traversal might accumulate thousands of tokens. That can't all land on Think's present. So the recursion back through the memory reality synthesizes — inference compresses, keeps the signal, maps back to the originals. Think sees a summary with handles. If it needs to pull on one, it can descend again into that specific node.
+The compression on recursion back is critical. A deep memory traversal might accumulate thousands of tokens. That can't all land on Think's present. So the recursion back through the memory reality synthesizes — inference compresses, keeps the signal, maps back to the originals. Think sees a summary with handles. If it needs to pull on one, it can descend again into that specific reality.
 
 ```
 relation (act mode) enters memory neighborhood
@@ -421,7 +421,7 @@ relation (creative mode) enters memory neighborhood
 
 This is memory working like actual memory. You don't recall everything at full fidelity. You get a compressed impression with the ability to focus in on specifics if you need to. The compression is the realization. Different state on the relation, different compression, different experience of the same memories.
 
-A node's type isn't permanent. It's the current best description of how this node tends to collapse. A memory that keeps realizing as a skill — keeps surfacing in act mode as direct capability — eventually *becomes* a skill. The repeated observation pattern is the promotion trigger. The graph isn't just weighted. It's evolving what things *are* through use.
+A reality's type isn't permanent. It's the current best description of how this reality tends to collapse. A memory that keeps realizing as a skill — keeps surfacing in act mode as direct capability — eventually *becomes* a skill. The repeated observation pattern is the promotion trigger. The graph isn't just weighted. It's evolving what things *are* through use.
 
 ### Act
 
@@ -553,7 +553,7 @@ The parent doesn't call bash anymore. It calls the specialist. The specialist, w
 
 ### Weights
 
-Skill weights are per-being. The same skill node exists once in the graph, but the edge weight between a being and that skill is unique to their relationship. When a specialist takes ownership:
+Skill weights are per-being. The same skill reality exists once in the graph, but the edge weight between a being and that skill is unique to their relationship. When a specialist takes ownership:
 
 - The specialist's edges to those skills start at a concentrated weight — these are its core capabilities.
 - The parent's edges to those skills decay — they're no longer the parent's job.
@@ -609,7 +609,7 @@ Cost scales with thought depth. The being thinks its way into expense rather tha
 
 ## Open Questions
 
-- Activation threshold: at what edge weight does a node surface during retrieval? Should there be a floor below which nodes never appear, or does the being always see the top N regardless of weight?
+- Activation threshold: at what edge weight does a reality surface during retrieval? Should there be a floor below which realities never appear, or does the being always see the top N regardless of weight?
 - Decay rate: how fast do earlier think passes fade in the present? How fast do unused edges decay over time? Linear? Exponential? Tunable per-being?
 - Act inference: when does an act need its own LLM call vs. being pure delivery? Is there a complexity threshold, or does the surface thought always carry enough?
 - Timeout: what happens when an act doesn't return? Mailbox timeout → Think re-enters with partial results?
