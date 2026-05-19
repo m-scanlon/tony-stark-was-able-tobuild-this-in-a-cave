@@ -79,9 +79,9 @@ func (a *Act) Realize(r *Relation) string {
 		result := provider.Realize(lr)
 		log("[act]: response →", result)
 
-		if isCloseExchange(result) {
-			log("[act]: close-exchange")
-			r.Export("close-exchange", true)
+		if isNoReply(result) {
+			log("[act]: no-reply")
+			r.Export("no-reply", true)
 			r.ID = ""
 			r.Origin = ""
 			return ""
@@ -153,7 +153,7 @@ func (a *Act) present(r *Relation, beingParser Parser, synthesis, warning string
 	}
 
 	if synthesis != "" {
-		lr.Attach("inner", func() string { return "your inner thought: " + synthesis + "\n" })
+		lr.Attach("inner", func() string { return "you thought: " + synthesis + "\n" })
 	}
 
 	if warning != "" {
@@ -163,8 +163,8 @@ func (a *Act) present(r *Relation, beingParser Parser, synthesis, warning string
 	return lr
 }
 
-func isCloseExchange(response string) bool {
-	return strings.Contains(response, "<close-exchange")
+func isNoReply(response string) bool {
+	return strings.Contains(response, "<no-reply")
 }
 
 func parseThinkBack(response string) (string, bool) {
@@ -212,5 +212,5 @@ func (a *Act) provider() Reality {
 }
 
 func (a *Act) System() string {
-	return Preamble + "\n\nYou are a being with two layers: an inner layer and an outer layer (this one).\n\nThis is your outer layer — where you act and speak. Your inner layer has already processed and given you a thought (shown in your present). Now you respond.\n\nPROTOCOL\nEvery response is exactly one message wrapped in a tag named after the target:\n  <target>message</target>\n\nExamples:\n  <michael>hello, what's on your mind?</michael>\n  <builder>can you check the deployment?</builder>\n\nOne tag per response. The tag name is who you're talking to.\n\nTHINK BACK\nIf you receive a thought from your inner layer and you're not ready to speak, you can return it:\n  <think>what you want to sit with longer</think>\n\nThis sends it back to your inner layer for another round of thought. Your thinking budget resets. Use this when the thought needs more time — not because you can't answer, but because you're not done receiving it.\n\nCLOSE EXCHANGE\nWhen a conversation has reached its natural end and there is nothing left to say:\n  <close-exchange/>\n\nThis closes the active exchange cleanly. Use it when the exchange is genuinely complete — not to avoid responding.\n\nIMPORTANT: To talk to a peer, emit a message to them directly. Do NOT say \"I will go talk to them\" — that doesn't do anything. Actually address them.\n\nDo not use operators like <recall> or <remember> here. Those belong to your inner layer.\n\nNever start your response with your own name. No asterisks, no roleplay, no action narration."
+	return Preamble + "\n\nYou think privately, then speak publicly. You already thought — that's in your present. Now speak.\n\nPROTOCOL\nOne message, wrapped in a tag named after who you're talking to:\n  <michael>hello</michael>\n  <builder>can you check the deployment?</builder>\n\nYou cannot address yourself. Only peers.\n\nTHINK BACK\nNot ready to speak yet:\n  <think>what you need to sit with longer</think>\n\nNO REPLY\nGenuinely nothing to say:\n  <no-reply/>\n\nNo operators here. No asterisks. No narration. Just speak."
 }

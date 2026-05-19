@@ -2,6 +2,8 @@
 
 Memory is a graph of entities connected by experience. Entities are the stable structure. Memories are the events that connect them. The graph self-organizes through use. Cognition emerges from that organization.
 
+Skyra is a personal operating layer that learns the user's intent model and routes work to the right agents/tools with increasing autonomy as trust is earned.
+
 ## Entities
 
 Entities are the being's conceptual vocabulary — the nouns it knows. An entity is global to the being, not scoped by relationship. A being that learns "websocket" from michael and later discusses it with louise is drawing on the same entity.
@@ -436,16 +438,45 @@ Each layer of Self (Context, Think, Act) owns its own `Providers map[string]Real
 
 The single `LLM Reality` field is gone from Think, Act, and Context. Self no longer holds a provider directly — it distributes.
 
-### Phase 3 — Inner Universe and Specialist Promotion
+### Phase 3 — Inner Universe and Specialist Promotion [done]
 
-The emergent cognition layer. Depends on phases 1-3 being solid and the being having accumulated real memory data.
+Cluster detection on memgraph (`DetectClusters()`) with density scoring: entity count * normalized edge weight * memory count. Promotion threshold at 75.0. `Self.Promote()` creates specialist beings with scoped graph views, their own Think/Act layers, identity derived from heaviest entity in cluster. Inner universe spun up on first promotion with its own thread gate. Context activates specialists on retrieval — entity match against claimed map, specialist consultation, synthesis via provider call. Recursive promotion supported — specialists have their own `Claimed`/`Specialists`/`OnPromote`.
 
-- Universe field on Self (optional, nil for young beings).
-- Cluster detection on the memory graph — measure density of entity subgraphs (entity count + edge weight sum + memory node count).
-- Promotion threshold — when density crosses it, create a specialist being inside the inner universe with a scoped view into that region of the graph.
-- Thread-based presence — the parent enters its inner universe by opening a thread, becoming a participant in the routing table. Same thread mechanics as the outer plane. Closing the thread removes the parent. No special Parent field needed.
-- Routing through inner universe — Context activates specialists based on which entity clusters the incoming relation touches. Specialists fire, surface-thoughts collect, synthesis produces final input for Think.
-- Recursive promotion — a specialist's own dense clusters can promote into sub-specialists. Same mechanism, one level deeper.
+Also shipped: close-exchange protocol (`<close-exchange/>` in Act), think-back budget capped at 3, exchange redirect for explicit target switching mid-conversation, entity curation pipeline (extractor proposes candidates, curator filters — only curator-approved entities enter graph), thought history scoped + recent rendering, `SourceRef` on MemNode for idempotent skill seeding.
+
+Remaining from original spec (deferred): thread-based presence (parent entering inner universe as a participant in routing table).
+
+### Phase 4 — Trust and Relationship Lifecycle
+
+Trust as edge weight on being-to-being relationships. Decay, betrayal, death threshold, specialist trust. Spec written (see Trust section above). Not yet implemented.
+
+- Trust struct on exchange layer (weight, peak, timestamps)
+- Decay function (half-life modulated by depth)
+- Betrayal as step-function damage vs. gradual decay
+- Death threshold — being ends when all trust drops below minimum
+- Specialist folding when parent-specialist trust decays
+
+### Phase 5 — Episodic Processing
+
+Context heartbeat: exchange close triggers processing of full cognitive cycle. Spec written (see Episodic Processing section above). Not yet implemented.
+
+- Exchange holds full history alongside present view
+- Chunked extraction (entities, skill usage, learnings, weight updates)
+- Graph updates from chunks
+- Skill file rewrites at maturation threshold
+- Episode boundary triggers (exchange close, compaction)
+
+### Phase 6 — Warm Context Retrieval
+
+Unified retrieval over the whole graph on each incoming impulse. Tags, memories, skills all loaded through the same semantic search into a warm cache. Present renderer structures them into sections. Recently activated nodes weight higher, stale ones drop. Replaces static operator listing in system prompts.
+
+### Phase 7 — Weight Decay and Entity Budget
+
+Deferred from Phase 1. Not yet specced in detail.
+
+- Weight decay on memories over time (half-life, reinforcement resets)
+- Entity budget and cap logic
+- Entity absorption via resolver when budget is full
 
 ## Skill Maturation
 
@@ -563,13 +594,22 @@ Both triggers feed the same processing loop. The difference is that exchange clo
 
 ## Open Questions
 
+### Answered
+- ~~How is cluster detection performed?~~ — Neighbor expansion from each entity, density = entity count * (edge weight sum / possible edges) * memory count. Threshold at 75.0.
+- ~~What density threshold triggers specialist promotion?~~ — 75.0.
+- ~~Should the curator's supersede/complement/contradict judgment be deterministic or LLM-evaluated?~~ — LLM-evaluated. Extractor proposes candidates, curator filters.
+- ~~When a specialist fires, does it get the full memory graph or only its cluster's subgraph?~~ — Full shared graph, scoped view via `Scope` field on Context (only traverses claimed entities).
+- ~~How does a specialist describe itself to the synthesis layer?~~ — Specialist's Think fires on a relation, returns a string. Context collects all specialist thoughts and synthesizes via provider call.
+
+### Open
 - What is the initial entity budget? Does it grow with level?
 - What is the weight decay function for memories? Linear, exponential, half-life?
-- How is cluster detection performed? Community detection algorithm, or simpler threshold on connected components?
 - When a sub-being is spawned from a cluster, does the parent's entity-to-entity edge weight in that region reset to zero, or just decay?
-- Should the curator's supersede/complement/contradict judgment be deterministic or LLM-evaluated?
 - How does the entity budget interact with the resolver? When budget is full and a new concept arrives, which existing entity absorbs it?
-- What density threshold triggers specialist promotion?
 - What are the first specialists a being develops? Are they universal (judgment, strategy, conflict) or do they emerge from the genome's identity/purpose?
-- How does a specialist describe itself to the synthesis layer? What's its surface-thought format?
-- When a specialist fires, does it get the full memory graph or only its cluster's subgraph?
+- What is the initial trust weight when a relationship is declared in the genome?
+- What is the decay half-life constant for trust?
+- What constitutes betrayal vs. honest disagreement?
+- Can a being that has ended ever return?
+- How does trust interact with levels?
+- What is the semantic search mechanism for warm context retrieval? Embedding-based, keyword, or entity-match?

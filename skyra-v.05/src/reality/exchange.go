@@ -232,10 +232,9 @@ func (e *Exchange) Realize(r *Relation) string {
 	result := being.Realize(r)
 
 	if r.Exports != nil {
-		if _, ok := r.Exports["close-exchange"]; ok {
-			conv.Active = false
-			delete(r.Exports, "close-exchange")
-			debug.Log("[exchange]: closed", key)
+		if _, ok := r.Exports["no-reply"]; ok {
+			delete(r.Exports, "no-reply")
+			debug.Log("[exchange]: no-reply", key)
 		}
 	}
 

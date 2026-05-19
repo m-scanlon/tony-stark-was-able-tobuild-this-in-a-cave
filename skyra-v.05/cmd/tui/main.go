@@ -85,7 +85,7 @@ func main() {
 		if comp, ok := components[name]; ok {
 			if p, ok := comp.(*reality.Provider); ok {
 				p.Model = model
-				p.Call = inference.Call
+				p.Call = inference.CallDeepSeek
 			}
 		}
 	}

@@ -14,7 +14,7 @@ import (
 
 const (
 	deepseekURL     = "https://api.deepseek.com/chat/completions"
-	defaultDSModel  = "deepseek-chat"
+	defaultDSModel  = "deepseek-v4-pro"
 )
 
 func CallDeepSeek(system, present string) (string, error) {
