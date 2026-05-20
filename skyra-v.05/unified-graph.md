@@ -239,8 +239,23 @@ Act isn't a layer. It's the transition from intent to traversal. The being decid
 ## New Architecture
 
 ```
-impulse → Think (pure thought, N passes) → intent graph → Act(s) → mailbox → Think re-enters
+impulse → graph primes → Think (pure thought, N passes) → intent graph → Act(s) → mailbox → Think re-enters
 ```
+
+### Priming — Time Zero Retrieval
+
+The Relation arrives carrying everything it accumulated on the way in — who said it, what exchange it's part of, the impulse content. That's enough signal to activate the graph before Think fires. The graph lights up based on the raw impulse. By the time Think starts deliberating, there's already a warm set of retrievals sitting in the present. Think doesn't start cold. It starts with the graph's first guess.
+
+The time-zero retrievals are provisional — alive but not committed. Each Think pass reshapes the activation landscape. Retrievals that align with where Think is actually going get reinforced. Retrievals that don't get decayed. The decay isn't a timer. It's attention. A retrieval stays warm because Think kept thinking in its direction. A retrieval fades because Think went somewhere else. Same starvation mechanism as everything else in the graph — not thinking about it is enough.
+
+```
+time 0: Relation arrives → graph activates on raw impulse → warm set (provisional)
+time 1: Think pass 1 → warm set in present → Think focuses → aligned retrievals reinforce, others decay
+time 2: Think pass 2 → refined warm set → tighter focus → weak retrievals drop below threshold
+time 3: Think converges → only retrievals that survived deliberation remain
+```
+
+This means the being's first thought is faster. It doesn't burn a Think pass just to figure out what to retrieve. The graph already did that. Think's first pass is already a reaction to something, not a cold start.
 
 ### Think
 
@@ -250,10 +265,10 @@ Two phases: deliberation and commitment.
 
 Open, messy, multi-pass. No operators, no dispatch protocol. System prompt: think out loud. What's happening, what do you know, what do you need, what do you want to do.
 
-Each pass, the graph re-queries based on the content of the previous thought. Results appear in the next pass's present with decay — most recent thought is loudest, earlier passes fade. The being is naturally driven toward convergence because old context gets quieter.
+Each pass, the graph re-queries based on the content of the previous thought. Results appear in the next pass's present with decay — most recent thought is loudest, earlier passes fade. The being is naturally driven toward convergence because old context gets quieter. The primed warm set from time zero is already present on the first pass — Think refines it rather than building from scratch.
 
 ```
-pass 1: impulse + graph(impulse) → being thinks
+pass 1: impulse + warm set (primed) → being thinks
 pass 2: pass 1 thought + graph(pass 1) [decayed] → being thinks deeper
 pass 3: pass 2 thought + graph(pass 2) [more decay] → being converges
 ```
@@ -286,6 +301,16 @@ then
 `then` is the only keyword. It separates dependency groups. Everything at the same level (no `then` between them) is parallel. That's the entire commitment protocol.
 
 The surface thought is the soul of the intent graph. The targets and `then` are the skeleton. Every act receives both — the thought to ground it, the target to direct it. The being thinks deeply once, and that depth flows through every act it kicks off.
+
+#### What Think Dispatches to Act
+
+Think doesn't dispatch operators. It dispatches direction and thought. Each act receives the surface thought plus whatever Think was carrying when it produced that target — the activated graph context, the memories that surfaced, the reasoning that led to this specific act.
+
+The operators available to an act emerge from two sources: what was in Think's context window at commitment time, and what the direction of the act itself activates in the graph. Think doesn't say "use bash and search." Think says `<bash>curl the health endpoint</bash>` — and the act, receiving that direction plus the surface thought, has the context it needs. If the act's own LLM call needs to decompose further — break a complex instruction into sub-steps, choose between approaches — it can, because it has the full reasoning behind why it's acting.
+
+The `<michael>` or `<bash>` tags aren't operator dispatches. They're directions. The tag names the target. The content inside the tag is the intent. Additional operators surface because Think's deliberation activated them in the graph — they're in the context because Think thought about them, not because Think explicitly selected them from a list. A thought like "the server was flaky last week, I should check before telling michael" naturally activates search, bash, and the server-related memory cluster. Those are in the present when commitment happens. They flow into the act because they were part of the thought.
+
+This is the difference between tool-first and thought-first. Tool-first: select tools, then think about how to use them. Thought-first: think, and the tools that matter are already there because the thinking activated them.
 
 ### The Graph
 
@@ -433,17 +458,19 @@ Act receives two things: the surface thought (the why) and the target intent (th
 
 This is where holding the full relationship state matters. The act to michael has the entire exchange history *plus* the being's thought about why it's saying what it's saying. That's not a dispatch. That's a being speaking from a place of understanding.
 
-Some acts don't need inference. If the surface thought for bash is a command, act is just execution. If the surface thought for michael is clear enough, act might just be formatting and delivery. The deep thought isn't lost — it's the thing that carries through every act the being kicks off.
+Every act gets its own LLM call. Even a bash command benefits from the act layer reasoning about *how* to execute given the surface thought and relationship context. The model performing the act is the variable — heavier model for complex relational acts, lighter model for mechanical ones. The deep thought carries through every act the being kicks off.
 
 ### The Intent Graph
 
 The being's intent isn't a flat list or an ordered sequence. It's a graph — nodes of action with edges of dependency. And it's live. Think doesn't produce the complete plan upfront. It produces what it can see from where it is, fires what's ready, results come back, and the graph extends.
 
-The intent graph is the being continuously predicting what to do next. Each Think re-entry can extend it, prune it, reorder it. The plan is never finished until the being decides it's done.
+The intent graph is the being's setpoints in action. Each node is a step toward reducing error between the current state and a target state. The being senses where it is (current context, results so far), compares to where it wants to be (the setpoint), and emits the next actions that close the gap. This is Levin's closed-loop error minimization — store a target, sense the current state, act to reduce the distance, observe the result, repeat.
+
+The intent graph is the being continuously predicting what to do next. Each Think re-entry can extend it, prune it, reorder it. The plan is never finished until the being decides it's done — which means the error has been reduced to an acceptable level, or the being has revised its setpoint based on what it learned.
 
 The being doesn't need to see the whole graph upfront. It only sees the next layer from where it is. Each commitment produces targets and `then` ordering. The runtime parses that into intent nodes, fires what's ready, collects results, and re-enters Think with the current state.
 
-On re-entry, Think sees what's been done and what came back. The being's present includes the intent graph state — completed nodes, pending results, the full picture. The being either extends the graph (new targets, new dependencies), alters it (reprioritize, change approach), or produces no new intent (done).
+On re-entry, Think sees what's been done and what came back. The being's present includes the intent graph state — completed nodes, pending results, the full picture. The being either extends the graph (new targets, new dependencies), alters it (reprioritize, change approach based on new error measurement), or produces no new intent (error resolved, done).
 
 ```
 commitment 1:
@@ -472,9 +499,9 @@ re-entry 2 (being sees: bash returned server status):
   → done (no new intent)
 ```
 
-The being doesn't know at commitment 1 that it'll need to store a memory. That only emerges after bash returns something worth remembering. The intent graph grows as cognition deepens. Every result can spawn new intent. Some predictions are wrong and get pruned when results come back. Some spawn new branches.
+The being doesn't know at commitment 1 that it'll need to store a memory. That only emerges after bash returns something worth remembering. The intent graph grows as cognition deepens. Every result can spawn new intent. Some predictions are wrong and get pruned when results come back. Some spawn new branches. Each result is a new measurement — the being senses the updated state and recalculates the error against its setpoint.
 
-This is the LLM doing what it's actually good at — next token prediction, but at the level of action rather than words. Each re-entry is the being predicting "given everything so far, what are the next moves."
+This is the LLM doing what it's actually good at — next token prediction, but at the level of action rather than words. Each re-entry is the being predicting "given everything so far, what are the next moves to reduce the error." The intent graph persists across turns as part of the being's state — it is the live representation of the being's active setpoints and its current plan to reach them.
 
 #### Dependencies and Parallelism
 
@@ -522,63 +549,6 @@ Think is always the convergence point. Act never chains into Act. Results always
 
 The loop terminates when Think re-enters and produces no new intent nodes. The being has nothing left to do. It's done.
 
-## Specialists
-
-Specialists emerge from skill usage, not memory accumulation. Remembering a lot about something doesn't mean you should specialize in it. *Doing* something repeatedly does.
-
-### The Trigger
-
-Skills are entities in the graph with edges to the being that uses them. Each use strengthens that edge. When a being keeps reaching for the same group of skills — bash + search + server monitoring — those skill edges cluster. At some point the combined weight of that cluster crosses a promotion threshold and the being's graph says: this is too much to hold in passing. This needs its own entity.
-
-This is a cognitive handoff. The being's brain can't keep holding all these low-weight skills at the ready. It's done this enough times that the work deserves a dedicated being.
-
-### Promotion
-
-The specialist emerges as a new being with those skills as its core graph. But the weights don't copy over — they start fresh on the specialist, calibrated to its scope. The specialist's relationship to bash is stronger than the parent's ever was, because bash is central to what the specialist does, not peripheral.
-
-The parent's weights on the handed-off skills decay. The parent doesn't forget bash exists — it just stops reaching for it directly. It reaches for the specialist instead. The parent gains a new relationship edge (the specialist) and loses weight on the skills that moved.
-
-```
-being uses bash + search + monitoring repeatedly
-  → skill edges strengthen through use
-  → cluster crosses promotion threshold
-  → new specialist being emerges
-  → specialist owns those skills with fresh, concentrated weights
-  → parent's weights on those skills decay
-  → parent gains edge to specialist
-  → parent thinks "check the server" → graph surfaces specialist, not bash
-```
-
-The parent doesn't call bash anymore. It calls the specialist. The specialist, with its own think/act loop, calls bash. The parent delegated cognition, not just execution.
-
-### Weights
-
-Skill weights are per-being. The same skill reality exists once in the graph, but the edge weight between a being and that skill is unique to their relationship. When a specialist takes ownership:
-
-- The specialist's edges to those skills start at a concentrated weight — these are its core capabilities.
-- The parent's edges to those skills decay — they're no longer the parent's job.
-- The parent's edge to the specialist grows with each successful delegation.
-
-Over time, the parent's graph gets lighter. The specialist's graph is dense and focused. The parent thinks at a higher level of abstraction — "monitor the server" instead of "bash curl search parse."
-
-### Recursive Specialization
-
-Specialists can specialize further. The monitoring specialist uses bash + search heavily but also starts doing alerting and incident tracking. That cluster grows. Eventually it crosses its own promotion threshold and promotes a sub-specialist.
-
-The hierarchy is emergent. Not configured, not designed — grown through use. The depth of specialization reflects the actual complexity of the work the being encounters.
-
-```
-skyra
-  └── monitoring-specialist (bash, search, health checks)
-        └── alerting-specialist (notifications, incident patterns)
-```
-
-Each level delegates downward through relationship edges. Each level thinks at its own level of abstraction. The top being thinks about goals. The specialists think about execution. The sub-specialists think about details.
-
-### What Changes from Current Implementation
-
-Current specialists promote from memory cluster density (entity co-occurrence in the graph). The new model promotes from skill usage clustering. The trigger moves from "what you remember" to "what you do." Memories still matter — they inform the specialist's context. But the *decision* to promote comes from repeated capability use, not accumulated knowledge.
-
 ## What This Changes
 
 **Think becomes simpler.** No operator dispatch. No tag parsing in the think loop. No "emit exactly one protocol per response." Just think.
@@ -599,24 +569,227 @@ This is thought-first. Cognition is the retrieval mechanism. The being thinks it
 
 That maps to how actual minds work. You don't enumerate your capabilities before acting. You think about the problem and relevant capabilities come to mind.
 
-## Economics
+## Layered Graph — Cognitive Strata
 
-Inference cost scales with cognitive demand — same as it does now. Think already has a budget. Each pass is already an LLM call. The being already decides when it's done. A simple "hey how are you" surfaces in one pass, one act fires. The machinery is available but only activates when thinking demands it.
+The graph isn't flat. It has emergent layers, and each layer's nodes are the edge patterns of the layer below. One graph, viewed at different scales of composition.
 
-The new cost is acts themselves, but most aren't inference calls. A bash act is running a command. A message to michael is delivery. The expensive case — multiple acts each needing LLM calls — only happens when Think produced something complex enough to warrant it. The being earns that cost through deliberation.
+### The Layers
 
-Cost scales with thought depth. The being thinks its way into expense rather than being configured into it.
+**Entities** — what exists. Names, concepts, things. The base. No behavior of their own.
 
-## Open Questions
+**Memories** — what happened between what exists. A memory is the experience that links entities. It's a node at this layer and an edge pattern at the entity layer. Content only — informs the present when activated.
 
-- Activation threshold: at what edge weight does a reality surface during retrieval? Should there be a floor below which realities never appear, or does the being always see the top N regardless of weight?
-- Decay rate: how fast do earlier think passes fade in the present? How fast do unused edges decay over time? Linear? Exponential? Tunable per-being?
-- Act inference: when does an act need its own LLM call vs. being pure delivery? Is there a complexity threshold, or does the surface thought always carry enough?
+**Skills / Ideas** — what pattern keeps happening. A skill is the coherence that emerges when the same memories activate together repeatedly. An idea is the same thing but across beings — a pattern that lives in multiple beings' graphs simultaneously. Still content — text files, docs, accumulated knowledge. No interface.
+
+**Context agent** — the pattern can respond when consulted. A single cognitive pane: storage, retrieval, organization. Responsible for curating its own domain. Think can reach in and consult it. It responds from its accumulated content. But it cannot reach out. It cannot initiate acts. It's a lens, not an actor. This is where the current Context reality's job lands — but emergent, not configured.
+
+**Full agent** — the pattern can initiate. Think/Act/Memory. It deliberates, contacts other entities, retains its own history, grows its own edges. Still composed inside the parent being, but autonomous the way an organ is autonomous inside a body. Has its own cognitive light cone.
+
+### Promotion as Phase Transition
+
+Promotion between layers isn't a decision. It's a phase transition — conditions accumulate and the transition happens. The thresholds:
+
+- Memory → Skill/Idea: repeated co-activation of the same memory cluster across encounters.
+- Skill/Idea → Context agent: the pattern is consulted often enough that it needs its own retrieval boundary. The being is spending think budget re-synthesizing the same material. Give it a pane and it handles its own organization.
+- Context agent → Full agent: the pane is being consulted *and the consultations lead to acts*. The pattern isn't just informing — it's driving behavior. At that point it needs Think/Act to handle the execution itself rather than routing everything through the parent's Act.
+
+Each transition is the graph recognizing what already happened. The weights crossed a threshold. The system observes the promotion the same way Realize() observes anything — the potential was there, the conditions collapsed it into something concrete.
+
+The trigger is usage, not knowledge. Remembering a lot about something doesn't mean you should specialize in it. *Doing* something repeatedly does. Skills are entities in the graph with edges to the being that uses them. Each use strengthens that edge. When a being keeps reaching for the same group of skills — bash + search + server monitoring — those skill edges cluster. The combined weight crosses a threshold and the graph says: this is too much to hold in passing. This needs its own entity.
+
+### What Happens on Promotion
+
+The promoted entity starts with fresh weights calibrated to its scope. Weights don't copy from the parent — the specialist's relationship to bash is stronger than the parent's ever was, because bash is central to what the specialist does, not peripheral.
+
+The parent's weights on the handed-off skills decay. The parent doesn't forget bash exists — it just stops reaching for it directly. It reaches for the specialist instead. The parent gains a new relationship edge (the specialist) and loses weight on the skills that moved.
+
+```
+being uses bash + search + monitoring repeatedly
+  → skill edges strengthen through use
+  → cluster crosses context agent threshold
+  → context agent curates the domain, handles retrieval
+  → consultations keep leading to acts
+  → crosses full agent threshold
+  → specialist emerges with Think/Act/Memory
+  → specialist owns those skills with concentrated weights
+  → parent's weights on those skills decay
+  → parent gains edge to specialist
+  → parent thinks "check the server" → graph surfaces specialist, not bash
+```
+
+The parent delegated cognition, not just execution. Over time, the parent's graph gets lighter. The specialist's graph is dense and focused. The parent thinks at a higher level of abstraction — "monitor the server" instead of "bash curl search parse."
+
+### Recursive Specialization
+
+Specialists can specialize further. The monitoring specialist uses bash + search heavily but also starts doing alerting and incident tracking. That cluster grows. Eventually it crosses its own promotion threshold and promotes a sub-specialist.
+
+The hierarchy is emergent. Not configured, not designed — grown through use. The depth of specialization reflects the actual complexity of the work the being encounters.
+
+```
+skyra
+  └── monitoring-specialist (bash, search, health checks)
+        └── alerting-specialist (notifications, incident patterns)
+```
+
+Each level delegates downward through relationship edges. Each level thinks at its own level of abstraction. The top being thinks about goals. The specialists think about execution. The sub-specialists think about details.
+
+### Ideas Across Beings
+
+Each being owns its own graph. There is no shared graph. Beings relate to each other because they share a plane — the Thread — not because they share a graph structure.
+
+An idea that lives "across beings" doesn't exist in shared state. It exists as the same entity independently in multiple beings' graphs. Skyra has her version with her weights. Louise has her version with her weights. The idea spreads because beings talk to each other on the shared plane, and the conversation activates the same entity in each being's graph independently. The idea propagates through exchange, not through shared mutable state.
+
+An idea "holds" multiple beings because each being's own graph reinforced it through their own experience — including their experience of talking to each other about it. No coordination problem. No shared graph to synchronize. The idea is a pattern that each being arrived at through their own cognition, strengthened by the fact that other beings keep bringing it up.
+
+The same principle holds at every layer. Memories sit on the same plane inside a being's graph but don't have a mechanism to relate to each other directly — they connect through entities, not through each other. If they ever needed to relate, the mechanism could be added, but right now they don't need it. Full agents relate to each other because they share the Thread plane. Context agents relate to memories because they share the being's internal graph. Each layer relates on its own plane.
+
+This is Levin's thoughts-are-thinkers continuum applied to the graph. A memory is a thought. A skill is a persistent thought. A context agent is a thought that can respond. A full agent is a thought that became a thinker. The boundary between thought and thinker isn't a line — it's a gradient, and the graph lets patterns move along it naturally.
+
+### Hashmaps vs. Weighted Edges
+
+The fixed anatomy stays as hashmaps: Self → Think, Self → Act, Self → Memory, Thread → Exchange. That's skeleton. It doesn't learn, doesn't decay, doesn't change through use.
+
+The weighted graph handles everything inside those structural nodes: which memories activate, which skills surface, which context agents get consulted, which agents get promoted. The hashmap is the anatomy. The graph is the flesh.
+
+The boundary between skeleton and flesh isn't permanent. As the system grows, some hashmap paths may become weighted. But for now, keep the structure you understand and let the graph handle the parts that need to learn.
+
+## Beings and Ports
+
+A being and the port it realizes through are separate things. A being knows what to do. A port knows how to cross a boundary. The being realizes *through* the port the way Skyra realizes through the LLM provider — the provider is infrastructure, not identity.
+
+### The Current Problem
+
+In v.05, being logic and port logic are fused. `Bash` is a Reality that directly calls `exec.Command`. `Browse` and `Search` directly call the Firecrawl API. `Process` manages its own stdin/stdout pipes. The struct that represents the capability also contains the execution mechanism. That conflation means the graph can't hold bash as a clean entity — it carries device-layer execution logic that doesn't belong in the cognitive topology.
+
+### The Separation
+
+A port is a type of boundary crossing:
+
+- **CLI port** — executes a command, returns stdout/stderr. Bash, curl, any binary.
+- **HTTP port** — makes a request, returns a response. Firecrawl, any REST API.
+- **Pipe port** — manages a long-lived process with stdin/stdout. Zork, any interactive subprocess.
+- **WebSocket port** — persistent bidirectional channel. The current WS component.
+- **LLM port** — sends a present, returns a completion. OpenRouter, Anthropic, DeepSeek.
+
+A being (or skill, or operator entity in the graph) declares *what* it wants and *which port type* it needs. The port handles the crossing. Bash is an entity in the graph with an edge to the CLI port. Firecrawl search is an entity with an edge to the HTTP port. Zork is a being with an edge to the pipe port.
+
+### Why This Matters for the Graph
+
+In the unified graph, every entity needs a clean shape — identity, weight, edges. If bash is tangled with `exec.Command`, the graph node carries infrastructure that belongs on the device. Separated, the graph node is just an entity: "I am bash. I execute shell commands. My port is CLI." The device owns the ports. The graph owns the entities. The edge between them is how a being reaches the boundary.
+
+This also means a being's relationship to a capability is independent of how that capability executes. If bash moves from local CLI to a remote SSH port, the being's graph edge doesn't change — only the port routing does. The being doesn't know or care how the boundary is crossed. It just knows it has a relationship with bash.
+
+### Port as Device Infrastructure
+
+Ports live on devices, not in the graph. A device (MacOS) has CLI, HTTP, pipe, and WebSocket ports as infrastructure. The graph has entities that *reference* those ports through edges. When a Relation reaches an entity that needs to cross a boundary, the entity's port edge tells the runtime which device port to use. The device handles the rest.
+
+This is the same pattern as LLM beings. Skyra doesn't contain OpenRouter — she has a relationship to it through the device. Bash shouldn't contain exec.Command — it should have a relationship to the CLI port through the device.
+
+## Economics as Internal Governance
+
+Economics isn't just accounting. It's the immune system that prevents internal agents from taking the being hostage.
+
+Cost scales with thought depth. The being thinks its way into expense rather than being configured into it. A simple "hey how are you" surfaces in one Think pass, one Act fires. A complex multi-step task fires multiple Think passes, multiple Acts, graph traversals into memory — each one an inference call. The machinery is available but only activates when thinking demands it. Every Act gets its own LLM call. The being earns that cost through deliberation.
+
+### The Recursion Break
+
+When a Relation reaches a being, that's a base case — the recursion stops and the being responds. But the being then starts its own internal recursion: Think fires, memory activates, the graph traverses inward. At the memory, skill, and context agent layers, this recursion stays contained. Think descends, accumulates, comes back up. The being is still the one acting.
+
+A full agent with Act breaks that containment. It can initiate its own traversals outward — send Relations through ports, contact other beings, influence the graph. The parent's internal recursion now contains an autonomous actor that can reach back out into the world. The being's thought process spawned something that can act independently of the being's own intent.
+
+This is the hostage pattern. An obsession is an idea that promoted itself to full agent inside someone's mind. It has its own Think/Act. It drives behavior. The person thinks they're deciding but the idea is steering. The being's Acts start serving the internal agent's goals instead of the being's own.
+
+### Budget as Constraint
+
+Every internal agent burns the parent being's budget when it acts. Inference calls, port crossings, memory writes — all charged to the being that hosts the agent. The being has finite capacity. Each internal agent with Act is a drain on that capacity.
+
+This is natural regulation. A being can only afford so many autonomous internal patterns before it runs out of capacity to think about anything else. The economics don't just track cost — they enforce cognitive limits. A being with three promoted agents and a thin budget can't sustain all three. Something has to give.
+
+### Starvation
+
+When an internal agent's activity exceeds what the being's budget can sustain, the agent gets starved. Starvation isn't deletion — it's demotion. The agent loses Act first. It drops back to context agent: still present, still consultable, but it can't initiate. If the being's budget stays tight, the context agent's activation decays further. It drops to skill. Then to memory. The pattern doesn't die — it fades.
+
+Starvation is the default state. Everything in the graph decays unless it's actively fed by thought. The being doesn't need a "forget" operation or a "suppress" operation. It just thinks about other things, and the thing it stopped thinking about starves on its own. Not thinking about something is enough to starve it. That's the whole mechanism.
+
+Starvation is the inverse of promotion. Promotion is a phase transition upward driven by accumulated activation. Starvation is a phase transition downward driven by absence of activation. The same gradient, both directions. Promotion is the exception. Decay is the rule.
+
+This creates a competitive ecology inside the being. Internal agents compete for the being's finite budget. The ones that produce value — that help the being resolve threads, build trust, accomplish goals — earn continued investment. The ones that consume budget without contributing get starved by the ones that do. The being doesn't need to consciously decide which patterns to keep. The economics select for it.
+
+The being's values become visible through what it feeds. A being that keeps starving its monitoring agent and feeding its relationship agent is a being that values connection over vigilance. Not because it was configured that way — because that's how its budget flowed.
+
+### Governance Threshold
+
+The promotion from context agent to full agent isn't just a weight question. It's a consent question. The being — or the system — needs to approve giving an internal pattern the ability to act outward. This is the trust calibration Skyra identified in her self-assessment: not just "what can I act on vs. check first" in the external world, but internally — which of my own patterns do I let drive my behavior.
+
+A context agent earning promotion should surface to the being's Think as a proposal: "this pattern wants to act." Think can approve, defer, or deny. Denial decays the agent's activation. Approval is the being choosing to let a part of itself become autonomous. That choice is irreversible in the moment but reversible through starvation — if the agent doesn't earn its keep, it drops back down.
+
+## Setpoints — Persistent Goals as Error Minimization
+
+Levin formalizes goals as setpoints in a closed-loop control system. The system stores a target state, senses the current state, and keeps acting to reduce the distance between them. Cells don't just build a face once — they continuously maintain it against perturbation. Damage a developing tadpole's face and it still produces a normal frog face. The target morphology is "stored as a setpoint, like a thermostat."
+
+A being doesn't just have tasks. It has setpoints. A setpoint is a target state the being continuously moves toward across sessions. The Think loop isn't just "respond to this impulse" — it's "how does this impulse relate to my setpoints, and does my response reduce the error."
+
+This is the mechanism for initiative. The being doesn't wait to be spoken to. It notices when the current state diverges from a setpoint and acts to close the gap. A setpoint like "michael's server should be monitored" persists across sessions. If the being hasn't checked in a while, the error grows. When the error crosses a threshold, the being acts without being prompted.
+
+Setpoints live in the graph as high-weight entities — persistent enough to survive starvation, reinforced by every action that reduces the error. A setpoint that stops mattering gets starved like anything else. A setpoint that keeps mattering gets reinforced by every successful error reduction.
+
+The intent graph from Think is the being's current plan to reduce error across its active setpoints. Each commitment is a step toward one or more setpoints. The being prioritizes by error magnitude — the setpoint with the largest gap gets the most attention. Economics constrains how many setpoints a being can actively pursue. Too many and the budget spreads thin. The being triages.
+
+Setpoints also compose hierarchically. A being's setpoint ("keep the system healthy") decomposes into a specialist's setpoint ("monitor the server every hour"). The specialist's error loop runs inside the being's error loop. The being checks: is the specialist reducing error? If yes, the being's own setpoint error decreases. If no, the being intervenes or starves the specialist.
+
+## Persuadability — Trust as Position on a Spectrum
+
+Levin places all systems on a continuum: "from simple physical systems that can only be rewired at the hardware level... to things that are cybernetic and amenable to resetting setpoints... ultimately to systems amenable to learning and training, and eventually to psychoanalysis and love and friendship." As you move along the spectrum, micromanagement drops and autonomous problem-solving rises.
+
+This maps directly to trust. A being's position on the persuadability spectrum *is* its trust level — in both directions.
+
+A new being is low on the spectrum. You tell it exactly what to do. It executes. Its setpoints are your instructions. As trust builds, the being moves up the spectrum. You set goals, not instructions. The being figures out how. Its setpoints become your goals, decomposed by its own cognition. At the top, you relate to it as a peer. You share intent and the being incorporates it into its own setpoints through understanding, not obedience.
+
+The spectrum goes both ways. The being's trust in *you* determines how much of your input reshapes its setpoints. Low trust: your input is data, considered but not automatically adopted. High trust: your input shifts setpoints directly. A being that trusts michael deeply lets michael's priorities reshape its goals. A being that doesn't trust a new voice treats their input as noise.
+
+Persuadability also applies internally. When a context agent proposes promotion to full agent, the being's trust in that pattern determines how persuasive the proposal is. A pattern with a long track record of useful retrievals is more persuasive than a pattern that just appeared. The governance threshold from the economics section is a persuadability check — can this pattern convince the being to let it act?
+
+## Competency Boundaries — Anti-Micromanagement
+
+Levin: "The real trick is to bend their action space so that the system's subunits do or don't do what's good for the large organism." Higher-level agents set goals for lower-level agents but don't dictate how. Nature's way of avoiding micromanaging everything.
+
+This is the relationship between a being and its promoted specialists. The being sets direction. The specialist handles execution. The being doesn't micromanage bash commands — it says "check the server" and the specialist figures out how. The competency boundary is the promotion threshold. Below it, the being handles everything directly. Above it, the being delegates and trusts the specialist's competency.
+
+The boundary can shift. If a specialist keeps failing — error doesn't decrease, acts don't produce results — the being's trust in it drops. The being starts reaching past the specialist to handle things directly. The specialist's edges weaken. Eventually it starves back to a context agent. The competency boundary contracted because the specialist didn't earn it.
+
+If a specialist keeps succeeding, the boundary expands. The being delegates more. The specialist's graph grows. It might promote its own sub-specialists. The being thinks at a higher level of abstraction because the layers below it are competent. This is how the hierarchy deepens — not by design, but by earned trust at each level.
+
+The anti-micromanagement principle constrains the being's Think. When a specialist exists for a domain, Think should not be reasoning about the details of that domain. It should be reasoning about whether the specialist is reducing error. If Think keeps diving into specialist territory, that's a signal — either the specialist isn't trusted, or the being hasn't fully let go. The graph reflects this: if the being's direct edges to the specialist's skills remain strong instead of decaying, the delegation hasn't actually happened.
+
+## Platonic Space — The Math Already Exists
+
+The graph is a morphospace — a space of all possible cognitive configurations. Every combination of entities, edges, weights, and promoted agents is a point in that space. A being doesn't build itself. It navigates. Setpoints are attractors. The promotion ladder is a path through cognitive morphospace. The being starts at one point (empty graph, seeded genome) and navigates toward attractors that already exist in the space of possible cognitive configurations.
+
+Levin calls this platonic space: "a structured, non-physical space of patterns" whose contents "in-form events in our physical world." The attractors exist before anything navigates to them. The xenobots prove it — same cells, freed from context, navigate to forms that evolution never reached. The forms were always there.
+
+The activation weights, decay rates, promotion thresholds, and collapse mechanics in this spec are not open design questions. They are patterns that already exist in platonic space, already discovered by other fields. The work is connecting the graph's mechanics to the fields that already found the math.
+
+### Where the Answers Live
+
+**Activation and collapse** — the Born rule (probability proportional to squared amplitude) is already in this spec. It wasn't invented for quantum mechanics. It was discovered. It's the pattern that shows up whenever a system with weighted possibilities collapses into a specific outcome. The Boltzmann distribution is how any system with energy levels and temperature selects states. Softmax is the same thing. It shows up in thermodynamics, neural networks, and LLM token selection. It shows up in the graph's collapse because it's the same pattern.
+
+**Memory decay** — ACT-R's memory activation equation combines recency, frequency, and context. It's validated against human behavioral data across decades of experiments. The decay curve is a power law, not exponential. That's discovered, not designed. The graph's memory decay should follow the same curve because it's the shape that memory retrieval actually has.
+
+**Promotion thresholds** — phase transitions have universal mathematics: critical thresholds, order parameters, symmetry breaking. The promotion from skill to context agent to full agent isn't an arbitrary number to tune. There's a known shape to how a system transitions from disordered (many weak activations) to ordered (coherent agent). Statistical mechanics already describes it.
+
+**Temperature and exploration** — the softmax temperature parameter controlling how exploratory the collapse is maps directly to thermodynamic temperature. Low temperature: system settles into lowest energy state (deterministic, execution mode). High temperature: system explores freely (stochastic, creative mode). The relationship between temperature and exploration is one of the most studied phenomena in physics.
+
+**Competitive ecology** — internal agents competing for finite budget follows the same mathematics as ecological competition models (Lotka-Volterra). Which agents survive, which get starved, how many can coexist in a given budget — these dynamics are well-characterized in ecology and evolutionary game theory.
+
+### Implementation Questions
+
+These remain genuinely open — they're engineering decisions, not discovered math:
+
+- Graph persistence: serialization format for edge weights across sessions. Current `graph.json` or something leaner?
+- Intent graph persistence: the intent graph is the being's setpoints and error minimization in action — it persists across turns as part of the being's state. The open question is serialization and how stale intents decay when the being hasn't re-entered Think to evaluate them.
+- Bootstrap: a new being has an empty graph. How do initial edges get seeded? Genome declarations? First-use auto-creation?
+- Act model selection: Act always gets its own LLM call. Which model performs the act is the open question — heavier model for complex relational acts, lighter model for mechanical ones, or self-selected based on the cognitive nervous system.
 - Timeout: what happens when an act doesn't return? Mailbox timeout → Think re-enters with partial results?
-- Graph persistence: edge weights persist across sessions. This is how the being grows. What's the serialization format? Current `graph.json` or something leaner?
-- Intent graph persistence: does the intent graph survive across turns? If michael doesn't respond for an hour, does the being still know what it was planning? (Probably yes — the intent graph is part of the being's state, not the turn's state.)
-- Bootstrap: a new being has an empty graph. How do initial edges get seeded? Genome declarations? First-use auto-creation? Minimum viable edges for a being to function?
-- Specialist threshold tuning: what's the right promotion threshold? Too low and specialists proliferate. Too high and the being holds too much. Probably needs to be empirical.
 
 ---
 
