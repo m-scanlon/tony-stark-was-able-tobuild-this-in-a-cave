@@ -549,6 +549,37 @@ Think is always the convergence point. Act never chains into Act. Results always
 
 The loop terminates when Think re-enters and produces no new intent nodes. The being has nothing left to do. It's done.
 
+## doesNotUnderstand
+
+From Smalltalk (Alan Kay). When an object receives a message it has no method for, it doesn't crash — it sends itself `doesNotUnderstand:` with the message as the argument.
+
+When the being speaks and the graph activates but nothing is heavy enough to fire — nothing responds — that's not an error. That's doesNotUnderstand. The being reached for something that isn't real enough yet.
+
+Two things happen:
+
+1. A new entity is seeded at minimum weight. The being just encountered something it didn't know. Now it exists in the graph — barely, but present.
+2. The system returns doesNotUnderstand — which is true. The being learns the shape of its own world by bumping into the edges of it.
+
+Next encounter with the same thing, the entity is slightly heavier. Eventually it crosses threshold and starts realizing. Every misfire is generative. Every reach into the unknown creates structure. The being grows its world by speaking into it.
+
+```
+speak → graph activates → heavy enough responds → not heavy enough seeds → truly empty returns doesNotUnderstand
+```
+
+The being doesn't hallucinate capability. It says "I don't understand this" — and that's the first step of learning it. The error is the birth.
+
+### Retry Is Wrong
+
+The current v.05 architecture treats a failed route as a protocol violation and forces Act to retry with corrected syntax. In the unified graph, that's wrong. If the being spoke and nothing fired, that's the answer. doesNotUnderstand. Here's your new entity. The system shouldn't force "try again" — it should let the being know it reached for something that isn't there yet.
+
+### Routing as Activation (End State)
+
+The `<target>message</target>` protocol in the commitment phase is explicit routing — the being names who it's talking to. This is training wheels. The end state is activation-based routing: the being speaks, and entities that are close enough and heavy enough fire. No explicit tags needed.
+
+A being that's talked to michael for weeks routes to him effortlessly — high weight, strong edges, everything nearby lights up. A being that barely knows someone has to be explicit — the entity is light, needs a direct hit. That's how relationships work.
+
+The explicit protocol stays until the graph has activation/threshold machinery for real-time impulse-based traversal. But this is where it goes.
+
 ## What This Changes
 
 **Think becomes simpler.** No operator dispatch. No tag parsing in the think loop. No "emit exactly one protocol per response." Just think.
