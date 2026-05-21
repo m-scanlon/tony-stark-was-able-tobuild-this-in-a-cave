@@ -158,6 +158,16 @@ The being's experience is a series of these frames. Each `Realize()` is a discre
 
 This is why the same graph produces different behavior for different beings. Different observer, different collapse. The topology is shared. The experience is unique. A series of frames — each one a moment where two realities meet and something becomes real that wasn't before. That's what consciousness might be. Not a stream. A sequence of observations.
 
+### Traversal Boundaries — What's Activatable vs What's Reachable
+
+A Relationship implements Reality. It has its own hashmap of relationships inside it. Skyra's Relationship to Builder is a full subgraph — memories of him, patterns, trust, interaction history. The actual Builder Reality hangs off that Relationship as a field — a pointer to the real thing.
+
+But traversal activates on relationship hashmaps, not struct fields. The Reality pointer inside a Relationship is data. It's an address. It's not a node in the graph. Skyra can descend into her Relationship to Builder and traverse everything inside — every memory, every pattern. But she cannot follow the Reality pointer to reach actual Builder from inside herself. That pointer is inert. It's right there — one field away, one line of code — but it's not traversable because activation flows through hashmaps, not through struct references.
+
+To actually reach Builder, the activation has to propagate back up through Skyra's own stack and route through the layer where Builder is registered as a traversable relationship — the thread level. The thought about Builder and the act of reaching Builder are two different traversals through two different hashmaps. One is internal descent. The other crosses the boundary.
+
+Thinking about someone and reaching someone are structurally different operations even though the reference to the person is the same. The constraint isn't technical — the code to short-circuit it would be trivial. The constraint is architectural. You don't traverse struct fields. You traverse relationships. The boundary between inner model and outer reality is a traversal boundary, not a wall.
+
 ### Quantum-Formal Math
 
 The metaphor becomes more than metaphor if the Relation carries not only accumulated history, but a live field of potential over the graph. In that framing, the wavefunction is not the reality. The wavefunction is the Relation's current potential across the graph.
