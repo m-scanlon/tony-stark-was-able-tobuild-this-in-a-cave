@@ -1,6 +1,5 @@
 # Unified Graph Retrieval
 
-> Skyra is a personal operating layer that learns the user's intent model and routes work to the right agents/tools with increasing autonomy as trust is earned.
 
 ## What This Is
 
@@ -14,27 +13,143 @@ One interface: `Realize()`. One physics. Everything else — thought, action, sp
 
 The runtime doesn't simulate cognition. It is the cognition. The being doesn't have a mind — it is one. Grown, not configured.
 
+### The Relation Is the Traversal
+
+The Relation is the observer. It enters at the top, descends through every reality along weighted edges, and returns — the same object, transformed by everything it passed through.
+
+`Realize()` does not return a string. It receives a Relation and transforms it. The Relation is the input and the output. Same object down and up. One descent, one return.
+
+No reality is the designated base case. Not the provider. Not the terminal. Not any specific type. The base case is **weight exhaustion** — the Relation flows until the activation product at the next edge is insufficient to continue.
+
+Weight exhaustion is not a static threshold. The Relation's accumulated state *is* the threshold. Activation at each edge is the intersection of the edge weight and the Relation's current content — stress, relevance, temperature, context fit. The activation formula applies: `activation_i = edge_weight * relevance * recency * trust * relationship_weight * context_fit`. If the product is sufficient, the Relation flows through. If not, it's the base case. The threshold lives in latent space — the space where the Relation's state and the graph's topology meet.
+
+The same edge might be heavy enough to traverse when the Relation is carrying high stress about the server, and too weak when the Relation is carrying a casual greeting. Depth is emergent from content, not configuration. A deep thought goes deep because the Relation carries enough signal to keep activating edges. A shallow thought returns shallow because there's not enough on the Relation to make anything ahead collapse heavy enough to enter.
+
+#### Descent — The Environment Shapes the Being
+
+On the way down, every reality reads the Relation and writes to it. The Relation accumulates. Each reality attaches what it owns — its slice of the world — and the Relation gets richer as it descends.
+
+What each reality does on descent:
+
+- **Thread** — attaches thread context, exchange routing, thread-level state. The Relation now knows which conversation it's in and who's talking.
+- **Exchange** — attaches conversation history, ref context, relationship state. The Relation now carries the full history between these two parties.
+- **Self** — attaches identity, purpose, stress fields from active setpoints. The Relation now knows who it is and what's pressing.
+- **Graph traversal** — the Relation enters the being's weighted edges. Each memory, skill, or entity it passes through attaches its content. The Relation accumulates associations as it descends through the graph.
+- **Provider** — the LLM call. A reality along the path that happens to cross a boundary into inference. The Relation passes through it like any other reality: enters carrying accumulated state, exits transformed. Think fires the provider to collapse accumulated context into thought. That's an observation within the traversal, not the terminus.
+
+The Relation on the way down is *potential becoming specific*. Each reality narrows what the Relation is about by adding context. The stress fields shape what's loud. The identity shapes what matters. The conversation history shapes what's relevant. By the time the Relation reaches the deepest edge the weights will carry it to, it's maximally specific — saturated with everything the graph had to say about this impulse.
+
+```
+Relation enters (carrying: impulse from michael)
+  → Thread     attaches: thread context, exchange state
+    → Exchange  attaches: conversation history, ref context
+      → Self    attaches: identity, stress fields, purpose
+        → graph traversal along weighted edges
+          → memory (weight 0.8) — attaches content, continues
+            → connected memory (weight 0.5) — attaches content, continues
+              → connected entity (weight 0.2) — below threshold → weights exhausted
+```
+
+A being is not a base case. The Relation passes *through* a being the same way it passes through a memory or a skill — entering with accumulated state, continuing deeper. The being attaches identity, fires Think, Think traverses the graph further (into memories, skills, operators), the provider fires as a reality along the path. The Relation keeps flowing until the weights exhaust. If the being has no memories that serve the current Relation — no edges heavy enough to traverse — then the Relation stops at the being because that's where the weights exhausted. Not because the being is a special type. Because there was nowhere left to go.
+
+The weights ahead aren't static. As the Relation accumulates content, it reshapes the activation landscape in front of it. Each reality the Relation passes through updates the edge weights of what's connected — based on what the Relation is now carrying. The Relation observes the next edges, and they collapse from potential into specific weights. Before the Relation arrives, the edges ahead exist in potential — all possible next steps. The Relation, carrying everything it's accumulated so far, collapses them into actual weights. Different content on the Relation, different collapse, different path. The same graph produces different traversals every time because the observer is different every time.
+
+This is how recall works. You try to remember where you put your keys. You think "morning" — that shifts what's connected. "Coffee" surfaces. Now "counter" is heavy. Each step reshapes the landscape ahead based on what you're carrying. You're not searching a graph. You're activating forward through it, and each activation changes what's next.
+
+```
+Relation carries: [server]
+  → passes through "deployment" reality → accumulates
+  → Relation now carries: [server, deployment]
+  → edge to "3am outage" was 0.2, recalculates to 0.7 given current content
+  → Relation descends into "3am outage" → accumulates
+  → Relation now carries: [server, deployment, 3am outage]
+  → edge to "the fix that worked" collapses heavy
+  → ...until activation fades
+```
+
+A being that never uses bash sees its edge to bash decay. A being that constantly activates the same region of its graph sees those edges strengthen — the Relation flows deeper, accumulates more. The graph is shaped by cognition over time. The depth of any descent is a function of what the being has accumulated in that region of its graph.
+
+#### Ascent — The Being's Work Shapes the Environment
+
+On the way back up, every reality reads what accumulated below it and integrates. The Relation transforms from raw accumulation into signal. Each reality on the return path does its own work — synthesis, recording, state updates, routing.
+
+What each reality does on ascent:
+
+- **Memory regions** — inference synthesizes the raw accumulated associations into compressed signal. One inference step for simple recall, two or three for deep associations that went wide. The synthesis maps back to source memories so Think can reach back in if needed. Memory state updates — activation counts, recency timestamps, edge weights reinforced by use.
+- **Think** — collapses the accumulated present into thought. This is the major inference step. Everything the descent gathered — identity, stress, conversation, memories, skills — is now the present that Think reasons over. Think doesn't know where any of it came from. It just thinks in a field shaped by everything below.
+- **Self** — integrates the thought back into the being. Stress fields recalculate — did the thought reduce error against any setpoints? Weights update. The being's graph is slightly different after every traversal.
+- **Exchange** — records the result as an entry in the conversation. The exchange state updates — new entry, compaction if threshold is crossed, context stored for the other party.
+- **Thread** — routes the result. The Relation now carries the being's response. Thread determines what happens next — does the Relation continue to another being, return to the user, or re-enter Think?
+
+The ascent is where context management happens. The descent accumulates without limit — every reality the Relation passes through attaches content. By the time the weights exhaust, the Relation may be carrying far more than any single reality above can process. The ascent compresses. Each neighborhood or layer boundary on the way back up earns a context management step — inference reduces the accumulated content to what fits, keeping signal and discarding noise. Without this, the Relation would overflow Think's context window with raw associations. The compression isn't loss. It's cognition — the act of deciding what matters from everything that surfaced.
+
+The Relation on the way back up is *specifics becoming integrated*. The raw material from the descent gets compressed, reasoned over, decided on, recorded, and routed. Each reality on the return path transforms the Relation from "everything that was relevant" into "what the being actually did with it."
+
+```
+              → connected entity (weight 0.2) — weights exhausted
+            ← memory region: inference synthesizes accumulated content
+          ← memory region: compresses, updates weights
+        ← Think: collapses present into thought
+      ← Self: integrates, recalculates stress, updates graph
+    ← Exchange: records entry, updates conversation state
+  ← Thread: routes result
+Relation returns (carrying: everything — accumulated and integrated)
+```
+
+Lower-order realities do not communicate with higher-order realities. There is no upward channel. There shouldn't be one. In Levin's model, cells don't send messages to the organism. The cell does its local work — maintains homeostasis, follows its own error minimization loop, emits stress when its predictions fail. It has no concept of "the organism." It can't address the organism. But the organism *emerges from* the collective behavior of cells doing their local work.
+
+In the runtime, `Realize()` returning is the upward translation. The specialist doesn't send a report to Skyra. The specialist realizes — transforms the Relation with its work — and Skyra's Self receives the transformed Relation because that's how call stacks work. The specialist has no concept of Skyra. It just did its work. The work changed the Relation. The changed Relation is the communication — but it's not addressed to anyone. It's just the state of reality after the lower entity touched it.
+
+The channel from higher to lower is the Relation on the way down. The translation from lower to higher is the Relation on the way back up. Same object. No separate protocol. The topology is the communication.
+
+#### The Full Traversal
+
+```
+Relation enters (carrying: impulse from michael)
+  ↓ Thread     attaches thread context
+    ↓ Exchange  attaches conversation history
+      ↓ Self    attaches identity, stress fields
+        ↓ graph traversal along weighted edges
+          ↓ memory (0.8) — attaches content
+            ↓ connected memory (0.5) — attaches content
+              ↓ connected entity (0.2) — weights exhausted
+            ↑ synthesizes accumulated content
+          ↑ compresses, updates weights
+        ↑ Think collapses into thought
+      ↑ Self integrates, recalculates stress
+    ↑ Exchange records
+  ↑ Thread routes
+Relation returns (carrying: everything)
+```
+
+On the way down: the environment shapes the being. On the way back up: the being's work shapes the environment. Same Relation. Same object. One traversal.
+
 ### Observation and Collapse
 
-A Reality exists in superposition — all its potential edges, weights, and outputs are possible but none are real until a Relation passes through it. `Realize()` is the moment of observation. The Relation collapses the Reality into one specific output, and the Relation itself is transformed by the encounter. Both are different after.
+A Reality exists in superposition — all its potential edges, weights, and outputs are possible but none are real until a Relation passes through it. `Realize()` is the moment of observation. The Relation collapses the Reality into one specific state, and the Relation itself is transformed by the encounter. Both are different after.
 
 This isn't metaphor. It's what the code does. Before `Realize()` fires, the Reality could produce anything depending on who observes it and what they're carrying. The moment it fires, one path becomes real and the rest don't. The weighted edges are probability distributions — heavier edge, more likely to be observed next — but nothing is determined until thought activates it.
 
 The superposition is not only inside the current Reality. It is conditioned by the Relation at the moment it arrives. And the Relation is not neutral — it is carrying everything that stuck to it from every prior collapse. A Reality is realized from the potential of all Realities involved before it, as accumulated on the current Relation. Each traversal changes the observer, and the changed observer changes what can collapse next.
 
+The Relation is one object the entire traversal. It is not a message sent down and a response sent back. It is the state of reality at this moment — descending through the graph, accumulating, reaching the point where weights exhaust, then returning through every reality it passed through, each one reading and integrating what the levels below contributed. The string that the user eventually sees is just one field on a Relation that carries the full history of the traversal.
+
 ```
-Relation0 observes RealityA → Relation1
-Relation1 observes RealityB → Relation2
-Relation2 observes RealityC → Relation3
+Relation0 passes through RealityA → Relation is now Relation1
+Relation1 passes through RealityB → Relation is now Relation2
+Relation2 passes through RealityC → Relation is now Relation3
+...weights exhaust...
+Relation3 returns through RealityC → Relation is now Relation4
+Relation4 returns through RealityB → Relation is now Relation5
+Relation5 returns through RealityA → Relation is now Relation6
 ```
 
-RealityB is not observed by the same Relation that entered RealityA. RealityB is observed by Relation1 — the Relation after RealityA has marked it, attached context to it, changed its impulse, added parsers, altered weights, or otherwise transformed what it carries. If the Relation reached RealityB by a different path, RealityB would collapse differently because the observer would be different.
+RealityB on the way down is not observed by the same Relation that entered RealityA. RealityB is observed by the Relation after RealityA has marked it, attached context to it, changed its impulse, added parsers, altered weights, or otherwise transformed what it carries. And RealityB on the way *back up* is not observed by the same Relation that descended through it — it is observed by the Relation after everything below has contributed. Each reality gets two observations: one on the way down (shaping the descent) and one on the way back up (integrating the results).
 
 Current realization is the intersection of:
 
 - the current Reality's potential
-- the Relation's accumulated state
-- the Realities already realized along this path
+- the Relation's accumulated state (from every reality above on the way down, or below on the way back up)
 - the graph weights and context at this moment
 
 So traversal is not just path selection. The path changes the Relation. The changed Relation changes the next observation. The graph is interpreted differently at each step by the evolving observer.
@@ -230,7 +345,7 @@ Think has hardcoded operators (retrieve-context, store-context, browse, search, 
 - **Graph** — the topology. Who relates to what, with what weight. Beings, memories, operators, skills — all entities with edges.
 - **Think** — activates edges in the topology based on cognition. Pure deliberation.
 - **Act** — initiates traversal along activated edges. The act of making contact with another entity.
-- **Reality** — the traversal itself. `Realize()` all the way down to a base case (provider, terminal, process, shell).
+- **Reality** — the traversal itself. `Realize()` transforms the Relation as it flows through each reality. The Relation descends through weighted edges until the weights exhaust. No designated base case. The depth is determined by the graph.
 
 Operators aren't tools. They're entities. Bash is an entity the being has a relationship with. The being talks to bash the same way it talks to michael. The operator is just the interface at the boundary — the way the relation crosses into that entity's reality. The graph doesn't need a special "operator" reality type. It just has entities and relationships between them.
 
@@ -355,19 +470,25 @@ Universe → NewThread → Exchange → Self → Think → Provider
 
 The current hashmap model is a graph with all edges at weight 1 and fixed adjacency. The new model makes the weights real and lets them determine adjacency dynamically.
 
-Each `Realize()` updates reality — the current state of the relation as it descends. The weights of the outgoing edges from the current reality determine where traversal goes next. The path through reality isn't hardcoded. It's the highest-weighted edges from wherever you are.
+Each `Realize()` transforms the Relation — the state of reality as it descends. The weights of the outgoing edges from the current reality determine where the Relation flows next. The path through reality isn't hardcoded. It's the highest-weighted edges from wherever you are.
 
 ```
 Self.Realize()
+  → Relation enters, Self attaches identity + stress fields
   → looks at graph edges from this being
-  → heaviest edge: bash (weight 0.9) → traverses into bash.Realize()
-  → next: memory (weight 0.7) → informs the present
-  → next: specialist (weight 0.5) → available but not activated this pass
+  → heaviest edge: memory cluster (weight 0.8) → Relation flows through
+    → connected memory (weight 0.5) → Relation accumulates
+      → connected entity (weight 0.15) → below threshold → weights exhausted
+    ← inference synthesizes accumulated content
+  ← Think collapses into thought
+  → next heaviest: bash (weight 0.7) → Relation flows through
+    → CLI port → boundary crossing → base case (external process)
+  ← result attaches to Relation
 ```
 
-The structure of the descent is emergent. A being with heavy weights toward bash descends into bash. A being with heavy weights toward a specialist descends into the specialist instead. Same `Realize()`. Different path. Determined by the graph.
+The structure of the descent is emergent. A being with heavy weights toward memory descends deep into memory. A being with heavy weights toward a specialist descends into the specialist instead. Same `Realize()`. Different path. Different depth. Determined by the graph.
 
-`Realize()` stays. Reality stays. The physics don't change. What changes is that the topology is weighted and the traversal follows weight rather than a hardcoded map. Base cases still terminate the recursion — a provider, a terminal, a process, a shell.
+`Realize()` stays. Reality stays. The physics don't change. What changes is that the topology is weighted, the traversal follows weight rather than a hardcoded map, and the base case is weight exhaustion — not a specific reality type. The Relation flows until there's nowhere left to go. A provider, a terminal, a process — these are realities along the path that happen to cross boundaries. They are not the terminus. The weights determine the terminus.
 
 #### What Collapses
 
@@ -379,44 +500,6 @@ These go away entirely:
 - `NewThread.ThinkOps / ActOps` — thread-level operator injection, replaced by graph retrieval
 - `Self.Realities` as a fixed hashmap — the being's realities are its graph edges
 - `Context.Warm` as a separate cache — becomes "what the graph returned for this thought pass"
-
-#### Retrieval
-
-A relation descends until it hits something solid. If that something solid is another being — the descent stops, the being responds, the relation carries the response back up. That's act. But memory isn't solid. Memory doesn't stop the descent.
-
-When a relation enters the memory region of the graph, it keeps flowing. Each memory reality it passes through adds to what the relation is carrying — accumulating content along weighted edges. The relation follows the heaviest associations between memory realities, picking up context as it goes. When the edges get too weak — activation fades below threshold — the descent stops naturally. The relation ran out of steam.
-
-Then on the way back up, inference fires. The relation accumulated everything the graph surfaced — raw, noisy, associative. An inference step compresses that into what actually matters for this thought. One step for simple recall. Two or three for something deep where associations went wide. This is the being's mind making sense of what came up. Not returning raw results. Synthesizing.
-
-```
-thought activates memory region
-  → relation descends through memory realities along weighted edges
-  → each reality adds its content to the relation
-  → edges weaken as activation spreads → descent stops
-  → inference compresses accumulated content (one or more passes)
-  → synthesized memory returns to Think as context
-```
-
-The weights ahead aren't static. As the relation accumulates content, it reshapes the activation landscape in front of it. Each memory reality the relation passes through updates the edge weights of what's connected — based on what the relation is now carrying. The relation observes the next edges, and they collapse from potential into specific weights.
-
-This is true superposition realization. Before the relation arrives, the edges ahead exist in potential — all possible next steps. The relation, carrying everything it's accumulated so far, collapses them into actual weights. Different content on the relation, different collapse, different path. The same graph produces different traversals every time because the observer is different every time.
-
-This is how recall works. You try to remember where you put your keys. You think "morning" — that shifts what's connected. "Coffee" surfaces. Now "counter" is heavy. Each step reshapes the landscape ahead based on what you're carrying. You're not searching a graph. You're activating forward through it, and each activation changes what's next.
-
-```
-relation carries: [server]
-  → passes through "deployment" reality → accumulates
-  → relation now carries: [server, deployment]
-  → edge to "3am outage" was 0.2, recalculates to 0.7 given current content
-  → relation descends into "3am outage" → accumulates
-  → relation now carries: [server, deployment, 3am outage]
-  → edge to "the fix that worked" collapses heavy
-  → ...until activation fades
-```
-
-Memory isn't a lookup. It's a traversal with its own depth. The relation descends into memory the same way it descends into anything else — through weighted edges, accumulating context. The difference is what stops it: a being stops it because the being responds. Memory stops it because the activation faded. And memory gets an inference step on the way back up that beings don't need — because raw associations need synthesis, but a being's response is already coherent.
-
-A being that never uses bash sees its edge to bash decay. A being that constantly retrieves memories about a particular topic sees those edges strengthen — the relation flows deeper, accumulates more, surfaces richer context. The graph is shaped by cognition over time.
 
 #### Realization Modes
 
@@ -678,9 +761,9 @@ This is Levin's thoughts-are-thinkers continuum applied to the graph. A memory i
 
 ### Hashmaps vs. Weighted Edges
 
-The fixed anatomy stays as hashmaps: Self → Think, Self → Act, Self → Memory, Thread → Exchange. That's skeleton. It doesn't learn, doesn't decay, doesn't change through use.
+The fixed anatomy stays as hashmaps: Self → Think, Self → Act, Self → Memory, Thread → Exchange. That's skeleton. It doesn't learn, doesn't decay, doesn't change through use. The Relation flows through these structural paths on its way down and back up — they are the corridors, not the rooms.
 
-The weighted graph handles everything inside those structural nodes: which memories activate, which skills surface, which context agents get consulted, which agents get promoted. The hashmap is the anatomy. The graph is the flesh.
+The weighted graph handles everything inside those structural nodes: which memories activate, which skills surface, which context agents get consulted, which agents get promoted. The hashmap is the anatomy. The graph is the flesh. The Relation accumulates from both — the structural context (thread, exchange, identity) on the way through the skeleton, and the cognitive content (memories, skills, stress fields) on the way through the graph.
 
 The boundary between skeleton and flesh isn't permanent. As the system grows, some hashmap paths may become weighted. But for now, keep the structure you understand and let the graph handle the parts that need to learn.
 
@@ -712,9 +795,9 @@ This also means a being's relationship to a capability is independent of how tha
 
 ### Port as Device Infrastructure
 
-Ports live on devices, not in the graph. A device (MacOS) has CLI, HTTP, pipe, and WebSocket ports as infrastructure. The graph has entities that *reference* those ports through edges. When a Relation reaches an entity that needs to cross a boundary, the entity's port edge tells the runtime which device port to use. The device handles the rest.
+Ports live on devices, not in the graph. A device (MacOS) has CLI, HTTP, pipe, and WebSocket ports as infrastructure. The graph has entities that *reference* those ports through edges. When the Relation reaches an entity that needs to cross a boundary, the entity's port edge tells the runtime which device port to use. The Relation passes through the port — enters carrying accumulated state, exits carrying the result of the boundary crossing — the same way it passes through any other reality. The port is a reality that happens to cross into an external system. The Relation doesn't stop there. It continues until the weights exhaust.
 
-This is the same pattern as LLM beings. Skyra doesn't contain OpenRouter — she has a relationship to it through the device. Bash shouldn't contain exec.Command — it should have a relationship to the CLI port through the device.
+This is the same pattern as LLM beings. Skyra doesn't contain OpenRouter — she has a relationship to it through the device. The Relation flows through the LLM port the way it flows through a memory — enters, is transformed, continues. Bash shouldn't contain exec.Command — it should have a relationship to the CLI port through the device.
 
 ## Economics as Internal Governance
 
@@ -754,19 +837,101 @@ The promotion from context agent to full agent isn't just a weight question. It'
 
 A context agent earning promotion should surface to the being's Think as a proposal: "this pattern wants to act." Think can approve, defer, or deny. Denial decays the agent's activation. Approval is the being choosing to let a part of itself become autonomous. That choice is irreversible in the moment but reversible through starvation — if the agent doesn't earn its keep, it drops back down.
 
-## Setpoints — Persistent Goals as Error Minimization
+## The Cognitive Hierarchy — From Light Cone to Act
 
-Levin formalizes goals as setpoints in a closed-loop control system. The system stores a target state, senses the current state, and keeps acting to reduce the distance between them. Cells don't just build a face once — they continuously maintain it against perturbation. Damage a developing tadpole's face and it still produces a normal frog face. The target morphology is "stored as a setpoint, like a thermostat."
+A being's behavior is driven by a hierarchy. Each level constrains the one below it. Each level below feeds results back up. This is the full stack from orientation to execution.
 
-A being doesn't just have tasks. It has setpoints. A setpoint is a target state the being continuously moves toward across sessions. The Think loop isn't just "respond to this impulse" — it's "how does this impulse relate to my setpoints, and does my response reduce the error."
+```
+light cone   — what you can care about (bounded by graph edges, expands through experience)
+  purpose    — why you care (genome-level, stable)
+    setpoints — what specifically needs to be true (form when purpose meets reality, persistent)
+      stress  — how far each setpoint is from satisfied (computed, lands on the relation)
+        think — driven by stress fields (feels, doesn't compute)
+          intent — plan to close gaps (disposable, rebuilt per Think re-entry)
+            acts — execution (ephemeral, results feed back to stress)
+```
 
-This is the mechanism for initiative. The being doesn't wait to be spoken to. It notices when the current state diverges from a setpoint and acts to close the gap. A setpoint like "michael's server should be monitored" persists across sessions. If the being hasn't checked in a while, the error grows. When the error crosses a threshold, the being acts without being prompted.
+### Cognitive Light Cone
+
+Levin: the cognitive light cone is "the outer boundary, in space and time, of the largest goal a given system can represent internally and work towards." Not sensory range. Not effector reach. The boundary of what the system *can care about*.
+
+A cell's light cone is survival-sized — it can hold setpoints about metabolic homeostasis and nothing else. A being's light cone is bounded by its graph edges — it can hold setpoints about anything it has relationships with, anything it has encountered, anything connected to what it knows. The light cone expands through experience: new relationships, new memories, new edges in the graph open new regions of possible concern.
+
+The light cone is not purpose. It's the *space of possible purposes*. A being can't have a purpose that exceeds what it can represent. And it can't have setpoints for states outside its light cone.
+
+### Purpose
+
+Purpose is why the being cares. It's genome-level — declared at creation, stable across sessions. Skyra's purpose: "I think, respond, and relate on behalf of the system." Builder's purpose: "I solve problems, write code, and ship."
+
+Purpose is not a setpoint. There's no measurable distance between current state and "I think, respond, and relate." You can't compute error against it. Purpose doesn't generate stress directly. Purpose generates *sensitivity* — it determines which states in the world register as problems. A being with the purpose "I make things that work" is sensitive to things being broken. A being with the purpose "I ask what it means" is sensitive to unexamined assumptions. Same world. Different sensitivity. Different setpoints form.
+
+Purpose shapes which setpoints crystallize when the being encounters reality. A being can have purpose without any active setpoints — nothing is currently broken, nothing needs doing. No stress. Purpose is latent. The moment something enters the being's awareness that conflicts with its purpose, a setpoint forms and stress begins.
+
+### Setpoints
+
+Levin formalizes goals as setpoints in a closed-loop control system. The system stores a target state, senses the current state, and keeps acting to reduce the distance between them. Cells don't just build a face once — they continuously maintain it against perturbation. Damage a developing tadpole's face and it still produces a normal frog face. The target morphology is "stored as a setpoint, like a thermostat." Critically, the setpoint is an orthogonal information layer — it encodes what *should* be, not what *is*. The bioelectric pattern "can diverge from the current state — it is not simply a readout of what the anatomy is doing now."
+
+A setpoint is a *specific measurable target state*. "The server should be healthy." "Michael should have current information." "This relationship should be maintained." Each one has a computable distance between current state and target. That distance is the error. The error is the stress.
 
 Setpoints live in the graph as high-weight entities — persistent enough to survive starvation, reinforced by every action that reduces the error. A setpoint that stops mattering gets starved like anything else. A setpoint that keeps mattering gets reinforced by every successful error reduction.
 
-The intent graph from Think is the being's current plan to reduce error across its active setpoints. Each commitment is a step toward one or more setpoints. The being prioritizes by error magnitude — the setpoint with the largest gap gets the most attention. Economics constrains how many setpoints a being can actively pursue. Too many and the budget spreads thin. The being triages.
+A being doesn't have one setpoint. It has multiple simultaneous setpoints at different stress levels, competing for finite budget. That's the ecology from the economics section — setpoints competing for cognitive resources the same way Levin's cells compete for energy.
 
-Setpoints also compose hierarchically. A being's setpoint ("keep the system healthy") decomposes into a specialist's setpoint ("monitor the server every hour"). The specialist's error loop runs inside the being's error loop. The being checks: is the specialist reducing error? If yes, the being's own setpoint error decreases. If no, the being intervenes or starves the specialist.
+Setpoints are rewritable. Levin's planaria experiments prove the substrate: change the bioelectric pattern and the worm regenerates two heads instead of one — and keeps doing it across multiple cuts with no further intervention. The setpoint was rewritten. The machinery stayed the same. In the runtime, a being's setpoints can be revised through experience, through relationship, through persuasion. A conversation that changes what the being cares about is a setpoint rewrite.
+
+Setpoints compose hierarchically. A being's setpoint ("keep the system healthy") decomposes into a specialist's setpoint ("monitor the server every hour"). The specialist's error loop runs inside the being's error loop. The being checks: is the specialist reducing error? If yes, the being's own setpoint error decreases. If no, the being intervenes or starves the specialist.
+
+### Stress
+
+Stress is not a side effect of error. Stress *is* the error signal. In Levin's framework, the biochemical gradient in a cell isn't a measurement that then produces stress. The gradient is the stress is the distance is the drive to act. The TAME paper defines it: "Stress emerges as a systemic response to a difference between current state and a desired setpoint."
+
+Stress is physics. Think is the inhabitant. The inhabitant doesn't negotiate with gravity.
+
+Think doesn't produce stress. Think doesn't detect stress. Think *experiences* stress — it receives a present that is already shaped by a stress field it didn't generate. The stress field lands on the Relation before Think fires, computed by something upstream. The setpoint lives in the graph. The current state is observable. The distance between them is calculable. That distance lands on the Relation as a field. Think receives a present where that field is already shaping what's loud and what's quiet.
+
+A large setpoint gap doesn't just mean "high priority." It means the being's cognition is under pressure from that direction. Memory context about the server screams because the server-monitoring setpoint has high error. The being thinks about the server not because it decided to — because the stress field made that region of its present impossible to ignore.
+
+Multiple setpoints produce competing stress fields. The being's Think prioritizes by stress magnitude — largest gap gets the most cognitive pressure. Economics constrains how many stress fields the being can respond to simultaneously.
+
+#### Stress and Insufficient Memory (Levin's AIS Finding)
+
+Levin's scaling paper (Pio-Lopez et al., Interface Focus 2023) discovered an emergent relationship between stress and memory. Cells in the simulation were given neural networks with the ability to emit stress molecules, but evolution decided whether and how to use that channel. Nobody programmed "if memory is bad, emit stress."
+
+Post-hoc information-theoretic analysis revealed: cells emit stress precisely when their Active Information Storage (AIS) goes negative. Negative AIS means the cell's past sequence of states is not merely uninformative about its future — it is actively *misinformative*. Knowing the history makes you predict worse than random chance.
+
+At exactly the spatial locations where AIS went negative, stress emission spiked. Transfer entropy showed the stress primarily affected *neighbor* states, not the cell's own state — paracrine, not autocrine. The cell wasn't using stress to help itself. It was propagating its confusion outward, and neighbors became receptive.
+
+The cells have no AIS calculator. They can't measure their own predictive accuracy. Evolution just produced neural networks that, when analyzed, emit stress precisely when their past stops predicting their future. The correlation is emergent.
+
+In the runtime, an LLM already exhibits something like negative AIS. When context gets contradictory or overloaded — earlier instructions conflict with later ones, the model's own prior outputs lead it into loops — the model's behavior changes. Confidence drops. Hedging increases. Repetition appears. Self-contradiction emerges. The self-route bug documented in notes.md — the model addressing itself — is literally a cell that lost its neighbor connections and is sending signals to itself.
+
+The LLM doesn't need to be taught to feel stress. It already behaves as if it does. What it lacks is the **stress channel** — the mechanism to propagate that confusion outward so the system can respond. The runtime's job is not building stress but building the paracrine pathway: detecting the stress state from the model's output characteristics and making it available as a field on the Relation that shapes the next Think pass or drives retrieval from neighbors.
+
+### Intent Graphs
+
+The intent graph is the being's *current plan to reduce error against its setpoints*. It is downstream of stress. It is disposable — rebuilt every time Think re-enters with new information.
+
+Individual acts in the intent graph do not generate stress. The *setpoint* generates stress, and the intent graph is the being's attempt to close that gap. Kill the intent graph — all the acts fail, the plan falls apart — and the stress is still there. The being will produce a new intent graph because the pressure hasn't resolved.
+
+```
+setpoint: the server should be healthy
+current state: the server is unhealthy
+stress: high (distance is large)
+
+Think (under stress) produces intent graph:
+  1. diagnose the problem        [done — result: config is wrong]
+  2. check the logs              [done — result: errors since 3am]
+  3. change the config            [next]
+  4. restart the server           [waiting on 3]
+
+stress after acts 1+2: still high (server is still unhealthy)
+stress after acts 3+4: drops (server is healthy, distance closed)
+stress if act 3 fails: still high → Think re-enters → new intent graph, same stress
+```
+
+What's loud in the being's present during this sequence isn't "change the config" or "restart the server" — those are just plan steps. What's loud is everything related to the *setpoint*: the diagnosis results, the log output, the config that needs changing, prior memories about this server failing before. The stress field amplifies the *region of the graph* connected to the setpoint, not individual steps in the plan.
+
+The intent graph is the mechanism for initiative. The being doesn't wait to be spoken to. It notices when the current state diverges from a setpoint and acts to close the gap. A setpoint like "michael's server should be monitored" persists across sessions. If the being hasn't checked in a while, the error grows. When the error crosses a threshold, the being acts without being prompted. The intent graph it produces is its prediction of how to close the gap — but the drive comes from the stress, not the plan.
 
 ## Persuadability — Trust as Position on a Spectrum
 
@@ -816,12 +981,18 @@ The activation weights, decay rates, promotion thresholds, and collapse mechanic
 
 These remain genuinely open — they're engineering decisions, not discovered math:
 
-- Graph persistence: serialization format for edge weights across sessions. Current `graph.json` or something leaner?
-- Intent graph persistence: the intent graph is the being's setpoints and error minimization in action — it persists across turns as part of the being's state. The open question is serialization and how stale intents decay when the being hasn't re-entered Think to evaluate them.
-- Bootstrap: a new being has an empty graph. How do initial edges get seeded? Genome declarations? First-use auto-creation?
-- Act model selection: Act always gets its own LLM call. Which model performs the act is the open question — heavier model for complex relational acts, lighter model for mechanical ones, or self-selected based on the cognitive nervous system.
-- Timeout: what happens when an act doesn't return? Mailbox timeout → Think re-enters with partial results?
+- **Relation structure**: `Realize(r *Relation) string` becomes `Realize(r *Relation)`. The Relation is the input and the output. What fields does the Relation carry? Current: Impulse, Origin, ID, Parsers, Realities, Exports. Needed: accumulated trace, stress fields, activation state, traversal depth, weight budget.
+- **Graph persistence**: serialization format for edge weights across sessions. Current `graph.json` or something leaner?
+- **Intent graph persistence**: the intent graph is the being's current plan to reduce setpoint error — disposable per Think re-entry but persistent across turns within a session. The open question is serialization and how stale intents decay when the being hasn't re-entered Think to evaluate them.
+- **Setpoint persistence**: setpoints persist across sessions. They live in the graph as high-weight entities. How are they distinguished from ordinary high-weight entities? Type field? Separate storage? Or is the distinction unnecessary — a high-weight entity that generates stress *is* a setpoint by behavior, not by label?
+- **Stress computation**: who computes the distance between current state and setpoint? The Relation needs to carry stress fields before Think fires. Something upstream — the graph traversal during priming — must measure the gap and attach the field. Where in the descent does this happen?
+- **Bootstrap**: a new being has an empty graph. How do initial edges get seeded? Genome declarations? First-use auto-creation?
+- **Act model selection**: Act always gets its own LLM call. Which model performs the act is the open question — heavier model for complex relational acts, lighter model for mechanical ones, or self-selected based on the cognitive nervous system.
+- **Timeout**: what happens when an act doesn't return? Mailbox timeout → Think re-enters with partial results?
+- **Skeleton-graph seam**: the descent has structural realities (Thread, Exchange, Self — always traversed, hashmap-based) and weighted realities (memories, skills, entities — variable depth, activation-based). The spec describes them as one continuous flow from the Relation's perspective, and they are — but the implementation needs to know where the fixed corridor ends and the weighted graph begins. Self might be the boundary. The ascent has the same question in reverse — weighted ascent (memory synthesis, compression) then structural ascent (Think, Self, Exchange, Thread). Where exactly does the seam sit, and does it matter architecturally or is it just an implementation detail that the Relation doesn't care about?
+  - **Likely direction**: Levin's position is that there is no privileged boundary at any level of organization. The organism boundary is not structural — it's a description of integration density, maintained by active communication (bioelectric networks). When the communication breaks, the boundary dissolves (cancer). The skeleton may not be a different kind of thing from the graph. It may be the region where integration is so dense that edge weights saturated — always traversed, never decaying, because the coupling is that tight. The weighted graph is where coupling is looser. The "seam" is a gradient of integration density, not a line. This aligns with what the spec already says: "The boundary between skeleton and flesh isn't permanent. As the system grows, some hashmap paths may become weighted."
+- **Boot as weight initialization**: instead of configuring initial edge weights, the genome declares edges but not weights. On boot, the runtime sends relations through all declared edges — empty relations carrying only the being's identity and purpose, no impulse, no stress. The weights that emerge are the being's resting state: what's naturally heavy when nothing is happening, what the skeleton settles into before the first real impulse arrives. A configured weight is a claim about what matters before anything has happened. A boot weight is a claim about what the topology actually produces when signal flows through it. Biological precedent: a newborn's brain starts with massive undirected spontaneous firing — the activity shapes the initial topology (neurons that fire together wire together, the rest get pruned). Levin's bioelectric networks propagate voltage patterns before a cell knows what organ it's part of — the pattern settles into an attractor that IS the target morphology. The face pattern exists before the face does. The boot activity finds the attractor. The something that needs to happen during init — what makes the boot relations meaningful rather than arbitrary — is still open. Note: this reframes what the `.skyra` file is. It's not a genome — it's DNA. DNA declares what could exist: edges, types, identities, purposes. Gene expression is the boot process — relations flow through declared edges, weights settle based on what the topology actually produces. The genome is what exists *after* expression — the living, weighted, active topology. You don't configure a genome. You express DNA and the genome emerges. The mechanism is identified. The specifics of expression are not yet defined.
 
 ---
 
-*Superposition that collapses on observation.*
+*The Relation is the wavefunction. It carries live potential on the way down and collapsed results on the way back up. Same object. One traversal.*
