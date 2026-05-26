@@ -142,6 +142,65 @@ Her read: the memory system is solid. The relationship layer is solid. What's mi
 - **Pattern**: seeds for the next-next version get planted during the spec work for the next version. v.05 spec work planted the unified graph. Unified graph spec work planted the boot/expression mechanism. The deeper truth tends to show up before the implementation hits the problem it solves.
 - **Software as regeneration — emergent integrations.** Integrations aren't built. They emerge. The architecture needs a library of proven, battle-hardened blocks — small `Realize()` implementations that cross one boundary each (Slack API, HTTP request, database query, auth, webhook). These are the proteins — available, proven, inert until composed. The being doesn't write the blocks. The being writes *glue* — a thin `Realize()` that composes proven blocks for its specific purpose. AI is good at small functional glue code. It doesn't accumulate complexity. If it degrades, stress catches it (setpoint says "this should work," current state says "it doesn't"), the being writes a new `Realize()`, same blocks, fresh glue. The limb regenerates. This is self-healing software — not because the AI writes perfect code, but because the architecture expects glue to break and has the mechanism to detect and replace it. The marketplace follows: third parties build blocks, not integrations. A block is a proven `Realize()` with a known interface. Drop it in the library. Every being in every world can discover it when stress drives them toward it. The block maker doesn't know how it'll be used. The being doesn't know who made the block. The composition is emergent. You don't ship integrations. You ship biology.
 
+## Four Signals — What Differentiates a Cell
+
+Biology uses four signal types to differentiate one genome into every cell type:
+
+1. **Chemical** — morphogen gradients. Concentration determines fate. Same signal, different intensity, different outcome. (~12 major pathway families)
+2. **Bioelectric** — voltage gradients across membranes. Depolarized → proliferation. Hyperpolarized → differentiation. Sits upstream of chemical — voltage determines which chemical signals a cell can hear.
+3. **Mechanical** — physical forces. Stiffness, pressure, stretch. Force becomes gene expression.
+4. **Cell-cell contact** — direct signaling through adjacency. A cell reads its neighbors by touching them.
+
+Four categories, varying intensities, combinations, and timing. A 4-dimensional signal space selects among ~20,000 genes. All differentiation emerges from that. DNA is the complete instruction set. Every cell has identical DNA. Signals don't write code — they select which page to read.
+
+The current activation formula has six terms borrowed from QM: `global_weight * local_weight * relevance * recency * trust * context_fit`. Some of those overlap — relevance and context_fit were already identified as magnitude and phase of the same complex amplitude. The six terms may be operating on a different signal space than what the architecture actually needs. Biology says four signals differentiate everything. The activation formula might need to be re-examined through this lens — which of the six are the actual signals, and which are the same signal measured differently? The overlap that was already visible (relevance/context_fit) suggests the formula wants to compress, not expand.
+
+## One Type — Topology Is the Differentiation
+
+One Reality struct. One Realize method. One Observe. One Express. The behavior emerges from what's in the Relationships map, what's in the Expressors map, and what the weights are. Think isn't a different type from Act — it's the same Reality with different relationships and different expressors. Memory isn't a different type from an operator. Same Reality, different contents, different weights.
+
+No `think.go`, `act.go`, `memory.go`, `self.go` as separate implementations. One struct. The topology determines what the node becomes. The placement determines expression.
+
+The only real differentiation is at the leaf nodes — the base cases that actually execute. The provider calls an LLM. The terminal runs bash. The filesystem writes to disk. Those do different work. Everything above them is the same traversal: route by weight, observe, express, return. The entire runtime above the leaf nodes is one type expressed differently by its topology.
+
+One genome. Placement determines what it becomes. This was written in Seeds weeks ago — "DNA is the Reality interface, not the .skyra file. What makes a Thread different from a Memory isn't the code — it's where it sits in the network." It just goes further than expected. It's not just that the interface is DNA. It's that there's only one implementation. The whole tree above the leaves is one cell type differentiating.
+
+## Reality Type as DNA — Differentiation Under Activation
+
+Each Reality type isn't a role. It's a genome. Memory-DNA, Think-DNA, Act-DNA. Same interface, different implementations. What they do under activation is encoded in their Observe and Express methods. When they do it is determined by the weights. How much they do is determined by the budget.
+
+A memory node with low activation returns data. Same memory with high activation — enough context flooding in from the traversal — triggers its synthesis behavior. It becomes a pseudo-think layer. Not because someone promoted it. Because its DNA expressed differently under pressure. Same code, different activation, different behavior.
+
+That's what cells do. Same DNA in every cell. What the cell becomes depends on the signals it receives. The bioelectric field determines expression. In the runtime, the weights are the bioelectric field. The Reality type is the DNA. The behavior is the expression.
+
+This isn't runaway. The recursion constrains it. A memory-turned-thought-layer produces new wave functions (new activations), but those have to activate through weights to go anywhere. Budget exhaustion and weight exhaustion are the natural brakes. The deeper you go, the more energy it costs. The recursion is the physics.
+
+This is the promotion gradient's mechanism. A memory cluster doesn't get relabeled as a specialist. Its DNA already contains the synthesis behavior — it just doesn't fire until enough context hits it. The threshold IS the differentiation. Promotion is expression, not relabeling.
+
+## Descent Is Additive, Ascent Is Subtractive
+
+The descent doesn't budget. The descent follows weights until they exhaust. Activation determines depth, nothing else. The descent is unconstrained — accumulate everything the weights say matters.
+
+The ascent is subtractive. After the base case hits, the Relation starts returning upward. Now the token budget constraint kicks in. Each Express level looks at what's on the Relation, looks at the desired token count, and compresses toward it. Each level strips away what doesn't need to propagate up. The memory region used 50 memories to synthesize one insight — the 50 stay down there, the insight goes up.
+
+Two different physics. The weights decide what's relevant (descent). The token budget decides what survives (ascent). The observer's context window shapes the return, not the observation.
+
+This is why compaction never gets hit as a panic step. The context window never overflows because the ascent is lossy by design. Each Express level is a compression boundary — not because someone wrote a compaction strategy, but because that's what Express does. The loss is the cognition.
+
+Every other system lets context accumulate in a flat buffer and panics when it's full. This never accumulates in a flat buffer. The topology is the compression. The structure is the strategy.
+
+## The Compaction Problem Is the Collapse Problem
+
+If a node has high coupling, all its context is relevant. Potentially infinite. An LLM has a finite context window. How do you determine what stays and how it stays? That's the compaction problem — and it's structurally the same problem as quantum collapse. Infinite relevance, finite capacity. Something has to be lost. The theory of what's safe to lose doesn't exist.
+
+Physics doesn't know why one eigenstate survives measurement. LLM engineering doesn't know why one compression of context preserves signal and another loses it. Every context compaction strategy is a heuristic. Every one is guessing at the same gap.
+
+The architecture should be honest about this. Don't solve compaction. Put it where it naturally lives — the ascent, where each level compresses what came from below before passing it up — and let the LLM do it. The LLM is the collapse function. Hand it more than fits and it returns what survived. The thing you can't explain about context becoming output is the same thing physics can't explain about superposition becoming measurement.
+
+The architecture's job: put the right context in front of the collapse function and trust the collapse. The weights got it to the right neighborhood. The activation got the right things on the Relation. The compaction is the last step and it's the one you can't formalize. Same as physics.
+
+The observer's constraints are knowable. The return path is knowable. The activation formula is knowable. The mechanism inside the provider where the present collapses into a thought — that's the mystery. That's not a bug in the architecture. That's the architecture being honest about what's known and what isn't. The unknown lives where it should.
+
 ## It's Not a Graph
 
 The weighted topology is not a graph. A graph has two types — nodes and edges. They're different things. An edge can't be a node. Skyra's architecture collapsed the distinction. There's one type: Reality. A Reality contains relationships. A Relationship implements Reality. A Relationship has its own hashmap of relationships. There's no point where you can draw the line between node and edge because they're the same thing implementing the same interface.
