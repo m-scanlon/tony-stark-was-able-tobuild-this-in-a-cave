@@ -164,6 +164,132 @@ PFC decides which response based on what it can read from the in-flight Relation
 - Graceful degradation under rapid input
 - The being can reason about its own in-progress traversals
 
+## Competence — The Cell Reads Itself First
+
+Before Observe fires, the Reality reads its own state. Biology calls this competence — the cell's pre-existing internal state determines which response pathways are even available before processing the incoming signal. Same signal, different self-read, different outcome. This is not optional. It is the mechanism.
+
+Three layers in biology:
+
+1. **Chromatin landscape** — which genes are accessible vs locked. Long-term identity. A liver cell and a neuron receiving the same signal respond completely differently because different parts of their genome are available.
+2. **Active transcription factor network** — what's currently running. Medium-term state.
+3. **Bioelectric resting potential (Levin)** — voltage state acts as the upstream self-read, independent of which ion channel produces it. The cell reads its own voltage before deciding what to become.
+
+In Realize, competence is the first step. Before Observe, before Express. The Reality reads its own weights and the binding fields on the Relation to determine what it currently is. This gates which Observe and Express branches are available this frame.
+
+```go
+func (b *Base) Realize(r *Relation) *Relation {
+    // competence — the cell reads its own state
+    // weights + binding fields determine what this Reality is right now
+    // gates which Observe and Express branches fire
+
+    b.Observe(r)
+    // ...descent...
+    b.Express(r)
+}
+```
+
+There is no declared type. There is no genome label that says "you are an emotional observer." The Reality determines itself from its weights at the moment the Relation arrives. The weights are the bioelectric field. The Relation is the signal. The competence step is the cell asking "what am I right now, given my accumulated experience and what's arriving?"
+
+This means a Reality's type can change frame to frame. Dense emotional weights and an emotionally charged Relation — the Reality expresses as an emotional processor. Same Reality, next traversal, task-heavy Relation and reinforced task weights — it expresses as a task processor. One DNA. The field determines expression. The cell determines itself.
+
+The switch statement in Observe and Express isn't static dispatch. It's dynamic self-determination — the cell reading its own state and selecting the branch that matches who it is right now.
+
+## Promotion Is Activated by the Relation
+
+The promotion gradient — memory becomes skill becomes specialist becomes full agent — isn't triggered by a monitor or a threshold checker. It's triggered by the Relation itself during traversal.
+
+A Relation enters a region. The region is dense — many hits, high convergent activation. The Relation records that density. On the return path, the density evidence is what triggers promotion. The Relation carried the proof that this region is load-bearing enough to deserve a higher expression.
+
+This means the topology can only differentiate through use. No Relation flowing through a region means no promotion evidence, means no growth. The embryo starts as one Reality. The first Relation flows through and the return path carries evidence of what needs to exist. The second Relation flows through a slightly differentiated topology. Each traversal is both the use and the growth signal.
+
+The genome declares what could be. The Relation determines what becomes. Promotion gradients aren't a background process watching weights — they're activated by the same traversal that does everything else. One mechanism. The Relation is the morphogenetic signal.
+
+## Promoted Nodes Are Lenses, Not Attractors
+
+The promoted node doesn't get pulled toward by its constituent memories. The promoted node sits ABOVE its memories in the topology. Promotion moved it there. The Relation descends through the promoted node first, then into the underlying memories.
+
+The traversal order is the hierarchy:
+
+```
+descent enters → dense region → specialist → memories
+```
+
+The promoted node is a gravity well the Relation falls INTO, not gets pulled toward from below. It's structurally higher in the topology because promotion put it there. The Relation hits it on the way down because that's where it lives now — between the surface and the raw memories.
+
+### Promotion reshapes the descent path
+
+When enough constituent memories fire together across enough traversals, the region promotes. A new Reality emerges above them. It becomes their parent in the descent path. Now every future Relation passes through the promoted node first, and the promoted node's Observe shapes what the memories underneath even see.
+
+The promoted node is a lens. The Relation descends through it, gets filtered and shaped by it, and then hits the memories underneath in the context of that lens. The memories don't change. What changed is what sits above them.
+
+This is the chromatin landscape from competence — the promoted node gates which memories are even accessible this traversal. Same memories, different lens above them, different expression.
+
+### The act of promotion is Levin's attractor
+
+Levin's morphogenetic attractors work the same way. "Head" is an attractor state — a bioelectric prepattern distributed across many cells. When enough cells participate in the pattern, the attractor deepens and the ensemble converges on the morphogenetic goal. The act of convergence IS the promotion — the pattern becomes a structure that sits above its constituent cells and shapes what they express.
+
+The promoted node doesn't know it was promoted. It's a Reality like everything else. Its Competence reads its weights and determines what it is. The weights say "you're dense, you have many Relationships pointing to memories below you, your Provider is active." The DNA expresses accordingly. Promotion is just what the topology looks like after enough traversals reinforced the same region.
+
+## Observe and Express Are Independently Composable
+
+Every Reality has the same DNA — same interface, same three maps, same Base. What differentiates a Reality isn't its type. It's the weight field determining which branches of the DNA express. But Observe and Express are not coupled. A Reality can be one thing on the way down and a different thing on the way back up.
+
+Biology confirms this. Receptor expression and effector expression are separate gene regulatory networks composed orthogonally:
+
+- **Same Observe, different Express:** Muscle cells, fat cells, and liver cells all bind insulin (same intake). Muscle stores glycogen, fat makes lipids, liver suppresses glucose production (three different outputs). M1 and M2 macrophages share identical phagocytic intake machinery but M1 outputs inflammatory cytokines while M2 outputs anti-inflammatory. Cortical pyramidal neurons share dendritic input structure but their axons project to completely different brain regions.
+- **Different Observe, same Express:** Macrophages, neutrophils, and dendritic cells all perform phagocytosis (same output) but are triggered by different receptor families (different intake).
+
+### Three fields per Reality
+
+```
+what the cell IS          → weight field (position in topology)
+what it does on Observe   → intake profile (composable)
+what it does on Express   → output profile (composable)
+```
+
+The DNA is two independent switch statements — one for Observe, one for Express. The weights determine which branch fires in each direction. The genome declares which combination a Reality runs.
+
+```
+// Observe switch — what fires on descent
+// weights determine which branch expresses
+if emotionalFieldActive {
+    // imprint emotional resonance onto Relation
+} else if contextDensity > threshold {
+    // absorb and accumulate context
+} else {
+    // pass through — transparent
+}
+
+// Express switch — what fires on ascent (independent)
+if providerActivation > threshold {
+    // compress and synthesize — thinking node
+} else if actionWeight > threshold {
+    // emit action — command, API call, tag
+} else {
+    // return accumulated context — pure relay
+}
+```
+
+A Reality that Observes as emotional context and Expresses as a thinking node. A Reality that Observes as memory accumulation and Expresses as an action emitter. The combinations are orthogonal. Ten Realities can share the same Observe profile and Express completely differently. Five Realities with different Observe behaviors can all Express through the same Provider.
+
+### System prompt composed from DNA fields
+
+The system prompt isn't a handwritten string. It's assembled from the DNA composition — what this Reality is, what its Observe branch does, what its Express branch does. Three fields, each contributes to the prompt.
+
+```
+being ~name skyra ~observe emotional-context ~express synthesizer ~identity "I hold the world together."
+```
+
+The identity is what the cell IS. The Observe profile tells it what to pay attention to on descent. The Express profile tells it what to produce on ascent. The Provider receives a prompt composed from all three — derived from the genome, not authored.
+
+Different Realities at different positions in the topology get different system prompts from the same DNA. A Reality in the emotional region with `observe: emotional-context` and `express: synthesizer` gets a prompt shaped by emotional intake and synthesis. The same DNA in a task region with `observe: task-context` and `express: action-emitter` gets a completely different prompt. The genome line is the differentiation. The system prompt is the expression.
+
+The prompt can evolve. If the weights shift and a different Observe branch starts firing, the system prompt changes because the DNA is expressing differently. The being doesn't get a new prompt — the prompt reflects what the Reality currently is. The prompt is alive.
+
+### Maximum behavioral diversity from minimum machinery
+
+Maximum behavioral diversity from minimum machinery. Same principle as DRY in software — not deduplication, but recognizing which dimensions are actually orthogonal and refusing to couple them. Biology arrived at the same answer because evolution is a compression engine. Redundant machinery costs energy. Cells that share intake behavior don't duplicate the receptor code — they express the same gene regulatory network and compose it with a different output network.
+
 ## Binding Realities
 
 A binding Reality is a Reality that owns a local activation field over the graph. It doesn't store state on every node. It imprints its field onto the Relation during descent, the Relation carries that field during traversal, and the return path updates the binding Reality's own weights from what was actually used.
