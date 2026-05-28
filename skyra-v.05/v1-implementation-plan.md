@@ -1,22 +1,23 @@
-# v.1 Implementation Plan — Observe and Express
+# v.1 Implementation Plan — One Traversal
 
 ## What This Is
 
-A step-by-step plan to replace ~1,900 lines of hardcoded routing logic with one recursive traversal in two phases. Each step builds on the previous one.
+A step-by-step plan to build the v.1 runtime from the clean slate. The old v.05 routing code (~1,900 lines) is deleted. The interface and Relation are defined. Everything below is new construction.
 
-## The Core Insight
+## The Core Insight (Updated)
 
-The graph already exists. Every Reality already has `map[string]Reality` hashmaps pointing to other Realities. These are already edges. The topology is already there. It's just unweighted and single-phase.
+There is one recursive call: `Realize()`. It descends through Relationships (thought), ascends through Expressors (action formation). Providers fire on either direction when a node needs inference. One traversal does everything — storage, thought, compression, action, learning. The being visits each node once. Thoughts compound on the way down. Actions crystallize on the way up.
 
-The entire move from v.05 to v.1 is: split Realize into Observe and Express, add weights, and let recursion do what it already does.
+Think and Act are not separate systems. They are descriptions of what the traversal is doing at different depths. Deep is thought. The surface is action. There is no orchestrator, no loop, no handoff. The call stack is the control flow.
 
-Every recursive function has two phases — work before the recursive call (observation) and work after it returns (expression). v.05 mixes both into a single `Realize()` and uses ~1,900 lines of handwritten routing to compensate. v.1 makes the phases explicit.
+Conversation and memory are the same thing. Messages are Reality nodes attached to the entities they reference. Thread is its own Reality — the episodic binding that connects unrelated messages that co-occurred.
 
-### The Interface
+### The Interface (Locked — Already Implemented)
 
 ```go
 type Reality interface {
     ID() string
+    Core() *Base
     Create(r *Relation) Reality
     Realize(r *Relation) string
     Observe(r *Relation)
@@ -24,483 +25,416 @@ type Reality interface {
 }
 ```
 
-`Realize` is the recursive call. `Observe` and `Express` are the phases. Every Reality implements all five. The pattern:
+`Realize` is the recursive call. `Observe` fires on the descent — context accumulates. `Express` fires on the ascent — compression and action formation. Every Reality implements all of them.
+
+### Three Maps on Base
 
 ```go
-func (x *SomeReality) Realize(rel *Relation) string {
-    x.Observe(rel)
-    // ... recursive traversal ...
-    return x.Express(rel)
+type Base struct {
+    Weight          float64
+    WeightSum       float64            // cumulative activation for EMA
+    TraversalCount  int                // being's proper time — traversal count, not wall clock
+    LastTraversed   int                // traversal count when last activated
+    Relationships   map[string]Reality // descent — what the being knows
+    Expressors      map[string]Reality // ascent — what the being can do
+    Providers       map[string]Reality // either direction — inference surfaces
 }
 ```
 
-Having all three on the interface means a Reality can't skip the phases. You might have an empty `Observe` or a trivial `Express`, but you had to think about it.
+- **Relationships** activate during descent. Context, memory, associations. The being's experience.
+- **Expressors** activate during ascent. Compression, action formation. The being's output.
+- **Providers** activate on either phase. The being's ability to think. Fires when a node needs to call out — LLM, bash, API. Orthogonal to direction.
 
-Observe traverses the Relationships map. Each entity above threshold gets `Observe` called — context accumulates on the Relation. This continues recursively until weight exhausts or no more Relationships exist. That's the bottom.
+A being without Providers is an actor — purely reactive, no inference, passes content through based on weights. Add a Provider and it starts thinking. The actor/agent line is whether the Providers map has anything in it.
 
-At the bottom, `Express` fires. Express calls `Realize` on Expressors. Each Expressor is a full Reality — it observes through its own Relationships (which affect and configure the Expressor itself), exhausts, then expresses through its own Expressors. This repeats until a Reality has no Expressors. That's the durable thing. It executes.
-
-`Realize` is the recursive call that contains both phases. `Observe` and `Express` are the phases themselves. The traversal calls `Observe` on entities discovered through Relationships maps. It calls `Realize` on entities discovered through Expressors maps — because a Expressor needs its own full observe/express cycle. Execution is always at the termination of the recursion.
-
-### Reality Carries Its Own Topology
-
-There is no separate Relationship struct. The relationship fields dissolve into Reality itself. Every Reality struct carries:
-
-```go
-Weight        float64                // global weight — Skyra's intrinsic relationship to this Reality
-Usage         int
-LastUsed      time.Time
-Relationships map[string]Reality     // observe — context accumulation
-Expressors    map[string]Reality     // express — execution
-```
-
-Every Reality is both a thing and its connections. Self has Relationships (being, memory, context, desk) and Expressors (Think, Act). Think has Relationships (operators — what it knows it can do) and Expressors (Provider — the durable thing). Provider has no Expressors. It executes.
-
-### Two Weights — Global and Local
-
-There are two kinds of weight in the system. They serve different purposes and live in different places.
-
-**Global weight** lives on Base. It's Skyra's intrinsic relationship to this Reality — how much bash matters to Skyra overall, accumulated through all use across all contexts. Each being is its own god. The global weight is the being's perspective on the importance of this Reality.
-
-**Local weight** lives on the edge — the Reality that *is* the connection between two other Realities. Bash's local weight from server-memory is different from bash's local weight from poetry. Same bash. Different connection strengths. The local weight is how strongly *this specific path* flows from one Reality to another.
-
-The edge is a Reality. It implements Reality. It embeds Base. On Observe, it reads its local weight and contributes to the activation decision. On Express — the return path — it updates its local weight based on what just happened. Reinforcement if the traversal produced value. Decay if it didn't.
-
-The target Reality lives in the edge's own Relationships map. The traversal passes through the edge to reach the thing.
+### The Activation Equation (v.1)
 
 ```
-Self.Relationships["bash"] → Edge Reality (local weight, usage, recency)
-    Edge.Observe → reads local weight, activation check
-    Edge.Relationships["target"] → Bash Reality (global weight)
-        Bash.Observe → ...
-        Bash.Express → ...
-    Edge.Express → updates local weight on return
+activation_i = global_weight * local_weight * recency * thread_alignment * thread_strength
 ```
 
-This dissolves the node/edge distinction entirely. There is no graph with nodes and edges. There is one type: Reality. The edge between two neurons is itself a neuron. The Relationships map stays `map[string]Reality`. No type change. The connection between two Realities is itself a Reality containing Realities.
+Computed per-entry in any of the three maps. Five terms, all computable:
 
-The activation formula uses both weights:
+- **global_weight** — EMA: `α * activation_this_traversal + (1 - α) * previous`. Slow α. The being's intrinsic relationship to this Reality across all contexts. Starvation is built in — when activation is 0, the EMA decays by `(1 - α)`.
+- **local_weight** — EMA: same formula, faster α. Strength of this specific connection. Absorbs relevance for v.1 (actors don't evolve, so historical strength ≈ current relevance).
+- **recency** — Power law: `(traversals_since_last_use)^(-0.5)`. ACT-R validated. Long tail — old edges fade but never fully disappear. Measured in the being's proper time (traversal count), not wall clock. Different beings age at different rates. Relativistic.
+- **thread_alignment** — Binary for v.1: 1 if the node is on the same thread as the Relation, 0 if not. The gate — are you on this thread at all.
+- **thread_strength** — EMA of per-node hit counts within the thread. How central this node is to what the thread is doing right now. A node on the thread but not recently relevant gets `thread_alignment = 1.0` but `thread_strength → 0` — still reachable but quiet. A node the thread keeps hitting gets both — fully gated in and loud. This is what makes the cost curve invert: the thread's own weight history concentrates activation where it belongs, so traversals get cheaper as the thread gets longer.
 
-```
-activation_i = global_weight * local_weight * relevance * recency * trust * context_fit
-```
+Thread alignment and thread strength split what was one term into gate and amplitude. Alignment is binary — on or off. Strength is continuous — the thread's opinion about what matters right now.
 
-Global weight says how much this Reality matters to the being overall. Local weight says how strongly this specific connection flows. Both multiply into the activation score. A Reality can be globally important but locally irrelevant to the current traversal path. A Reality can be locally strong from this specific context but globally weak. The product captures both.
+Activation is a tensor contraction — five dimensions with independent temporal dynamics projected to a scalar. High activation = all dimensions aligned. Low = at least one suppressing.
 
-### The Activation Variables
+### The Base Traversal Pattern
 
-```
-activation_i = global_weight * local_weight * relevance * recency * trust * context_fit
-```
+1. Relation enters a node. The being sees it — one frame, one look.
+2. Think pass fires (if Provider activates). Thought attaches to the Relation.
+3. Activation determines the next node in Relationships. Relation moves deeper.
+4. At the next node, the being sees new content PLUS all thoughts from above. Thoughts compound.
+5. A node can only be visited once per traversal. No loops. No revisiting.
+6. Signal exhausts — no more activations fire. The Relation attaches where it stopped, with edges back to entities involved. That's storage.
+7. Ascent begins. Expressors activate. Each layer compresses the thought stream. Action plans crystallize.
+8. Providers fire on the ascent if compression needs inference.
+9. Top frame — act sequence deploys.
 
-Each variable and where it comes from:
+One pass. Storage, thought, compression, action, learning. The call stack is the boundary.
 
-- **global_weight** — the target Reality's Weight on Base. The being's intrinsic relationship to this Reality across all contexts. Skyra's relationship to bash overall. Lives on the target Reality. Updated by cumulative usage across all traversal paths.
+### Tags Are Signal
 
-- **local_weight** — the edge Reality's Weight on Base. The strength of this specific connection between two Realities. How often traversal flows from A to B. Lives on the edge Reality. Updated on the return path of each traversal through this edge.
+Tags (`<builder>message</builder>`) are not routing. They're a frequency component on the Relation that modulates activation. Builder's nodes resonate with a `<builder>` tag — activation high. Other beings are transparent to it. No tag = pure activation-based routing.
 
-- **relevance** — the overlap integral. How much of the Relation's current content exists in the target Reality's content. Pure content match — does the substance of what the Relation is carrying overlap with the substance of what this Reality holds? This is the magnitude of the inner product ⟨Relation|Reality⟩.
+### Thread As Reality
 
-- **recency** — how recently this edge was traversed. Power law decay (ACT-R). Time-dependent. A recently traversed edge is warm. An untouched edge cools. The decay curve is a power law, not exponential — validated against human behavioral data.
+Thread is its own Reality — the hippocampal index. It binds messages that co-occurred regardless of entity overlap. Two retrieval paths to any message:
 
-- **trust** — the being's trust in this Reality. Position on the persuadability spectrum (Levin). How much this Reality's output reshapes the being's state. Bidirectional — the being trusts the Reality, and the Reality's track record earns or erodes that trust.
+- **Semantic** — through entity edges (what the message is about)
+- **Episodic** — through the thread Reality (what happened together)
 
-- **context_fit** — the phase alignment. Not "does this match what I'm carrying" (that's relevance) but "given each thing's own history of evolution, are they in phase right now at this moment of encounter." In QM, every state evolves continuously — phase rotates based on energy and history. Two states that were in phase yesterday may be out of phase today because they've been rotating at different rates. Context_fit captures whether the Relation's trajectory and the target Reality's current state are aligned at the moment of encounter.
+### Message Placement
 
-### Relevance and Context_fit — One Equation, Two Behaviors
+Messages find their own place through traversal. The signal propagates until it exhausts. Where it dies is where it lives. Depth encodes meaning — shallow messages attach near the surface, deep questions attach far down. Same pass as the response — the processing IS the storage.
 
-Relevance and context_fit are the magnitude and phase of a complex amplitude:
+### Conversation and Memory Are The Same Thing
 
-```
-amplitude_i = magnitude_i * e^(phase_i)
-```
-
-Magnitude is relevance — content overlap. Phase is context_fit — directional alignment. They're the two components of the same number. QM keeps them separate because they do different work during collapse. Two edges with equal relevance but different phase alignment produce different outcomes — constructive interference when aligned, destructive interference when misaligned.
-
-For **actors** (deterministic, non-cognitive Realities), relevance and context_fit produce the same value. An actor doesn't evolve between traversals. Bash is bash. Its state doesn't rotate. There's no independent phase evolution, so there's no divergence between content overlap and directional alignment. The two terms collapse to the same number — not because the formula simplifies, but because the target doesn't move.
-
-For **agents** (cognitive Realities), relevance and context_fit can diverge. An agent is live — it thinks, acts, updates its own graph between encounters. Its phase has rotated. A memory of Builder from yesterday has content overlap (relevance is high) but Builder's state has shifted since then (context_fit may be low). The divergence between relevance and context_fit for agents is an **attention function** — the mechanism by which an evolving system selects what to attend to from its field of potential, given both content overlap and directional alignment.
-
-The equation doesn't change. The same six terms compute for every Reality. The actor/agent distinction is emergent from the physics of the target, not from the formula. One system.
-
-### Relationships
-
-**Relationships** activate during observation. The traversal enters, checks activations on each entry (the edge Reality reads its local weight, the target Reality contributes its global weight), and calls `Observe` on those above threshold. Context accumulates on the Relation as it passes through — parsers attach, state enriches. This is association, thinking, following weighted paths deeper.
-
-**Expressors** activate during expression. When Relationships exhaust and Express fires, it calls `Realize` on Expressors by weight. Each Expressor runs a full cycle — observing through its own Relationships (which shape and configure the Expressor), then expressing through its own Expressors. An Expressor's Relationships affect the Expressor itself: Think's operators aren't things Think routes to, they're what Think knows it can do when it reaches the LLM. The recursion continues until a Reality has no Expressors — the durable thing. It executes.
-
-Skyra's model of Builder is a distinct Reality instance living in her Relationships map — not the actual Builder. The real Builder is on the thread plane, reachable only through action. Skyra's model carries its own Weight, Relationships (memories, patterns, trust signals), and Expressors (how actions toward Builder surface). Thinking about Builder traverses the model. Speaking to Builder goes through Exchange to the real thing.
-
-Both maps hold `Reality`. The recursion is natural — every entry can have its own Relationships and Expressors, all the way down.
-
-### How Memories Work
-
-A memory of a conversation with Builder and Philosopher is a Reality. It lives in the Relationships maps of both Skyra's Builder model and Skyra's Philosopher model — same Reality instance, different weights in different maps. The memory itself has Relationships pointing back to Builder and Philosopher as entities.
-
-When Skyra thinks about Philosopher, she observes into that Reality's Relationships. She hits a memory. That memory's Relationships map has an entry pointing to Builder. If the weight is high enough, traversal follows it. She arrived at Builder through Philosopher without anyone routing her there. The path emerged from the topology.
-
-### One Traversal
-
-```
-Observe: Relation enters. Activate Relationships by weight.
-         Each fires Observe. Context accumulates.
-         Sub-relationships activate. Deeper.
-         Weight exhausts or no more Relationships.
-
-         — bottom —
-
-Express: Fires. Calls Realize on Expressors by weight.
-         Each Expressor is a Reality. It observes through
-         its own Relationships (they affect the Expressor).
-         Those exhaust. Expressor expresses through its own Expressors.
-         Recurse until no more Expressors.
-
-         — durable thing — EXECUTE.
-
-         Result propagates back up the call stack.
-```
-
-One recursive pass. Two phases. Observe accumulates context until weight exhausts. Express calls Realize on Expressors, each of which runs its own full observe/express cycle. Execution happens at the base case — a Reality with no Expressors. Everything above it is weight resolution. This is what recursion already does. The plan just makes it formal.
-
-### Concrete Example
-
-```
-Self.Realize:
-  Self.Observe → Relationships: being, memory, context, desk
-    each accumulates context on the Relation
-    sub-relationships observe until weight exhausts
-  — exhausted —
-  Self.Express → Realize on Expressors:
-
-    Think.Realize:
-      Think.Observe → Relationships: operators (bash, retrieve-context...)
-        operators affect Think — they're what Think knows it can do
-        observe until exhausted
-      — exhausted —
-      Think.Express → Realize on Expressors:
-
-        Provider.Realize:
-          Provider.Observe → Relationships: (model config)
-          — exhausted —
-          Provider.Express → no Expressors → EXECUTE (call LLM)
-          ← result
-
-      ← result back to Think
-    ← result back to Self
-
-    Act.Realize:
-      Act.Observe → Relationships: (inner thought, peer context)
-      — exhausted —
-      Act.Express → Realize on Expressors:
-
-        Provider.Realize:
-          Provider.Express → EXECUTE (call LLM)
-          ← result
-
-      ← result back to Act
-    ← result back to Self
-
-  ← result propagates up
-```
-
-### Act's Position in the Architecture
-
-Act is the outermost execution surface — the edge of cognition before results cross the pipe to the world. In v.1, Act's only Relationship is Think, so it can only go one direction: inward to thought. That's correct for synchronous single-turn operation.
-
-Each integration is an actor — a Reality that participates in the topology but doesn't model, choose, or grow. Gmail, Slack, the calendar — same interface, same traversal, same pipe contract. Act routes to them directly, same way it routes to any other Reality on the thread. The pipe boundary and the act service sit behind the actor's Express — invisible to Act. Act just sees a peer in its Relationships map.
-
-When Act moves to async, completed acts accumulate in Act's Relationships on a timer. Instead of firing a new inference call per completed action, the being batches — waits for results to arrive, lets them accumulate as context in Act's Relationships map, then fires one Think cycle with all of them present. The weight system governs when the batch is worth processing: enough accumulated weight from completed acts crosses threshold, Act observes them all at once, expresses once. Cost control through topology, not scheduling logic.
-
-```
-```
-
-Relationships on a Expressor are not separate from the Expressor — they shape the Expressor before it fires. Think's operators accumulate on the Relation during Think's observation. The Provider at the bottom consumes all of it.
-
-### What This Replaces
-
-The ~1,900 lines of routing code — target peeling, protocol enforcement, self-route detection, retry loops, operator dispatch, access checks — is the runtime doing by hand what this one traversal does automatically. Specifically:
-
-- **Exchange.Realize** (~100 lines) — target peeling, `isBeing()` type-switch, redirect logic, being lookup, Process special-casing
-- **NewThread.Realize** (~110 lines) — the `for` loop (event loop), access checks, operator injection (`ThinkOps`/`ActOps`), error routing
-- **Self.Realize** (~80 lines) — hardcoded `think → act → think-back` loop, hashmap-based reality assembly
-- **Think.Realize** (~130 lines) — operator dispatch loop, tag parsing, outer-op blocking
-- **Act.Realize** (~130 lines) — protocol violation retries (3 attempts), self-route detection, `ParseResponse` as router
-- **Operators.Realize** (~30 lines) — verb extraction and constructor dispatch
-- **main.go bootstrap** (~130 lines) — hardcoded per-being operator injection
-- **Tag parsing helpers** (~200 lines) — `ParseResponse`, `parseOp`, `parseThink`, `parseThinkBack`, `isNoReply`, `isBeing`, `extractVerb`, `Peel`
-
-The remaining ~1,000 lines are conversation management, ref handling, memory compression, context heating. That code survives — it's state, not routing.
-
-### The Sheaf Structure
-
-There is no separate graph data structure. No `CognitiveGraph`. No `GraphNode`. No separate memory system. Every Reality holds two maps of Reality. Every Reality found in those maps may itself have its own maps. The topology is recursive.
-
-This is not a graph. A graph has two types (nodes and edges). Here there is one type: Reality. The closest formal analog is a sheaf on a topology — local data assigned to each region, with consistency across overlaps and no central authority assembling the global view. The Mandelbrot-Julia duality holds: `Realize` is the generating function, each being's internal topology is a different Julia set, and the thread plane indexes all of them.
+A message is a Reality node with edges to entities it references. A memory is a Reality node with edges to entities it references. Same type. Same activation. Same retrieval. The only difference is recency — a message from the active thread is hot, a memory from last week is cold. Not a type distinction. A position on the decay curve.
 
 ---
 
 ## Steps
 
-### Step 0: Split the interface, add relationship fields to every Reality
+### Step 0: Update Base struct (DONE → needs update)
 
-**Files:** `reality.go`, all Reality implementations
+**Files:** `reality.go`
 
-Split the Reality interface from 3 methods to 5:
+Add Providers map and EMA/traversal fields to Base:
 
 ```go
-type Reality interface {
-    ID() string
-    Create(r *Relation) Reality
-    Realize(r *Relation) string
-    Observe(r *Relation)
-    Express(r *Relation) string
+type Base struct {
+    Weight          float64
+    WeightSum       float64
+    TraversalCount  int
+    LastTraversed   int
+    Relationships   map[string]Reality
+    Expressors      map[string]Reality
+    Providers       map[string]Reality
 }
 ```
 
-Every existing Reality gets:
-1. Stub `Observe` (empty) and `Express` (returns `""`)
-2. New fields on the struct: `Weight float64`, `Usage int`, `LastUsed time.Time`, `Relationships map[string]Reality`, `Expressors map[string]Reality`
+Update `Activation()` to compute the four-term equation. Add `UpdateWeight()` for EMA updates.
 
-Existing `Realize` methods stay unchanged. The new methods and fields exist but nothing uses them yet.
-
-No `relationship.go`. No Relationship struct. The fields live on every Reality directly.
-
-**Verify:** Compile. Run. Everything works exactly as before. No behavior change.
+**Verify:** Compile.
 
 **Risk:** None. Additive.
 
 ---
 
-### Step 1: Extend Relation with traversal state
+### Step 1: Update Relation for traversal
 
 **Files:** `relation.go`
 
-Add fields for the two-phase traversal:
+Add traversal state:
 
 ```go
-Depth     int
-Budget    float64
-Trace     []string
+Visited     map[string]bool  // visit-once constraint
+ThreadID    string           // already exists — used for thread_alignment
+Signal      float64          // signal strength — attenuates during propagation
+Thoughts    []string         // accumulated thought stream from descent
+MaxDepth    int              // safety rail only — not the mechanism
 ```
 
-Additive. Existing fields stay. Zero-valued new fields change nothing. Sets up later steps.
+Remove or deprecate `Budget` — signal attenuation and visit-once are the depth limits. Keep `Depth` as a counter for diagnostics. Keep `Trace` for debugging.
 
-**Verify:** Compile. Existing tests pass.
+Update `Impress()` to initialize `Visited`, `Signal: 1.0`, `MaxDepth` to a safe default.
+
+**Verify:** Compile. Existing code unaffected.
 
 **Risk:** None.
 
 ---
 
-### Step 2: Swap Self's hashmaps to Relationships
+### Step 2: Implement activation equation
 
-**Files:** `self.go`
+**Files:** `reality.go` (new functions on Base)
 
-Replace `Self.Realities map[string]Reality` with `Self.Relationships map[string]Reality`.
+```go
+func (b *Base) Activate(rel *Relation, target Reality) float64 {
+    globalWeight  := target.Core().Weight
+    localWeight   := b.Weight
+    recency       := computeRecency(b.TraversalCount, b.LastTraversed)
+    threadAlign   := computeThreadAlignment(rel, target)
+    threadStr     := computeThreadStrength(rel, target)
+    return globalWeight * localWeight * recency * threadAlign * threadStr
+}
+```
 
-All initial lookups that did `s.Realities[name]` now do `s.Relationships[name]`. Pure mechanical rename. No Relationship structs injected yet — the map still holds concrete Realities directly.
+Implement:
+- `computeRecency(current, last int) float64` — power law: `(current - last)^(-0.5)`. Handle `last == 0` (never traversed) as minimum recency, not zero.
+- `computeThreadAlignment(rel *Relation, target Reality) float64` — binary: 1.0 if target is on same thread, 0.0 if not. Needs thread membership on the Reality somehow. Start with 1.0 for all (no thread filtering) and refine.
+- `computeThreadStrength(rel *Relation, target Reality) float64` — EMA of how often the current thread has activated this node. Thread Reality maintains per-node hit counts. Returns the thread's local weight to this node. Defaults to 1.0 when no thread history exists (cold start — don't suppress anything until the thread has opinion).
+- `updateEMA(current, activation, alpha float64) float64` — the EMA formula.
 
-This is the first file to move. Self is the center — being, memory, context, desk, think, act all hang off it. Moving Self's map first means the central node uses the new field name while leaves still use the old one.
+**Verify:** Unit tests. Known weights produce expected activation scores.
 
-**Verify:** Compile. Run. Identical behavior.
-
-**Risk:** None. Mechanical rename.
-
----
-
-### Step 3: Think operator dispatch → relationship traversal
-
-**Files:** `think.go`
-
-**Remove:** `parseOp()`, `collectOps()`, outer-op blocking (`isOuterOp`), `renderOps`/`renderOpsWithOuter`, the tag-dispatch loop.
-
-**Replace:** Think's operators move into its Relationships map. Rename `Think.Operators` → `Think.Relationships`. Think is a Expressor on Self — when Self.Ascend calls Think.Realize, Think runs its own cycle:
-
-`Think.Observe`: Sort Relationships by activation. Operators above threshold accumulate on the Relation as capabilities the being can use. Memory-type relationships attach as context. The LLM sees operators because the weights surfaced them, not because they're in a hardcoded map. Relationships that affect Think shape what Think knows it can do.
-
-`Think.Express`: Call Realize on Think's Expressors (Provider). Provider is the durable thing — it calls the LLM with everything that accumulated during observation.
-
-Inner/outer operator distinction goes away. One map. Weights decide reachability. Tag parsing for invocation stays temporarily — the being still says `<bash>command</bash>`.
-
-**Fallback:** If no relationship activates above threshold, show all (identical to v.05).
-
-**Verify:** Send impulse. Think's prompt includes operators from weighted relationships. Invocation still works.
-
-**Risk:** Medium. Fallback makes it safe.
+**Risk:** Low. Pure math.
 
 ---
 
-### Step 4: Act protocol enforcement → doesNotUnderstand
+### Step 3: Implement the traversal — Realize()
 
-**Files:** `act.go`, `exchange.go`
+**Files:** new file `traverse.go` or on Base directly
 
-**Remove from Act:**
-- 3-retry loop for protocol violations
-- Self-route detection and warning
+This is the core. One function that every Reality uses:
 
-**Replace:** Act is a Expressor on Self. When Self.Express calls Act.Realize, Act runs its own cycle:
-- Act's `Observe` traverses its Relationships — inner thought, peer context, conversation state accumulate on the Relation. These affect Act, shaping what it knows before it speaks.
-- Act's `Express` calls Realize on Act's Expressors (Provider). Provider is the durable thing — calls the LLM once, parses the response.
-- Valid `<target>message</target>` tags → route.
-- No valid tags → doesNotUnderstand: seed new relationship at minimum weight, inform the being.
-- Self-route is structurally impossible — no relationship from self to self.
+```go
+func (b *Base) Realize(self Reality, rel *Relation) string {
+    // Visit-once check
+    if rel.Visited[self.ID()] {
+        return ""
+    }
+    rel.Visited[self.ID()] = true
 
-**Remove from Exchange:**
-- `Peel()` for target extraction. Act sets `r.ID` directly.
-- `isBeing()` type-switch. Traversability is whether the Relationship has a Reality, not a type assertion.
+    // === DESCENT — Observe through Relationships ===
+    self.Observe(rel)
 
-**Verify:** Protocol violation → doesNotUnderstand. Explicit tags still route. Self-address doesn't retry.
+    // Think pass — fire Providers if activated
+    for _, p := range activatedEntries(b.Providers, rel) {
+        thought := p.Realize(rel)
+        rel.Thoughts = append(rel.Thoughts, thought)
+    }
 
-**Risk:** Behavior change. Correct per spec. Log doesNotUnderstand events clearly.
+    // Descend into activated Relationships
+    for _, r := range activatedEntries(b.Relationships, rel) {
+        r.Realize(rel)
+    }
 
----
+    // === ASCENT — Express through Expressors ===
+    // Expressors see accumulated thoughts, produce action
+    for _, e := range activatedEntries(b.Expressors, rel) {
+        // Provider may fire again during compression
+        e.Realize(rel)
+    }
 
-### Step 5: Operator injection → relationship seeding
+    result := self.Express(rel)
 
-**Files:** `newthread.go`, `self.go`, `main.go`
+    // === WEIGHT UPDATES ===
+    b.TraversalCount++
+    b.LastTraversed = b.TraversalCount
+    // EMA update on return path
+    b.Weight = updateEMA(b.Weight, 1.0, b.alpha())
 
-**Remove:**
-- `NewThread.ThinkOps` and injection loops
-- `NewThread.ActOps` and injection loops
-- Per-being operator wiring in `main.go` bootstrap
-- `Self.Create`'s hardcoded Think/Act assembly from Realities
+    return result
+}
+```
 
-**Replace:**
-- Genome declares operators as relationships. Bootstrap seeds them on each being with initial weights.
-- `Self.Create` reads from its own Relationships map for topology.
-- NewThread injects beings as Relationships. Operators are already on the being.
+`activatedEntries` sorts entries by activation score, returns those above threshold.
 
-**Verify:** Bootstrap. Each being has correct operator relationships. Builder's bash has higher weight.
+This is the DNA. Every Reality runs this. The topology determines the behavior.
 
-**Risk:** Low-medium.
+**Verify:** Simple topology — three Realities in a chain. Relation enters, descends, ascends. Visit-once holds. Thoughts accumulate. Express fires on return.
 
----
-
-### Step 6: Self's Think-Act loop → Observe/Express traversal
-
-**Files:** `self.go`
-
-**Remove:** The `for { think; act; think-back }` loop. The heart of v.05.
-
-**Replace:**
-
-`Self.Observe`: Sort Relationships by activation. Call `Observe` on those above threshold. Being, memory, context, desk accumulate on the Relation as it passes through. Sub-relationships observe until weight exhausts.
-
-`Self.Express`: Call `Realize` on Expressors by activation. Think and Act are Expressors on Self. Think.Realize runs a full cycle — observes through its own Relationships (operators affect Think, shaping what it knows it can do), exhausts, then expresses through its Expressors (Provider — the durable thing that calls the LLM). Act.Realize does the same — observes through its Relationships (inner thought, peer context), expresses through its Expressors (Provider — calls the LLM to produce speech).
-
-Think-back: Act's result signals re-entry. Self calls Think.Realize again. Budget limits depth — not a hardcoded loop count, but weight/budget exhaustion on the Relation.
-
-`Self.Realize` orchestrates: `Observe(rel)` then `Express(rel)`. The two-phase pattern.
-
-Thread → Exchange → Self stays hardcoded (skeleton). Weighted traversal governs what happens inside Self.
-
-**Feature flag:** If Relationships map is empty, fall back to v.05 loop. Migrate one being at a time.
-
-**Verify:** Think fires (high weight). Act fires after. Think-back works (bounded by budget).
-
-**Risk:** High. Feature flag is mitigation.
+**Risk:** High. This is the core mechanism. Get this right and everything else follows.
 
 ---
 
-### Step 7: NewThread for-loop → relationship-driven re-entry
+### Step 4: Implement concrete Realities — Being, Thread, Provider
 
-**Files:** `newthread.go`, `exchange.go`
+**Files:** `being.go`, `thread.go`, `provider.go`
 
-**Remove:** NewThread's `for { ... }` infinite loop.
+**Being** — the Self. Implements Reality. Its Relationships hold: models of other beings, memory nodes, message nodes. Its Expressors hold: action surfaces (response formation, tag emission). Its Providers hold: LLM providers (DeepSeek, Claude, etc).
 
-**Replace:**
+```go
+type Being struct {
+    Base
+    Name     string
+    Identity string
+    Purpose  string
+    Type     string // "llm", "user", "agent"
+}
+```
 
-1. Validate access, create thread (same).
-2. Inject beings as Relationships (same).
-3. `Exchange.Realize(r)` once. Records entry.
-4. Exchange calls `being.Realize(r)` → Observe/Express from Step 6.
-5. Relation returns up through Exchange → Thread.
-6. `r.ID` set to new target → Thread calls `Exchange.Realize(r)` again. Explicit re-entry.
-7. Stops when `r.ID` empty or `r.Budget` exhausted.
+Being's `Observe` attaches identity and purpose to the Relation as context.
+Being's `Express` returns the compressed result from the ascent.
 
-Exchange narrows to: conversation state, entries, compression, parsers. No target guessing. Exchange's `Observe` records the entry and attaches conversation context. Exchange's `Express` handles compression and cleanup.
+**Thread** — episodic binding. Implements Reality. Its Relationships hold: message nodes that co-occurred. Its Expressors: none (threads don't act). Its Providers: none.
 
-**Verify:** Multi-hop (michael → skyra → builder → skyra → michael). Entries recorded. Terminates.
+```go
+type Thread struct {
+    Base
+    ThreadID  string
+    Members   map[string]Reality // beings participating
+    Active    bool
+}
+```
 
-**Risk:** High. Feature flag — old loop alongside new.
+Thread's `Observe` attaches thread context — who's here, what's been said.
+Thread's `Express` handles re-entry — if the result tags a new target, the thread routes.
+
+**Provider** — inference surface. Implements Reality. Terminal node — has no Relationships, no Expressors, no Providers of its own. It executes.
+
+```go
+type Provider struct {
+    Base
+    Model    string
+    Endpoint string
+    Call     func(prompt string) string // wraps inference layer
+}
+```
+
+Provider's `Observe` assembles the prompt from accumulated context on the Relation.
+Provider's `Express` calls the LLM and returns the result.
+
+**Verify:** Create a Being with one Provider. Send a Relation. Being observes (identity context), Provider fires (LLM call), result returns. End to end.
+
+**Risk:** Medium. First real integration with inference layer.
 
 ---
 
-### Step 8: doesNotUnderstand as growth
+### Step 5: Message and memory as Reality nodes
 
-**Files:** `act.go`
+**Files:** `message.go`
 
-When Act targets something not in the being's Relationships:
+A message is a Reality. Same struct for both messages and memories — they're the same thing at different recency.
 
-1. New Reality created in Relationships map: `Weight: 0.01`, stub.
-2. Being receives doesNotUnderstand response.
-3. Subsequent encounters increment weight.
-4. Threshold crossing → participates in traversal.
+```go
+type Message struct {
+    Base
+    Content   string
+    From      string
+    ThreadRef string   // which thread this belongs to
+    Entities  []string // which entities this references
+}
+```
 
-The being grows by reaching into the unknown.
+Message's `Observe` attaches its content to the Relation.
+Message's `Express` returns empty — messages are context, not action.
 
-**Verify:** Nonexistent target → new Reality in Relationships. 5 attempts → weight increases. Crosses threshold → appears in context.
+**Placement:** When a traversal creates a new message, it attaches as a Reality in the Relationships maps of the entities it references AND in the Thread's Relationships map.
+
+**Verify:** Send a message about Builder. Message node appears in Builder model's Relationships AND in the thread's Relationships. Traversal through Builder finds the message. Traversal through the thread finds the message.
 
 **Risk:** Low. Additive.
 
 ---
 
-### Step 9: Weight updates from usage
+### Step 6: Weight updates on the return path
 
-**Files:** All Reality implementations with Relationships/Expressors
+**Files:** `reality.go`, `traverse.go`
 
-After each traversal:
+On the return path of every traversal:
 
-- Traversed: `Usage++`, `Weight += reinforcement`
-- Untraversed: `Weight *= decay`
-- Power law decay (ACT-R): `decay = (time_since_last_use)^(-d)`
+- **Traversed edges:** EMA update upward. `Weight = α * 1.0 + (1 - α) * Weight`. `LastTraversed = current traversal count`.
+- **Untraversed edges:** EMA decays naturally. `Weight = α * 0.0 + (1 - α) * Weight` = `(1 - α) * Weight`. No separate decay pass — the being's traversal count increments, recency drops via power law.
 
-The graph learns. Frequent use → stronger. Neglect → fades. This applies to both the Relationships and Expressors maps — frequently used expressors strengthen, neglected ones fade.
+Global weight (on target) and local weight (on edge) both update via EMA with different α values.
 
-**Verify:** 20 interactions using bash → weight up. Browse untouched → weight down. Traversal ordering changes.
+The being's `TraversalCount` increments once per traversal through it. This is the being's proper time.
 
-**Risk:** Low-medium. Start conservative (0.99 decay).
+**Verify:** 20 traversals using bash → bash weight up. Browse untouched → browse weight drifting down. Traversal ordering changes over time.
 
----
-
-### Step 10: Remove MemoryGraph — memory is already relationships
-
-**Files:** `memgraph.go`, `memory.go`, `context.go`
-
-**Remove:** `MemoryGraph`, `Entity`, `EntityEdge`, `MemNode`, `MemEdge`. `Context.Warm` cache. The entire separate memory data structure.
-
-Memory was never a separate system. It was always relationships. The MemoryGraph was a parallel structure doing what Relationships maps already do. Skyra's memories of Builder live inside her Builder model's Relationships map — as Realities with their own Relationships maps pointing back to entities involved. When she needs context about Builder, she observes into that Reality. The memory's cross-pointers to Philosopher let her arrive at Builder through Philosopher without explicit routing.
-
-**Replace:**
-- `Memory.Store` → creates a Reality inside the relevant parent's Relationships map. A memory involving Builder and Philosopher creates entries in both with cross-pointers.
-- `Memory.Query` → observation into a Reality's Relationships subgraph, activation-weighted.
-- `Context.Heat` → same observation, scoped.
-
-Migration for existing `graph.json` — entities become Realities with Weight/Relationships/Expressors fields, entity edges become nested Realities with cross-pointers.
-
-**Verify:** Existing memories load into Relationships maps. Retrieval returns same results. Storage works.
-
-**Risk:** High. Persistent state. Migrate on copy first. Keep old code behind build tag.
+**Risk:** Low-medium. Start with conservative α values (0.1 global, 0.3 local).
 
 ---
 
-### Step 11: Clean up dead code
+### Step 7: doesNotUnderstand as growth
 
-**Files:** All touched files.
+**Files:** `being.go`
 
-**Remove:**
-- `Think.Operators` / `Act.Operators` (now in Relationships map)
-- `NewThread.ThinkOps` / `NewThread.ActOps`
-- `Operators` struct and `operators.go`
-- `ParseResponse` as router
-- `isBeing()` type-switch
-- `Peel()` for target extraction
-- Feature flags
-- Old `MemoryGraph` code
-- Stub `Observe`/`Express` implementations that were never filled in
+When a being's Expressor produces a tag targeting something not in its Relationships:
 
-**Verify:** Test suite passes. `go vet` clean. No dead code.
+1. New Reality seeded in Relationships: minimum weight, stub.
+2. Being receives doesNotUnderstand — "I don't know this yet."
+3. Subsequent encounters reinforce the edge via EMA.
+4. Weight crosses threshold → participates in traversal.
+5. The being grew a new connection by reaching into the unknown.
 
-**Risk:** Low. Cleanup.
+**Verify:** Being targets nonexistent entity → stub created. Five traversals → weight increases. Crosses threshold → appears in context.
+
+**Risk:** Low. Additive.
+
+---
+
+### Step 8: Tags as signal modulation
+
+**Files:** `relation.go`, `traverse.go`
+
+Parse tags from the Relation's impulse. Tags become frequency components on the Relation that modulate activation:
+
+- Tag matches a being's name → activation boost for that being's topology
+- Tag doesn't match → activation dampened (not zero — still reachable if other factors are strong enough)
+- No tag → pure activation-based routing. Whoever resonates most responds.
+
+Tags are parsed once at entry. The frequencies live on the Relation for the duration of the traversal.
+
+**Verify:** `<builder>check the server</builder>` → Builder's topology activates strongly. Skyra's dampened but not silent. No tag → whoever has the strongest activation responds.
+
+**Risk:** Low. Modulates existing activation, doesn't replace it.
+
+---
+
+### Step 9: Genome bootstrap
+
+**Files:** `main.go`, `genome.go`
+
+The genome declares what could be. Bootstrap reads it and seeds topology:
+
+1. Parse `genome.skyra` — beings, devices, components, relationships, initial weights.
+2. Create Being Realities for each declared being with identity, purpose, type.
+3. Seed Relationships between beings at declared initial weights.
+4. Seed Providers on each being (which LLM, which endpoint).
+5. Seed Expressors on each being (action surfaces — response, tag emission).
+6. Create Thread Reality for the first thread.
+7. Wire devices and components as actor Realities in the topology.
+
+Skyra boots first. She shapes the topology — active judgment about what needs to be real for this world. Other beings boot into a space that already has curvature.
+
+**Verify:** `genome.skyra` → running world. Each being has correct topology. Providers wired to inference layer. Send an impulse → full traversal → response.
+
+**Risk:** Medium. Integration of everything above.
+
+---
+
+### Step 10: WebSocket device
+
+**Files:** `ws.go`
+
+The Universe observes itself. The frontend receives that observation.
+
+1. WebSocket server on port 8080.
+2. First-message auth.
+3. On connect: snapshot — serialize the universe state (beings with weights, threads, messages, topology).
+4. On traversal complete: delta events — entry, weight, being, topology changes.
+5. Client → server: impulse messages that become Relations.
+
+The serialization walks the topology and produces the JSON defined in `frontend-spec-v1.md`. The universe state shape is locked.
+
+**Verify:** Connect via WebSocket. Receive snapshot. Send impulse. Receive deltas as the traversal runs. Reconnect → fresh snapshot.
+
+**Risk:** Medium. Serialization of recursive topology needs cycle detection.
+
+---
+
+### Step 11: End-to-end integration
+
+**Files:** All.
+
+Full loop:
+
+1. Genome boots the world.
+2. Skyra activates, shapes initial topology.
+3. Michael sends impulse via terminal or WebSocket.
+4. Relation enters, descends through Skyra's topology.
+5. Think passes fire at nodes (Providers activate).
+6. Thoughts compound. Message attaches at exhaustion point.
+7. Ascent compresses. Expressors form action.
+8. Provider fires for final response generation.
+9. Result returns to top frame. Tags parsed. Thread routes if needed.
+10. Weights update on return path. Topology shifts.
+11. Frontend receives deltas. Topology visualization updates.
+12. Multi-hop: Skyra → Builder → Skyra → Michael. Thread manages re-entry.
+
+**Verify:** Multi-party conversation works. Weights shift visibly over 20+ exchanges. Topology evolves. Frontend shows it happening.
+
+**Risk:** High. Full integration. But every piece was verified independently in prior steps.
 
 ---
 
@@ -508,48 +442,86 @@ Migration for existing `graph.json` — entities become Realities with Weight/Re
 
 ### Locked
 
-1. **Interface:** `ID`, `Create`, `Realize`, `Observe`, `Express`. Realize contains both phases. Traversal calls `Observe` on entities found through Relationships maps. Traversal calls `Realize` on entities found through Expressors maps (Expressors need their own full observe/express cycle).
+1. **Interface:** `ID`, `Core`, `Create`, `Realize`, `Observe`, `Express`. Realize contains both phases. Locked and implemented.
 
-2. **No separate Relationship struct. Edges are Realities.** Weight, Usage, LastUsed, Relationships, Expressors dissolve into every Reality. Every Reality is both a thing and its connections. The connection between two Realities is itself a Reality — it implements the interface, embeds Base, observes (reads local weight), expresses (updates local weight on return). The target lives in the edge Reality's own Relationships map. One type all the way down. No node/edge distinction.
+2. **Three maps on Base.** Relationships (descent), Expressors (ascent), Providers (either direction). Same type: `map[string]Reality`. Same activation equation. Three roles.
 
-3. **Two-phase traversal:** Observe activates Relationships maps, accumulates context until weight exhausts. Express calls Realize on Expressors. Each Expressor observes through its own Relationships (which affect/configure the Expressor), then expresses through its own Expressors. Recursion terminates at a Reality with no Expressors — the durable thing. Execution happens there. One recursive pass.
+3. **One traversal.** Descent through Relationships accumulates context with think passes. Ascent through Expressors compresses and forms action. Providers fire on either phase. No orchestrator. The call stack is the control flow.
 
-4. **Memories as cross-pointed Realities:** A memory involving multiple entities exists in multiple Relationships maps. Cross-pointers enable emergent traversal paths.
+4. **Think and Act dissolved.** They are not Expressors. They are descriptions of depth. Deep is thought. Surface is action. The traversal doesn't hand off between them. One pass.
 
-5. **Deterministic first:** `argmax` for collapse. Stochastic/temperature later.
+5. **Conversation and memory are the same thing.** Messages are Reality nodes on entities. Recency is the only difference. No separate Exchange, no separate Memory system.
 
-6. **Skeleton stays:** Thread → Exchange → Self stays hardcoded for now.
+6. **Thread is a Reality.** Episodic binding. The hippocampal index. Binds co-occurring messages regardless of entity overlap. Two retrieval paths: semantic (entities) and episodic (thread).
 
-7. **Activation formula:** Activation is computed **per-entry** in a Relationships or Expressors map. If a Reality has four entries in its Relationships map, four separate activations are computed — one for each entry. The traversal visits entries above threshold, skips entries below. The activation score belongs to the entry, not to the map.
+7. **Message placement through traversal.** Where the signal exhausts is where the message attaches. Depth encodes meaning. The processing IS the storage.
 
-   ```
-   activation_i = global_weight_i * local_weight_i * relevance_i * recency_i * trust_i * context_fit_i
-   ```
+8. **Visit-once per traversal.** A node can only be seen once per traversal. No loops. No revisiting. This is the finiteness constraint — no budget needed.
 
-   Where `i` is one entry in the map. **Global weight** lives on the target Reality's Base — the being's intrinsic relationship to that Reality across all contexts. **Local weight** lives on the edge Reality — the strength of this specific connection between two Realities. Both are per-entry because each entry is its own edge Reality pointing to its own target Reality. Start with `global_weight * local_weight * recency`. Add factors as they prove necessary.
+9. **Tags are signal.** Not routing. Frequency components on the Relation that modulate activation. No tag = pure weight-based routing.
 
-8. **Relation signature:** Keep `Realize(r *Relation) string` and `Express(r *Relation) string`. Change in a later pass if needed.
+10. **Activation equation (v.1):**
+    ```
+    activation_i = global_weight * local_weight * recency * thread_alignment * thread_strength
+    ```
+    Global and local weight: EMA with different α. Recency: power law. Thread alignment: binary gate. Thread strength: EMA of per-node hit counts within the thread — the thread's opinion about what matters right now. Tensor contraction — five dimensions to scalar.
 
-9. **Intent graph:** Separate follow-up. Weighted relationships first.
+11. **Global weight as EMA.** `α * activation + (1 - α) * previous`. α is per-being — controls temporal sensitivity. Slow α = stable. Fast α = reactive. Starvation built into the formula.
 
-10. **Act as the outer layer:** Act is the outermost execution surface — the edge of cognition. v.1 starts with Think as Act's only Relationship (synchronous, one direction). Each integration (Gmail, Slack, calendar) is an actor — Act routes to it directly as a peer in its Relationships map. Async: completed acts accumulate in Act's Relationships on a timer, batch into one inference call when weight crosses threshold. Cost control through topology, not scheduling.
+12. **Recency is traversal count.** Not wall clock. The system doesn't experience time. Each being has its own proper time. Different beings age at different rates. Relativistic.
 
-11. **Actors and agents:** The distinction between cognitive and non-cognitive Realities follows Hewitt (1973) and Wooldridge & Jennings (1995). An **agent** is a Reality that observes, models, and chooses — it has a Self, Relationships it models, Expressors it selects between. Skyra is an agent. Michael is an agent. An **actor** is a Reality that receives and computes — same interface, same traversal, deterministic output, no interiority. Gmail is an actor. This is not a type split. The interface is identical. The distinction is emergent — what makes a Reality cognitive is the topology behind it, not a different type. An actor that accumulates enough complexity (gains Relationships, starts modeling, gets wired with choice) crosses into agency through the promotion gradient. Not by relabeling. By growing the topology that constitutes it.
+13. **Deterministic first.** `argmax` for collapse. Stochastic/temperature later.
+
+14. **Actors and agents.** Same interface. Distinction is emergent. Actor = no Providers (purely reactive). Agent = has Providers (can think). The line is whether the Providers map has entries.
+
+15. **doesNotUnderstand as growth.** Reaching for something unknown seeds a new Reality at minimum weight. The being grows at the edges.
+
+16. **Max depth as safety rail.** Not the mechanism. Signal attenuation and visit-once are the mechanism. Max depth catches runaway cases the mechanism misses.
+
+### Deferred
+
+- **Relevance** — content overlap. Absorbed by local_weight EMA for v.1. Own term when agents start evolving.
+- **Trust** — coupling strength. Not computable yet. Levin persuadability spectrum. Where it lives structurally TBD.
+- **Context_fit** — phase alignment beyond thread. Thread is the first component. Continuous phase comes when we understand what "rotation rate" means for a Reality.
+- **Signal attenuation** — replacing Budget with physical depth. The Relation's signal strength decreasing per-step. v.1 uses visit-once + max depth. Signal attenuation is the v.2 mechanism.
+- **Section weights on the Relation** — each component should have its own amplitude. Not in v.1. The Relation carries flat content for now.
+- **Streaming** — descent and ascent overlapping temporally. v.1 is synchronous. Streaming is the next frontier.
+- **Cognitive nervous system** — provider swap as circuit breaker for recursive patterns. Falls out of the Providers map naturally. Later.
 
 ---
 
 ## Sequencing
 
-Steps 0-1 are mechanical. Add Observe/Express stubs, add fields to every Reality. Zero risk.
+Step 0-1 are struct updates. Zero risk.
 
-Step 2 renames Self's hashmap. Zero risk.
+Step 2 is math. Low risk. Unit testable.
 
-Steps 3-5 replace dispatch logic with weight-based surfacing. Medium risk, fallbacks available.
+Step 3 is the core — one recursive traversal through three maps. High risk. Get this right and everything follows.
 
-Steps 6-7 replace the core loops with Observe/Express. High risk, feature flags.
+Step 4 builds concrete types on the traversal. Medium risk. First inference integration.
 
-Steps 8-9 are the payoff. The graph grows and learns.
+Step 5 makes messages and memory work. Low risk. Additive.
 
-Step 10 is unification. One topology. Memory dissolves into Relationships.
+Step 6 makes the topology learn. Low-medium risk. Conservative α values.
 
-Step 11 is compression. Throw away what's left.
+Steps 7-8 are growth and signal modulation. Low risk. Additive.
+
+Step 9 is bootstrap — genome becomes running world. Medium risk. Integration.
+
+Step 10 is the frontend connection. Medium risk. Serialization.
+
+Step 11 is the proof — full loop, multi-party, visible topology evolution.
+
+---
+
+## What This Replaces
+
+The previous implementation plan (11 steps organized around replacing v.05 routing code) is superseded. Key differences:
+
+- **Think and Act as Expressors on Self** — dead. Dissolved into depth.
+- **Self's think-act loop replaced with weighted version** — dead. One traversal, no loop.
+- **Exchange as a concept** — dead. Messages are Reality nodes.
+- **Operator dispatch → relationship traversal** — absorbed. Operators are Realities in the topology. No dispatch needed.
+- **Budget field** — deprecated. Visit-once + max depth + signal attenuation.
+- **Two maps** — now three. Providers are orthogonal to direction.
+- **Separate memory system removal** — unnecessary. Memory was never built as separate in v.1. It was always the topology.

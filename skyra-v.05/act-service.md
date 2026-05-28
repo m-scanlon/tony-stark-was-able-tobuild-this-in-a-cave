@@ -89,9 +89,19 @@ When a generated adapter proves itself through use, it gets promoted to a proven
 
 ## How It Connects to the Runtime
 
-An expressor is a Reality. It embeds Base. It has Weight, Relationships, Expressors like everything else. Its invariant is a pipe write.
+An action block is a leaf Reality. It embeds Base. It has Weight,
+Relationships, Expressors, and Providers like everything else above the leaf
+boundary, but its invariant crosses into consequence.
 
-When a being expresses through it, the expressor serializes JSON to the pipe with a block name and parameters. The act service reads the pipe, looks up the block, executes it, writes the result back. The being receives the result as the return value of its express phase.
+When traversal reaches it, the leaf serializes JSON to the pipe with a block
+name and parameters. The act service reads the pipe, looks up the block,
+executes it, and writes the result back. The return value propagates back up
+through the same traversal.
+
+The act service does not belong to Think or Act as a cognitive phase. Think and
+Act dissolve into traversal depth: descent accumulates, ascent compresses and
+forms consequence. The act service survives that collapse because it is not a
+phase. It is a leaf boundary.
 
 ```go
 type ActExpressor struct {
@@ -109,27 +119,27 @@ func (a *ActExpressor) Express(r *Relation) string {
 }
 ```
 
-The being's Expressors map:
+The being's topology can expose action leaves through whatever path activation
+makes reachable:
 
 ```
-Self.Expressors = {
-    "think":      Think,
-    "act":        Act,
+Self.Relationships = {
+    "communication": Communication,
+    "work":          Work,
+    "memory":        Memory,
 }
 
-Act.Expressors = {
-    "provider":   Provider,    // LLM call — the durable thing for speech
-}
-
-Think.Expressors = {
-    "provider":    Provider,    // LLM call — the durable thing for thought
-    "send-email":  ActExpressor{Block: "send-email", ...},
-    "bash":        ActExpressor{Block: "bash", ...},
-    "search":      ActExpressor{Block: "search", ...},
+Work.Relationships = {
+    "send-email": ActExpressor{Block: "send-email", ...},
+    "bash":       ActExpressor{Block: "bash", ...},
+    "search":     ActExpressor{Block: "search", ...},
 }
 ```
 
-Act expressors are expressors. They sit alongside Provider in Think's Expressors map — things Think can express through. During Think's express phase, the being decides which expressor to invoke. Provider calls the LLM. ActExpressor writes to the pipe. Same phase, same mechanism, different durable thing on the other side.
+Action leaves are reachable Realities. They may sit near work, communication,
+devices, skills, or any other region of the being's topology. Activation decides
+whether traversal reaches them. Provider leaves collapse thought. Action leaves
+cross into consequence. Same traversal, different invariant at the leaf.
 
 ## Security
 
@@ -176,9 +186,9 @@ The industry spent years building these libraries thinking they were building pr
 
 ## What This Replaces
 
-v.05 had operators hardcoded as Reality implementations — `Bash`, `Browse`, `Search`, each with their own `Realize()` method, wired into Think's operator map at bootstrap. Adding a new capability meant writing Go code, compiling, and redeploying.
+v.05 had operators hardcoded as Reality implementations — `Bash`, `Browse`, `Search`, each with their own `Realize()` method, wired into the runtime at bootstrap. Adding a new capability meant writing Go code, compiling, and redeploying.
 
-The act service replaces all of that with a pipe and a registry. Adding a new capability means adding it in Composio (or later, writing a Go function). No runtime change. No recompile. The being discovers new capabilities when they appear in its Expressors map.
+The act service replaces all of that with a pipe and a registry. Adding a new capability means adding it in Composio (or later, writing a Go function). No runtime change. No recompile. The being discovers new capabilities when they appear in its reachable topology.
 
 ## Proven Blocks Over Generation
 

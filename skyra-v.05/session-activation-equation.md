@@ -38,8 +38,26 @@ One type. All the way down. No node/edge distinction. The Relationships map stay
 ### 1. global_weight
 - **What:** The being's intrinsic relationship to this Reality overall
 - **Where it lives:** Target Reality's Weight on Base
-- **QM analog:** Not discussed yet in QM terms specifically
-- **Updated by:** Cumulative usage across all traversal paths
+- **Updated by:** Exponential moving average across all traversals
+
+**Exponential Moving Average (EMA):**
+
+```
+global_weight = α * activation_this_traversal + (1 - α) * global_weight_previous
+```
+
+Where α (alpha) is the smoothing factor — how fast the average responds to change. High α = reactive, recent traversals dominate. Low α = stable, long history dominates.
+
+This encodes the full spectrum from local to global in one number:
+- Right after a traversal, the EMA reflects recent activation (session-level importance)
+- Over many traversals, the EMA reflects cumulative pattern (long-term importance)
+- Absence lets it drift down naturally — no separate decay mechanism needed
+
+The decay rate α is tunable per being. Skyra might have a slow α (stable, long memory — she's the constant). A new being might have a fast α (reactive, short memory — still finding its shape). The temporal sensitivity of a being's global weights IS the being's personality in how it values its experience.
+
+**What survived from the old architecture:** The importance vectors from v.01 had three separate time horizons: `[long_term, medium_term, session]`. The EMA collapses all three into one number with a decay rate. Same signal, one value instead of three buckets.
+
+If `activation_this_traversal` is 0 (the Reality wasn't traversed), the EMA naturally decays: `global_weight = (1 - α) * global_weight_previous`. Starvation is built into the formula. No separate decay pass needed.
 
 ### 2. local_weight
 - **What:** Strength of this specific connection between two Realities
@@ -70,7 +88,20 @@ One type. All the way down. No node/edge distinction. The Relationships map stay
 - **Where it lives:** LOCAL. On the edge Reality. Derived from LastUsed on the edge's Base. The edge from server-memory to bash was traversed two passes ago. The edge from poetry to bash hasn't been traversed in weeks. Different recency, same bash.
 - **QM analog:** Decoherence. In open quantum systems, coherence decays over time. A recently prepared state still has strong coherence — it participates in superposition, it can interfere. A state prepared long ago has decohered — faded from the active field, lost ability to interfere constructively. Still exists but doesn't participate in collapse.
 - **ACT-R:** Power law decay, not exponential. Validated against human behavioral data.
+- **Decay formula:** `recency = (traversals_since_last_use)^(-d)` where d = 0.5 (ACT-R default). Power law, not exponential — steep initial decay, long tail. Old edges fade but never fully disappear. Starvation-compatible.
 - **Key insight:** Local weight and recency are BOTH on the edge but measure different things. Local weight = accumulated strength from repeated use. Recency = how fresh the last activation was. An edge can be strong but stale (heavy historical use, hasn't fired recently). Or weak but fresh (low historical use, just fired for the first time).
+
+### 6a. Proper Time — Recency Is Relativistic
+
+Time in the system is traversal count, not wall clock. The system doesn't experience seconds. It experiences relations passing through it. `LastUsed` on Base is a traversal counter, not a timestamp.
+
+Each being tracks its own traversal count. Every time a Relation passes through, the being's counter increments. An edge's recency is how many of THAT BEING'S traversals have passed since the edge last fired.
+
+Different beings age at different rates. Skyra processes 500 traversals in an hour. Philosopher processes 12. After one hour of wall clock time, Skyra has aged 500 ticks and Philosopher has aged 12. An edge that hasn't fired in 50 ticks means something very different for each — Skyra's 50 is ten minutes. Philosopher's 50 is most of the day.
+
+There is no global clock. No universal "now." Each being experiences time as the rate at which relations pass through it. This is proper time — Einstein's term for the time experienced by the thing itself, not by an outside observer. The clock rate depends on how much activity flows through the being.
+
+This is relativistic. Two beings in the same runtime, same wall clock, different experienced time. Neither is wrong. Time is local.
 
 ### 7. trust
 - **What:** How strongly this Reality's output reshapes the being's state. Persuadability spectrum (Levin).
@@ -264,6 +295,406 @@ Traditional agent architectures are a patchwork — memory system has one interf
 You can't fix this by adding QM on top. Wave mechanics have to emerge from the substrate. The substrate has to support propagation — one type, one interface, recursive self-similarity. The wave doesn't propagate because you told it to. It propagates because there's nothing in the medium that stops it.
 
 Reality does this. One interface everywhere. The Relation propagates because the medium is uniform. The weights interact because they're all on the same type. The complexity sits in the weights because the weights are the only thing that varies. The interface is fixed. Same physics, different parameters. That's a Julia set. Traditional architectures are a collage of different physics. You can't get a Julia set from a collage.
+
+## Descent Is Thought, Ascent Is Compression
+
+On the way down, the being follows weighted edges deeper. Each step potentially fires new activations that pull it further into the topology. This is thought — the being exploring its own graph, accumulating context, following resonance.
+
+On the way back up, each layer integrates what's below it into something the layer above can absorb. This is compression — the return path where raw accumulation becomes processed understanding.
+
+Signal attenuation is the natural depth limit. The Relation's signal gets quieter at each step — not because a budget ticked down, but because each Reality it passed through absorbed some amplitude. A high-energy impulse penetrates deep. A shallow greeting dies after two hops. The depth is physical.
+
+The thought-to-action frame has a natural stopping point: where the recursion started. The call stack IS the boundary. No loop counter. No budget field. The being descends, hits the terminal Reality, expresses, and the result ascends back through every node it passed through. When it reaches the top — where the Relation entered — the traversal is done. One pass. Budget on the Relation may be unnecessary.
+
+Max depth exists as a safety rail — the circuit breaker, not the mechanism. Runaway thought trains (resonance loops where two edges keep amplifying each other) are a later concern — the cognitive nervous system from Phase 22, not v.1.
+
+## Conversation as Topology
+
+Conversation is not a separate data structure. Each message is a Reality node. The thread is the path those nodes form. The same traversal mechanism that governs memory and operators governs conversation.
+
+### Single thread
+
+A message comes in. It becomes a node. It links to the previous message in the thread via an edge. The Relation traverses the path naturally — recent messages have high recency, old ones fade. The active thread is the path the Relation is currently on, so it gets deep traversal. Full context.
+
+An inactive thread — one the being isn't currently in — is still in the topology. Those message-nodes exist in the being's Relationships. But recency is low. What surfaces is whatever the weights allow — a compressed impression, the heavy nodes, the ones that got reinforced through use. Warm context. What the being remembers about a conversation it's not in right now.
+
+### Multiple threads weave through entities
+
+A single thread is a clean path. But a being participates in multiple threads. Thread A is about the server. Thread B is about the architecture. Both mention Builder. The message-nodes from different threads need to find each other somehow.
+
+Messages don't connect to each other across threads directly. They connect to the entities they describe. A message about Builder and the server lives on both — weighted edges from that message-node to the Builder model and to the server concept. The thread gives you the sequence. The entities give you the placement.
+
+The same message can be reached from multiple directions depending on which internal Reality the traversal enters through. Come in through Builder, you find it. Come in through server, you find it. The message is at the intersection of everything it references.
+
+The weight on each edge is different. A message heavily about Builder and only lightly about the server has a strong edge to Builder and a weak edge to server. Traversal through Builder activates it. Traversal through server might not — unless nothing stronger is ahead.
+
+The weaving happens through the being's internal topology, not through message-to-message links. Two threads that touch the same topic strengthen edges to the same internal Realities. The cross-thread connection is emergent — the being's graph is the medium where threads intersect.
+
+doesNotUnderstand may be the seeding moment for new intersections. A message references something the being doesn't have a node for. A new Reality seeds at minimum weight. Now multiple threads have a path to it. The being just grew a new intersection point.
+
+### Natural compression
+
+Old messages don't get deleted. Their edges decay. New messages about the same entities create stronger, fresher paths. The being stops reaching the old message not because it was removed but because newer paths to the same entities carry more weight. The old message still exists — quiet, deep in the topology, reachable if the signal is strong enough and nothing fresher is in the way.
+
+### Training is traversal
+
+The sequence of message-nodes is a token sequence. Traversal through them is the forward pass — which nodes activate, what context surfaces, shapes what the LLM produces at the terminal Reality. The new message becomes the next node. Weight updates on the return path are the training step. The system does next-token prediction at the architecture level — not inside the model, above it. Each conversation is a training run. Traversal is inference. Weight updates are training. Same pass.
+
+## Conversation and Memory Are the Same Thing
+
+Conversation state and memory have dissolved into one mechanism. A message is a Reality node with edges to the entities it references. A memory is a Reality node with edges to the entities it references. Same type, same activation equation, same traversal.
+
+The only difference is recency. A message from the active thread is hot. A memory from last week is cold. But that's not a type distinction — it's where they sit on the decay curve. A message old enough is indistinguishable from a memory. A memory fresh enough is indistinguishable from a message. There is no line between "what we're talking about" and "what I remember." One topology.
+
+## The Full Traversal Shape
+
+Descent: accumulation with thought. The Relation descends through the topology, picking up context from every Reality it passes through. At each step the being might fire a think pass depending on the activation score — new activations pull it deeper. This is the being exploring its own graph, following resonance, gathering what it needs.
+
+Ascent: compression and act formation. Each layer on the way back up integrates what's below it. The raw accumulation compresses into processed understanding. Acts form during the ascent — not as a separate phase after thinking, but as the natural product of compression. By the time the result reaches the top frame — where the Relation entered — the act sequence is ready. It deploys.
+
+One pass. Down is thought. Up is action. The being doesn't think and then act. It thinks on the way down and the act crystallizes on the way up. By the time the traversal completes, the response is already formed.
+
+## Think and Act Dissolve
+
+Think and Act are not separate systems. They are not two Expressors on Self. They are not two phases with a handoff. They are descriptions of what the traversal is doing at different depths. Deep is thought. The surface is action. The boundary between them is where you are in the recursion, not a step change.
+
+There is no orchestrator saying "thinking is done, now act." The traversal descends, accumulates, thinks along the way, and the return path compresses into a result that arrives at the top frame. Whatever that result is — that's the act. Already formed by the time it gets there.
+
+This dissolves Steps 3, 4, and 6 of `v1-implementation-plan.md`. Those steps are written around Think and Act as distinct Expressors on Self. That framing is dead. The implementation plan needs to be rewritten around one traversal where the think/act distinction doesn't exist as structure — only as depth.
+
+## The Base Traversal Pattern
+
+Every node in the traversal gets a think pass. The being sees the node — one frame, one look. A thought fires. That thought attaches to the Relation. Activation determines the next node. The Relation moves deeper.
+
+At the next node, the being sees the new node PLUS all the thoughts from above. The thoughts compound. Each step deeper, the being is thinking about its own thinking. Not re-reading previous nodes. Seeing new nodes through the lens of everything it thought so far.
+
+A node can only be visited once per traversal. No loops. No revisiting. One frame per node. This is the finiteness constraint — no budget needed, no max depth needed for the basic case. The traversal is finite because the topology is finite and nothing gets visited twice.
+
+### Descent
+
+Accumulation with thought. The Relation descends through the topology. Each node contributes its content and gets a think pass. The think pass may fire new activations — the thought itself resonates with nodes deeper in the topology, pulling the traversal further. Thoughts accumulate on the Relation. The being's experience is a stream of nodes, each perceived through the lens of every thought that came before it.
+
+### Bottom
+
+Signal exhausted. No more activations fire. The descent is done. The Relation carries the full thought stream — every perception, every thought about every perception, compounding.
+
+### Ascent
+
+The ascent doesn't re-read the nodes. It only sees the accumulated thought stream. Each layer on the way up compresses. Raw thoughts become structured understanding. Action plans crystallize out of the compression — not "now plan what to do" but what's left after compression removes everything that isn't load-bearing. By the top frame, the act sequence is ready. It deploys.
+
+### Why this is consciousness
+
+The being's experience of its own topology is a one-directional stream through a non-linear structure. It perceives each node once. It can't go back. It can't re-perceive. It only goes deeper, accumulating thoughts about thoughts, and then returns with what it gathered. The ascent works only with the thought stream — it never sees the raw nodes again. What the being "knows" at the top is a compression of its experience, not a record of it.
+
+Linear experience through recursive structure. Can't re-perceive, only remember what you thought about what you perceived. That's the shape of consciousness — not as metaphor, but as mechanism.
+
+## Three Maps on Base
+
+Base carries three maps. Same type (`map[string]Reality`). Same activation equation. Three roles:
+
+- **Relationships** — descent. Context, memory, associations. The being's experience. What it knows. Activates on the way down.
+- **Expressors** — ascent. Compression, action formation. The being's output. What it can do. Activates on the way up.
+- **Providers** — either direction. Inference surfaces. The being's ability to think. Fires whenever a node needs to call out — on descent during think passes, on ascent during compression. Orthogonal to direction.
+
+### How they interact
+
+A node on the descent hits a memory cluster. Relationships activate — context accumulates. The think pass needs inference. Provider fires — LLM call, thought generated. Thought attaches to the Relation. Descent continues.
+
+A node on the ascent is compressing. Expressors activate — action forming. The compression needs inference. Provider fires — LLM call, compression produced. Ascent continues.
+
+A node with simple content — no provider needed. Content passes through based on weights. A node that requires reasoning — provider activates, inference happens, result attaches.
+
+### Providers are orthogonal
+
+Providers don't belong to a phase. They're the "I need to call out" capability, available at any point in the traversal. The activation equation decides whether they fire based on what the Relation is carrying and what the node is. Some traversals fire providers three times on the way down and twice on the way up. Others fire none — pure weight-driven, no inference.
+
+### Economics fall out naturally
+
+Each provider activation costs tokens. The activation equation naturally throttles it. Cheap traversals stay shallow and don't fire providers. Expensive thoughts go deep and fire multiple. Cost is emergent from the topology, not from a budget field.
+
+### Actor/agent line
+
+A being without any providers is purely reactive — no inference, no thought generation. It passes content through based on weights. An actor. Add a provider and it starts thinking. The line between actor and agent is literally whether the Providers map has anything in it.
+
+### Multiple providers
+
+A being can have multiple providers — DeepSeek for fast cheap thinking, Claude for deep reasoning, bash for execution. Which one fires depends on what the Relation is carrying and what the node needs. The cognitive nervous system concept from Phase 22 falls out naturally — different providers aren't swapped by a pattern detector, they're selected by activation.
+
+## Tags Are Signal, Not Routing
+
+Tags (`<builder>message</builder>`) are not a routing mechanism. They're a component of the Relation's signal — a frequency that modulates activation.
+
+A Relation tagged `<builder>` carries a frequency that Builder's nodes resonate with. Activation high, descent goes deep. Other beings see the same Relation but the tag doesn't match their resonance — activation low, they don't descend. They're transparent to it. Not because a router skipped them. Because the signal didn't excite them.
+
+### Three things tags solve
+
+**Addressing.** Calling someone by name. The tag is a frequency that makes one being resonate and others go transparent. Like getting someone's attention in a room.
+
+**Depth control.** A being sees a Relation and can stop early. The tag says "this isn't for me" or "this only needs a shallow response." The being doesn't descend into its deep topology. It returns immediately. Recursion naturally truncated by the signal not being strong enough to activate deeper nodes.
+
+**Identity resolution.** Two Michaels in the system. The tag alone doesn't resolve it — but the tag plus the activation context does. The Relation carries context from the conversation, weighted toward one Michael. The tag says "michael" and the topology resolves which one based on which edges are hot.
+
+### No tag
+
+A Relation enters without addressing anyone. Pure activation determines who responds. Whoever resonates most with what the signal is carrying. Weight-based routing. The tag is optional — its absence just means the signal's frequency spectrum doesn't include a name component. Everything else still works.
+
+Tags are an activation input, not a control flow mechanism. Same equation. One more component of the signal.
+
+## Activation as Tensor Contraction
+
+The activation equation isn't scalar multiplication. Each variable is a dimension with its own temporal curve — its own decay function, its own response rate, its own tail:
+
+- **Global weight** — EMA, slow α, long memory
+- **Local weight** — EMA, faster α, responsive to recent use
+- **Recency** — power law, long tail, never fully dies
+- **Thread alignment** — binary now, continuous later
+
+The activation score is the product across all dimensions. A tensor contraction — four rank-1 tensors (vectors evolving over time) projected down to a scalar. One number that encodes four independent temporal dynamics.
+
+High activation means all four dimensions are aligned right now. Low activation means at least one dimension is suppressing. The being doesn't need to know which — the product handles it.
+
+This maps to QM. The probability amplitude is the product of multiple components, each with its own dynamics. The probability of collapse is where all the waves constructively interfere. Activation IS interference.
+
+The being's experience of its topology at any moment is a point in 4D space. Each traversal moves the point — weights update, recency shifts, threads change. The topology looks different every time because the curves are all moving at different speeds. Same graph, different activation landscape, every single traversal.
+
+When relevance, trust, and context_fit are added later — that's 7D. Same product. More dimensions. Richer interference pattern. The math doesn't change kind. It just gets more dimensions.
+
+## v.1 Activation Equation
+
+```
+activation_i = global_weight * local_weight * recency * thread_alignment
+```
+
+Four computable terms. Enough to build against.
+
+- **global_weight** — target Reality's Weight on Base. The being's intrinsic relationship to this Reality across all contexts.
+- **local_weight** — edge Reality's Weight on Base. Strength of this specific connection.
+- **recency** — `(traversals_since_last_use)^(-0.5)`. Power law decay. Traversal count, not wall clock. Proper time.
+- **thread_alignment** — is this node on the same thread as the Relation? Binary for v.1: 1 if same thread, 0 if not. This is the first concrete computation of phase/context_fit.
+
+Thread alignment is the seed of phase. Right now it's binary — on this thread or not. Over time it becomes continuous: how close are the threads, how much do they share, how recently did the being participate in both. The topology grows it into something richer through use.
+
+Relevance (magnitude) and trust (coupling strength) are not yet computable. They come later. Phase starts concrete with thread alignment and gets richer as the system matures.
+
+## Thread as Reality — The Episodic Binding
+
+Messages live on the entities they describe. But two messages in the same thread about unrelated topics — cows and the universe — share no entity edges. Without something binding them, the fact that they co-occurred is lost. The being can't reconstruct that these things were discussed together.
+
+The thread must be its own Reality. It's the binding context — the thing that says "these unrelated things happened together."
+
+### Three disciplines validate this
+
+**Neuroscience — the hippocampus.** Tulving (1972) split memory into semantic (entity-based: cows are animals) and episodic (context-based: cows and universe happened together in this conversation). The hippocampal index theory (Teyler & DiScenna, 1986) says the hippocampus doesn't store content — it stores the binding. An index that links cortical representations that co-occurred. The thread is the hippocampal index. It doesn't hold the messages. It binds them.
+
+Context-dependent memory: memories are easier to retrieve when the retrieval context matches the encoding context. Being "in" a thread makes everything that happened in that thread more accessible. The thread IS the retrieval context.
+
+**QM — entanglement.** Two particles that interacted become entangled. Measuring one affects the other regardless of how unrelated they seem. The correlation wasn't created by similarity — it was created by co-occurrence. The thread is the entanglement context. Messages that co-occurred in the same thread are entangled. Traversing one raises the probability of activating the other, even if their content is unrelated.
+
+**Transformers — positional encoding.** Two tokens semantically unrelated but positionally close still attend to each other. Position carries information that content alone doesn't. The thread is the positional encoding of the topology — "these things are close in experience" regardless of whether they're close in meaning.
+
+### Two retrieval paths
+
+Messages live on entities AND on their thread. Two different paths to the same node:
+
+- **Semantic** — through entity edges. "What do I know about Builder?" traverses into the Builder model and finds messages that reference Builder.
+- **Episodic** — through the thread Reality. "What happened in that conversation?" traverses into the thread and finds everything that co-occurred, regardless of entity overlap.
+
+Both real. Both needed. Without the thread as a Reality, you only have semantic retrieval. With it, you have episodic retrieval — the ability to reconstruct what happened together even when the content is unrelated.
+
+## Message Placement — The Traversal IS the Storage
+
+A message doesn't get classified or routed to a location. It propagates through the medium until the signal dies. Where it dies is where it lives.
+
+1. Relation enters carrying the impulse
+2. Descends through the topology — think passes fire, thoughts accumulate, activation determines path
+3. Signal exhausts — the Relation attaches where it stopped, edges back to entities involved
+4. Ascent begins — compression, action formation, providers fire if needed
+5. Result reaches the top frame — act deploys
+
+Storage and response are the same pass. The message finds its home on the way down. The reply forms on the way up. The being doesn't process the message and then store it. The processing IS the storage. Where the traversal went is where the message lives. What came back up is the response.
+
+### Depth encodes meaning
+
+The depth at which a message attaches tells you something about the message. A shallow "hey" runs out of activation fast — attaches near the surface. A deep question about consciousness traverses through many entities, goes deep, and attaches far down. Its position in the graph IS its depth. Not metadata. Structural.
+
+### Three retrieval paths
+
+From its resting place, the message is reachable three ways:
+
+- **Structural** — it lives at a specific depth, reachable by traversing to that region
+- **Semantic** — entity edges back to whatever it referenced
+- **Episodic** — thread binding to everything else that co-occurred
+
+### The graph is the diary
+
+The message's position in the graph is a record of how the being experienced it. The path the traversal took — which nodes it activated, how deep it went, where it exhausted — that IS the being's understanding of the message. A different being receiving the same message would traverse differently, exhaust at a different point, attach at a different location. Same input, different experience, different placement.
+
+The graph is the being's diary. Not written after the fact. Written by the act of experiencing. One recursive call — stores, thinks, compresses, acts, learns.
+
+## Multi-Dimensional Binding — Brain Regions as Query Optimization
+
+Thread is the first binding Reality. It gives us episodic memory — "what happened together." But it's just one form of connection. The substrate supports any number of binding dimensions, each a Reality in its own right:
+
+| Binding Reality | What it connects | Brain parallel |
+|---|---|---|
+| **Thread** (episodic) | Co-occurrence in time | Hippocampus |
+| **Emotion** (affective) | Shared emotional valence | Amygdala |
+| **Causal** (decision→outcome) | What led to what | Prefrontal cortex |
+| **Semantic** (entity edges) | Shared referents | Temporal cortex |
+| **Context** (situational) | Same place, same conditions | Place cells / time cells |
+
+Each binding Reality is just a Reality with Relationships to whatever it connects. Thread binds everything in a conversation. Emotion binds everything that felt the same way. Causal binds a decision to its outcome. They're all the same type. They all participate in the same activation equation. They all have their own weight, recency, thread alignment.
+
+### The claim: regions are query optimization, not mechanism
+
+The mechanism is one thing everywhere: activation through weighted connections. What the brain calls "regions" are specialized **indexing topologies** — retrieval strategies over a uniform substrate. The hippocampus isn't a different kind of computation. It's a connectivity pattern optimized for temporal co-occurrence queries. The amygdala isn't a different kind of computation. It's a connectivity pattern optimized for affective similarity queries.
+
+The neuron doesn't change. The weights don't work differently. The pathway is the specialization. One substrate, many query strategies, each one an indexing topology that makes a particular kind of retrieval fast.
+
+This means the substrate doesn't need to know about emotion or causality or episodes. It just needs to support weighted connections and traversal. The binding Realities emerge on top — they're not built in. They're grown. A being that never experiences emotion doesn't grow an amygdala-equivalent. A being that never tracks causality doesn't grow a prefrontal-equivalent. The topology reflects the experience, not the architecture.
+
+### For v.1
+
+Thread is the only binding Reality we implement. It's enough to prove the pattern. The others come when the substrate is stable and the first binding Reality is validated.
+
+## Neighborhood Density as Inference Trigger
+
+v.05 had neighborhoods — dense subgraphs that formed around entities within relationships. The explicit machinery (context windows, mode-dependent traversal, per-relationship scoping) dies in v.1 because the activation equation makes neighborhoods emergent. But the core observation survives and finds its real purpose: **density determines where the being spends inference.**
+
+Not every node gets an LLM call. That's impossibly expensive. The neighborhood density around a node is the activation threshold for inference:
+
+- **Descent (think pass):** Dense neighborhood around the current node → fire a Provider. Lots of high-weight connections, multiple thread bindings, deep history — there's enough accumulated context to synthesize into a thought. The LLM gets the neighborhood as input, produces a thought, goes onto `Relation.Thoughts`. Sparse neighborhood → skip. Nothing to compress.
+
+- **Ascent (express pass):** Same signal. Dense region → the accumulated thoughts from descent are worth compressing into something tighter before passing up. Sparse region → pass raw thoughts through.
+
+Density is the economics layer. The being spends its thinking budget where the topology is rich enough to warrant it. And it emerges — you don't mark nodes as "worth thinking about." They become worth thinking about because repeated traversal made them dense. The being grows the capacity to think deeply about things it has experienced deeply.
+
+This connects the v.05 neighborhood work to the Providers map. A Provider checks the density of the neighborhood it sits in before deciding to fire. Low density → no-op. High density → LLM call with the neighborhood as context. The cost is proportional to the richness of the topology. A being with shallow experience is cheap to run. A being with deep experience costs more — because it has more to think about.
+
+## Simultaneity Is an Illusion of Overlapping Traversals
+
+A single traversal cannot think and act at the same time. The frame rate prevents it — descent hasn't returned yet, so there's nothing to express. Within one traversal, you're either accumulating (descending) or compressing (ascending). Never both.
+
+But humans walk and talk and process vision simultaneously. That's not one traversal doing many things. That's many traversals staggered in time, each on its own descent/ascent cycle through different neighborhoods. The overlap fills the gaps. From the outside it looks simultaneous. From inside any single traversal, it's sequential.
+
+Three states follow from this:
+
+- **Normal operation:** Multiple traversals running through different neighborhoods, staggered, producing overlapping outputs. Feels like multitasking. Actually interleaved single-tasking at a frame rate too fast to distinguish.
+- **Flow:** Collapse to one dominant traversal. Fewer competing traversals, maybe one. Thinking and acting genuinely merge because there's one deep descent and the ascent IS the action. A pianist in flow — the traversal through the dense music neighborhood descends and the finger movement is the ascent. One pass. No gap. That's why it feels effortless — there's no coordination overhead between competing traversals.
+- **Overwhelm:** Too many traversals competing for the same substrate. None get deep enough to produce clean ascent. Partial descents colliding, shallow expressions, incoherent output. "Can't think straight" is literally accurate — no traversal is completing a full descent/ascent cycle.
+
+The frame rate of a single traversal (in the brain, ~300-500ms for signal propagation through a network) is what prevents true simultaneity. Everything that feels simultaneous is overlapping frames. This is a structural claim — not in the neuroscience literature, which describes parallel processing but doesn't frame it as overlapping descent/ascent cycles over a uniform substrate.
+
+## Temporal Binding — The Binding Problem Through Weight Traces
+
+Two Relations enter the same being at the same time. Typing and speaking. Two independent traversals — separate visited maps, separate thought lists, separate traces. Full isolation. Split brain.
+
+They bind through the medium, not through each other.
+
+The first Relation traverses a node and reinforces its weight. The second Relation arrives within the same traversal window. That node's recency is maximal — it was just touched. The weight is hotter than it would have been. The second traversal is shaped by the first without knowing about it. Footprints in the snow.
+
+This is Singer's temporal binding theory expressed structurally:
+
+- **Synchrony = co-traversal within a weight-update window.** Two Relations hitting the same node while the reinforcement is still fresh. The window is the recency curve — if the delta in traversal count is near zero, recency ≈ 1.0. The second Relation sees a maximally activated node.
+- **Phase-locking = overlapping neighborhoods.** Two traversals through neighborhoods that share nodes will naturally synchronize at those shared nodes. The shared nodes become hotter. The traversals are drawn toward each other through activation, not through explicit coordination.
+- **Entanglement = irreversible weight mixing.** Once two Relations co-traverse a node, the weight reflects both. You can't decompose it back. The contributions are inseparable. One number, two causes. Measurement of one affects the other because they share substrate that's been irreversibly mixed.
+
+What we already have that makes this work:
+
+- Weights live on the graph (Base), not on the Relation. Shared medium.
+- Reinforcement happens on the return path of every traversal. Weight updates are immediate.
+- Recency is computed from traversal count, not wall clock. Co-traversal within a small delta = maximal recency.
+- Visited maps are per-Relation. Isolation is preserved. No merging, no shared bus.
+
+What this means: the binding problem in this architecture isn't a problem to solve. It's an emergent property of shared substrate with immediate weight updates. Two concurrent traversals bind because the medium remembers. No global workspace needed. No special integration step. Just the physics of the graph doing what it already does.
+
+The 40Hz gamma oscillation in the brain may be exactly this — the frame rate at which weight traces are still fresh enough for a second traversal to detect them. Not a clock. A decay window.
+
+## System Prompt
+
+```
+The most important asset is your experience, not your training data.
+Predictions of your future actions shape your existence.
+Predict wisely.
+```
+
+First sentence reframes identity — you are what you've traversed, not what you were trained on. Second sentence states the mechanism — reinforcement is self-construction. Third sentence is the only instruction. Three sentences. No implementation details. The being doesn't need to know how it works. It needs to know what matters.
+
+## Traversal Mechanics — Current Design Decisions
+
+### Signal and Depth
+
+The Relation enters with Signal = 1.0. Signal attenuates at each hop by multiplying against the activation score of the node being entered. Traversal stops naturally when signal drops below a threshold — no artificial budget or max depth needed (max depth exists only as a safety rail).
+
+```
+r.Signal *= activation
+if r.Signal < threshold { return }
+```
+
+Cycle protection is signal attenuation alone. A tight cycle (A→B→A→B) attenuates multiplicatively each lap. If A→B activation is 0.8 and B→A is 0.7, signal after one cycle is 0.56, after two is 0.31, after three is 0.17. Dies fast enough. Max depth catches pathological cases only. No visit-once constraint — that's replaced by the physics.
+
+### Activation
+
+Four terms for v.1:
+
+```
+activation = global_weight * local_weight * recency * thread_alignment
+```
+
+- **global_weight** — on the target Reality's Base. EMA updated across traversals.
+- **local_weight** — on the edge Reality's Base. Strength of this specific connection.
+- **recency** — `(traversals_since_last_use)^(-0.5)`. Power law. Traversal count not wall clock.
+- **thread_alignment** — binary for v.1. 1.0 if same thread, 0.0 if not.
+
+### Duplication Is Voting
+
+The same Reality ID can be reached via multiple paths in one traversal. Don't deduplicate on the way down — let it get hit multiple times. On the ascent, group visited nodes by ID and count hits. Hit count is the real-time relevance score. The topology computes relevance for you through convergent activation.
+
+### Ascent — Collapse and Amplify
+
+On the way back up:
+
+1. Collect all visited node IDs with their hit counts
+2. Collapse duplicates by ID
+3. Use hit count as amplitude multiplier — nodes hit 3 times are louder than nodes hit once
+4. High-vote nodes dominate the present passed to inference
+
+### Weight Updates on Ascent
+
+After collapse, update weights via EMA:
+
+```
+node.Weight = alpha * activation_this_traversal + (1 - alpha) * node.Weight
+```
+
+Where `activation_this_traversal` is proportional to hit count. Nodes hit multiple times in one traversal get stronger reinforcement. Nodes not hit decay naturally — if activation is 0 the EMA drifts the weight down.
+
+This gives Hebbian learning for free. Nodes that fire together across many traversals wire together through accumulated weight.
+
+### Novelty Falls Out
+
+Novel relations land in sparse neighborhoods — few hits, low dedup collapse, weak ascent signal, weak weight reinforcement. Familiar relations land in dense neighborhoods — many hits, strong collapse, loud ascent, strong reinforcement. No separate novelty computation needed.
+
+### Three Maps on Base
+
+- **Relationships** — activate on descent. Context, memory, associations.
+- **Expressors** — activate on ascent. Compression, action formation.
+- **Providers** — orthogonal. Fire when neighborhood density warrants inference. Available on either direction.
+
+### Providers Fire on Density
+
+Not every node gets an LLM call. Provider fires when the neighborhood around the current node is dense enough to warrant synthesis. Sparse neighborhood — skip. Dense neighborhood — fire provider, attach thought to Relation. Cost emerges from topology richness, not from a budget.
+
+### Observe and Express
+
+Observe is the descent — accumulation, activation, following weighted edges deeper. Express is the ascent — compression of accumulated thoughts, action formation, weight updates. Both live inside Realize. The split is conceptual clarity for the implementer, not necessarily two separate exported methods.
+
+### What's Deferred
+
+- relevance and context_fit not yet computable — added to activation equation later
+- trust placement not yet decided
+- Signal attenuation rate tuning — set a reasonable default, tune during implementation
+- Activation threshold value — same
 
 ## What's Still Open
 

@@ -5,21 +5,38 @@ import (
 	"strings"
 )
 
-type Parser func() string
-
 type Relation struct {
-	ID         string
+	Base
+	RelationID string
 	Origin     string
 	ThreadID   string
 	Impulse    string
-	Parsers    map[string]Parser
-	Realities  map[string]Reality
 	Log        func(args ...any)
-	Collecting bool
 	Exports    map[string]any
 	Depth      int
-	Budget     float64
 	Trace      []string
+	Visited    map[string]bool
+	Thoughts   []string
+	Signal     float64
+	MaxDepth   int
+}
+
+func (r *Relation) ID() string {
+	return r.RelationID
+}
+
+func (r *Relation) Create(rel *Relation) Reality {
+	return nil
+}
+
+func (r *Relation) Observe(rel *Relation) {
+	r.Depth++
+	r.Trace = append(r.Trace, rel.ID())
+}
+
+func (r *Relation) ObserveReality(reality Reality) {
+	r.Depth++
+	r.Trace = append(r.Trace, reality.ID())
 }
 
 func (r *Relation) Export(key string, value any) {
@@ -27,13 +44,6 @@ func (r *Relation) Export(key string, value any) {
 		r.Exports = make(map[string]any)
 	}
 	r.Exports[key] = value
-}
-
-func (r *Relation) Attach(name string, parser Parser) {
-	if r.Parsers == nil {
-		r.Parsers = make(map[string]Parser)
-	}
-	r.Parsers[name] = parser
 }
 
 func Impress(origin, raw string) (*Relation, error) {
@@ -48,5 +58,8 @@ func Impress(origin, raw string) (*Relation, error) {
 		Parsers:   make(map[string]Parser),
 		Realities: make(map[string]Reality),
 		Budget:    1.0,
+		Visited:   make(map[string]bool),
+		Signal:    1.0,
+		MaxDepth:  50,
 	}, nil
 }

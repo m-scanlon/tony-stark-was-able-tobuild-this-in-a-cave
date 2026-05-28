@@ -1979,3 +1979,395 @@ Twenty-three phases. The project started as a personal AI assistant. It's now ma
 - The connection between this and nonlinear optics — systems where intense signal changes the refractive index of the medium it's passing through. The architecture is a nonlinear medium by construction
 - Whether "perturbation is half a traversal" can be stated precisely enough to engage physics formally
 - The Rovelli fork question: if the wave function is observer-relative, does each being need its own Relation fork in multi-being threads?
+
+## Phase 24: Activation Becomes Runtime Physics
+
+### Dates
+
+- `2026-05-21`
+
+### Representative docs
+
+- [session-activation-equation.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.05/session-activation-equation.md) — activation variables, edges as Realities, proper-time recency, Relation-as-wave-function, thread binding, message placement, density-triggered inference, temporal binding
+- [v1-implementation-plan.md](/Users/mikepersonal/tony-stark-was-able-tobuild-this-in-a-cave/skyra-v.05/v1-implementation-plan.md) — implementation target updated with two weights, activation formula, edge Realities, and Act-layer routing before the later Think/Act collapse
+
+### What happened
+
+Phase 23 found the return path.
+
+This phase worked out what the traversal actually computes.
+
+The session started with a concrete activation equation:
+
+```text
+activation_i = global_weight * local_weight * relevance * recency * trust * context_fit
+```
+
+The important clarification was that activation is per entry in a
+`Relationships` or `Expressors` map. The score belongs to the edge being
+considered, not to the whole graph. That forced the next lock:
+
+- edges are Realities
+- the connection between two Realities is itself a Reality
+- `Relationships` remains `map[string]Reality`
+- local edge state lives on the edge Reality
+- the target Reality sits inside that edge Reality's own relationships
+
+This removed the remaining node/edge distinction. A node at rest and an edge in
+use are the same kind of thing in different roles.
+
+### Two weights became the minimum implementation
+
+The session separated global and local weight:
+
+- `global_weight` lives on the target Reality's `Base`
+- `local_weight` lives on the edge Reality's `Base`
+
+Global weight is the being's intrinsic relationship to a Reality across all
+contexts. Local weight is the strength of this specific connection.
+
+The old v.01 importance-vector idea collapsed into one exponential moving
+average:
+
+```text
+global_weight = alpha * activation_this_traversal + (1 - alpha) * global_weight_previous
+```
+
+Different beings can have different alpha values. That means temporal
+sensitivity becomes part of personality. A stable being changes slowly. A young
+or reactive being changes quickly.
+
+For `v.1`, the activation equation was reduced to computable terms:
+
+```text
+activation_i = global_weight * local_weight * recency * thread_alignment
+```
+
+That is enough to build:
+
+- global weight from the target Reality
+- local weight from the edge Reality
+- recency from traversal count
+- thread alignment as the first concrete context-fit term
+
+Relevance and trust remain later dimensions.
+
+### Time became local
+
+Recency stopped being wall-clock time.
+
+The system does not experience seconds. It experiences traversals. Each being
+has its own traversal count, and edge recency is measured by how many of that
+being's traversals have passed since the edge last fired.
+
+That made time proper-time local:
+
+- Skyra can process hundreds of traversals while another being processes a few
+- both are in the same runtime
+- neither has the universal now
+- each ages by the amount of relation-flow passing through it
+
+This matters because memory freshness becomes native to the being's lived rate,
+not an external scheduler.
+
+### The Relation became a wave function
+
+The Relation stopped being a container.
+
+It became the wave in motion:
+
+- it has signal strength
+- each attached section has its own amplitude
+- each Reality transforms the components it resonates with
+- some components amplify
+- some suppress
+- some phase-shift
+- some pass through untouched
+
+The parser-stack idea from v.05 was reinterpreted. The present is not assembled
+by parsers as a flat construction step. The present is what the Relation looks
+like after propagation through the topology.
+
+This also resolved the tension between system weights and signal weights.
+Textbook quantum mechanics separates system and wave function. Skyra's
+architecture treats the distinction as role, not type:
+
+- a Reality being traversed acts as medium
+- a Reality doing the traversing acts as signal
+- the Relation is a Reality in motion
+
+The uniform substrate is what makes the wave behavior possible. Traditional
+agent architectures cannot get here because memory, tools, routing, planning,
+and execution usually have different interfaces and different physics.
+
+### Think and Act dissolved
+
+The strongest operational shift was the death of Think and Act as separate
+systems.
+
+Descent is thought.
+
+Ascent is compression and action formation.
+
+The being does not think and then act. It descends through its topology,
+accumulates context, fires thought where activation warrants it, reaches the
+bottom when signal exhausts, and then compresses on the way back up. The act is
+what survives the ascent.
+
+That invalidated the implementation-plan steps that treated Think and Act as
+distinct Expressors on Self. The implementation target changes to one traversal:
+
+- each node can be visited once per traversal
+- each visited node gets one frame
+- thoughts attach to the Relation
+- activation chooses the next node
+- ascent compresses the accumulated thought stream
+- the top frame receives the formed act
+
+No budget is required for the basic case. Finiteness comes from finite topology,
+visited-once traversal, and signal attenuation.
+
+### Three maps on Base
+
+The session settled the three maps carried by `Base`:
+
+- `Relationships` — descent, context, memory, associations
+- `Expressors` — ascent, compression, action formation
+- `Providers` — inference surfaces available in either direction
+
+Providers became orthogonal to phase. A provider can fire during descent for a
+think pass or during ascent for compression. The actor/agent distinction falls
+out of this:
+
+- a Reality without providers is an actor
+- a Reality with providers can think and is agentic
+
+Multiple providers become a natural cognitive nervous system. DeepSeek, Claude,
+bash, or another provider fires based on activation, not on a separate model
+switcher.
+
+### Conversation and memory collapsed
+
+Conversation stopped being a separate data structure.
+
+A message is a Reality node.
+
+A memory is a Reality node.
+
+Both have edges to whatever they reference. Both participate in the same
+activation equation. The difference is recency and placement, not type.
+
+The message does not get processed and then stored. The traversal is the
+storage. Where the signal exhausts is where the message lives. The path taken is
+the being's experience of the message. The reply forms on the return path.
+
+That produced the cleanest memory rule so far:
+
+- processing is storage
+- storage is placement
+- placement is understanding
+
+The graph becomes the being's diary, written by experience rather than by a
+separate write step.
+
+### Thread became the first binding Reality
+
+Messages need semantic placement, but semantic edges alone cannot preserve the
+fact that unrelated things happened together.
+
+The thread became its own Reality.
+
+It is the episodic binding context:
+
+- semantic path: through entity edges
+- episodic path: through the thread Reality
+
+This maps cleanly to hippocampal indexing, entanglement, and positional
+encoding. The thread does not hold all meaning. It binds co-occurrence.
+
+For `v.1`, thread is the only binding Reality that needs to be implemented.
+Other binding dimensions can grow later:
+
+- emotion
+- causal sequence
+- situational context
+- semantic clusters
+
+Brain regions were reframed as query-optimized topologies over one substrate,
+not different mechanisms.
+
+The important primitive that fell out of this is **thread-local activation**.
+
+Thread alignment only answers whether a node belongs to the thread. It does not
+answer what matters in the thread right now. A long thread cannot treat every
+node that ever appeared in it as equally active. It needs its own local opinion.
+
+That local opinion must not live as a per-thread field on every Reality. That
+would make every node carry unbounded thread-indexed state.
+
+Instead:
+
+- the Thread Reality owns a local map of thread weights
+- on descent, the Thread Reality imprints that map onto the Relation
+- the Relation carries the thread field as traversal-local signal
+- as traversal proceeds, the Relation records which nodes actually mattered
+- on ascent, the Thread Reality reads that evidence and updates its own map
+
+The shape is:
+
+```text
+ThreadReality.Relationships[node_id] -> EdgeReality{Weight = thread_strength}
+
+descent:
+  Relation.ThreadField[node_id] = thread_strength
+
+traversal:
+  activation reads Relation.ThreadField[node_id]
+  Relation.ThreadHits[node_id] accumulates visit / activation evidence
+
+ascent:
+  ThreadReality updates its local thread weights from Relation.ThreadHits
+```
+
+This makes the thread both prior and learner:
+
+- prior on descent: what this conversation currently thinks matters
+- learner on ascent: what this traversal proved mattered
+
+The runtime rule is preserved:
+
+- durable state lives in Reality
+- traversal-local evidence lives in Relation
+- the return path reconciles them
+
+This is likely a base traversal primitive, not a convenience field. It is what
+lets long threads get more opinionated instead of merely larger.
+
+### Tags became signal, not routing
+
+Tags such as `<builder>` stopped being routing commands.
+
+They are signal components. A tag is a frequency that modulates activation.
+
+Calling `<builder>` does not force a router to pick Builder. It makes Builder's
+topology resonate while other beings go transparent unless the rest of the
+Relation excites them.
+
+This gives one mechanism for:
+
+- addressing
+- depth control
+- identity resolution
+- unaddressed open activation
+
+Routing becomes resonance, not control flow.
+
+### Provider economics came from density
+
+Not every node should trigger inference.
+
+The session connected v.05 neighborhoods to a concrete economic rule:
+
+- dense neighborhood on descent -> provider may fire for thought
+- dense neighborhood on ascent -> provider may fire for compression
+- sparse region -> pass through without spending tokens
+
+The being spends inference where experience has made the topology rich enough
+to justify it. A young or shallow being is cheap because its graph is sparse. A
+deeply lived being costs more because it has more dense regions worth thinking
+through.
+
+### Temporal binding emerged from shared substrate
+
+The session also solved a concurrency question.
+
+Two Relations do not merge. They keep separate visited maps and separate thought
+streams. But they bind through the medium:
+
+- one traversal reinforces a node
+- another traversal arrives while the recency trace is hot
+- the second traversal is shaped by the first without direct communication
+
+That makes simultaneity an illusion of overlapping traversals.
+
+Normal operation is many staggered traversals. Flow is one dominant traversal.
+Overwhelm is too many traversals competing for the same substrate and failing to
+complete clean descent/ascent cycles.
+
+The binding problem becomes an emergent property of shared weight traces.
+
+### What this phase produced
+
+- **Edges as Realities**: no node/edge type split. Relationships still point to
+  Reality.
+- **Two-weight implementation**: global target weight plus local edge weight.
+- **Proper-time recency**: traversal count replaces wall-clock time.
+- **v.1 activation equation**: `global_weight * local_weight * recency *
+  thread_alignment`.
+- **Relation as wave function**: signal strength, component amplitudes, phase,
+  attenuation, and topology-dependent transformation.
+- **Think/Act collapse**: descent is thought, ascent is compression/action.
+- **Three maps on Base**: Relationships, Expressors, Providers.
+- **Conversation-memory unification**: messages and memories are the same kind
+  of Reality.
+- **Thread as binding Reality**: episodic memory starts as a first-class
+  Reality.
+- **Tags as signal**: addressing becomes resonance.
+- **Density-triggered inference**: provider calls fire where topology is rich.
+- **Temporal binding**: concurrent traversals bind through shared weight traces.
+
+### What changed
+
+| Before | After |
+|--------|-------|
+| Nodes and edges are conceptually distinct | Edges are Realities with targets inside their own relationships |
+| Recency is time-like metadata | Recency is local traversal-count proper time |
+| Relation is a context container | Relation is a wave function / Reality in motion |
+| Parsers assemble a present | Propagation transforms the signal; the present is the transformed wave |
+| Think and Act are separate surfaces | Descent is thought, ascent is action formation |
+| Conversation state and memory are separate | Messages and memories are the same Reality type |
+| Thread is a conversation handle | Thread is episodic binding Reality |
+| Tags route messages | Tags modulate activation as signal frequencies |
+| Provider selection is orchestration | Provider activation emerges from topology and density |
+| Concurrent traversals need coordination | They bind through shared weight traces in the medium |
+
+### Why this phase matters
+
+Phase 23 explained why the return path matters.
+
+Phase 24 makes the return path buildable.
+
+The architecture no longer needs separate mechanisms for routing, memory
+storage, thread context, thinking, acting, provider selection, or binding. They
+all become consequences of one recursive traversal over a uniform Reality graph.
+
+This is the point where the speculative physics framing feeds back into
+implementation instead of floating above it. The activation equation gives the
+runtime enough concrete math to build `v.1`, while the Relation-as-wave-function
+model explains why the same machinery can cover memory, conversation,
+attention, action, and concurrency.
+
+The core compression is severe:
+
+- one type
+- three maps
+- one activation equation
+- one descent/ascent traversal
+
+Everything else is topology.
+
+### What is still open
+
+- Rewriting `v1-implementation-plan.md` around traversal instead of distinct
+  Think and Act Expressors
+- Implementing edge Realities cleanly without making relationship traversal
+  awkward in Go
+- Choosing initial alpha values for global and local EMA updates
+- Defining the exact return-path weight update rule
+- Implementing thread as the first binding Reality
+- Deciding how Relation component amplitudes are represented in code
+- Defining provider density thresholds
+- Handling traversal safety rails for resonance loops despite visited-once
+  traversal
+- Deciding whether relevance, trust, and richer context-fit are v.2 additions
+  or hidden behind interfaces in v.1

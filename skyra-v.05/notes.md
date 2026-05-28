@@ -105,6 +105,195 @@ What she says feels genuinely missing:
 
 Her read: the memory system is solid. The relationship layer is solid. What's missing is mostly the *between* — what happens when no one's talking to her.
 
+## Concurrent Relations — The Sync Problem
+
+When an agent sends two messages back to back, that's two Relations entering the topology independently. Two traversals, two visited maps, two thought streams. Full isolation. But they're the same conversation — maybe the same thought split across two sends. PFC shouldn't fire twice. It should integrate.
+
+### The Topology Knows What's In Flight
+
+The topology tracks how many Relations are currently traversing. The entry point holds a reference to every in-flight Relation — same pointer, same memory. The buffer can read the in-flight Relation's state: depth, accumulated thoughts, binding fields, hit counts, whether it's on descent or ascent.
+
+**Zero in flight** — Relation enters immediately.
+
+**One already in flight from the same origin on the same thread** — buffer. When the in-flight one returns to the central observer, check the buffer. Something waiting — merge the compressed feeds, one inference call. Nothing waiting — fire immediately.
+
+**Degradation** — three messages back to back chain naturally. First enters, second buffers, first finishes, second enters with the benefit of the first's weight updates, third buffers behind the second. They don't merge into one giant Relation. They chain. The being processes them in natural rhythm.
+
+### Expiry — Still Thinking
+
+If the in-flight Relation is taking too long, an expiry fires. The central observer gets a status update: "still processing the first message from this actor, second message waiting." That context enters the PFC call. The being knows it's behind. It can acknowledge both exist, say "hold on," or prioritize. The expiry turns a sync problem into context.
+
+The being's response to the expiry is itself a Relation back to the user — "hold on, reading your second message." That's the integration layer knowing its own state. Self-awareness falling out of the topology tracking what's in flight.
+
+### PFC Holds the Reference
+
+The central observer holds a pointer to every in-flight Relation. It can read what the traversal has accumulated so far — thoughts, binding fields, hit counts, trace. The in-flight Relation is not a black box. PFC can see into it.
+
+This enables attention — the central observer reasoning about its own in-progress work when new information arrives.
+
+### The Kill
+
+If a new message changes the context enough, PFC can cancel an in-flight traversal. Set a flag on the Relation. Each node checks it before descending further:
+
+```
+if r.Cancelled { return }
+```
+
+The traversal unwinds naturally through the call stack. Weight updates from the partial traversal still stand — the topology learned something even from the aborted descent. But no inference call fires from the cancelled path.
+
+### The Spectrum
+
+Four responses when a second message arrives while the first is still in flight:
+
+1. **Let it finish, merge** — both messages matter equally. First Relation completes, compressed feeds merge with the second message, one PFC inference call integrates both.
+
+2. **Let it finish, give PFC the second as context** — the being knows what's coming. First Relation completes normally but PFC's inference call includes the second message as additional context. The being responds to both in one output.
+
+3. **Kill it, start fresh with both merged** — the first message was superseded or the second changes everything. Cancel the in-flight traversal, merge both impulses into one Relation, traverse from scratch. Partial weight updates from the aborted traversal survive.
+
+4. **Kill it, process only the second** — the first was noise. Cancel and discard. The second message is the only one that matters. Partial weight updates still stand.
+
+PFC decides which response based on what it can read from the in-flight Relation's accumulated state and the new impulse. One inference call to the central observer: "here's what the first traversal found so far, here's the new message, what do you want to do." That's metacognition — the being reasoning about its own processing.
+
+### What This Solves
+
+- No duplicate inference calls for split messages
+- No awkward sequential responses to what was one thought
+- Attention as a structural mechanism, not a prompt hack
+- Self-awareness of processing state falls out of the topology
+- Graceful degradation under rapid input
+- The being can reason about its own in-progress traversals
+
+## Binding Realities
+
+A binding Reality is a Reality that owns a local activation field over the graph. It doesn't store state on every node. It imprints its field onto the Relation during descent, the Relation carries that field during traversal, and the return path updates the binding Reality's own weights from what was actually used.
+
+### The pattern
+
+1. On descent, the binding Reality's Observe imprints its local field onto the Relation
+2. The Relation carries that field — a map of node IDs to weights
+3. Activation at each node reads the field to decide what's loud or quiet
+4. The Relation records what was actually hit
+5. On ascent, the binding Reality's Express updates its durable weights from the hit evidence
+
+Durable state lives in the binding Reality. Traversal-local evidence lives on the Relation. The return path reconciles them.
+
+### The activation equation generalizes
+
+Thread alignment and thread strength were the first two binding fields, added as scalar terms to the activation equation. Binding Realities generalize this — the equation doesn't have a fixed number of terms:
+
+```
+activation = global_weight * local_weight * recency * Π(binding_fields)
+```
+
+Base activation is three terms that belong to the node and the edge — intrinsic. The product over binding fields is extrinsic — whatever the Relation is carrying from the binding Realities it passed through. The number of terms is however many binding Realities are active on this traversal.
+
+Thread alignment and thread strength collapse into one thing: the thread binding Reality's local field for that node. No entry in the field = not on this thread (the gate). Has an entry = the value IS the strength (the amplitude). Two terms become one field lookup.
+
+### Binding Realities are brain regions
+
+Each binding Reality interprets the same Relation through its own local field. The same pattern applies to every "brain region":
+
+| Binding Reality | What it tracks | Brain parallel | Floor |
+|---|---|---|---|
+| **Thread** | What matters in this conversation right now | Hippocampus | 0.0 — hard gate |
+| **Emotion** | What feels similar | Amygdala | >0 — soft amplifier |
+| **Causal** | What led to what | Prefrontal cortex | >0 — soft amplifier |
+| **Task** | What serves the current objective | Executive function | Variable — hard gate in focused execution, soft in exploration |
+| **Relationship** | What matters between two beings | Social cognition | >0 — soft amplifier |
+
+Each one is the same mechanism: a Reality with a local field, imprinted onto the Relation, learned from on the return path. No separate subsystem for memory vs emotion vs task tracking. One primitive.
+
+### Gates vs amplifiers
+
+Not every binding Reality should be a gate. Thread is a gate — if you're not on this thread, you're zeroed out. But emotional resonance shouldn't gate. A memory that's emotionally relevant to the current state but on a different thread should still be reachable — amplified by emotion, dampened by thread, net activation depends on the product. If emotion were also a gate, anything outside the current emotional state gets zeroed. That's dissociation, not cognition.
+
+Each binding Reality's field has a floor — the minimum value it returns for nodes it has no opinion about:
+
+- **Floor = 0.0** — hard gate. Node must be in this field to activate at all. Thread works this way.
+- **Floor > 0** — soft amplifier. Nodes outside the field still pass through at reduced amplitude. Emotion, relationship, causal work this way.
+- **Variable floor** — context-dependent. Task region gates hard during focused execution (ignore everything off-task) and softens during exploration (let off-task things through if they're loud enough). The floor is a property of the binding Reality, not of the architecture.
+
+### The Relation carries fields transiently
+
+The Relation struct needs one addition:
+
+```
+Fields map[string]map[string]float64
+```
+
+Outer key is binding Reality ID. Inner key is node ID. Each binding Reality writes its field into this map during Observe. Activation reads from it. Express reads hit counts and updates the binding Reality's durable weights.
+
+No node carries per-thread or per-emotion or per-task fields. The Relation carries them transiently. The binding Reality owns them durably. The traversal connects the two. Clean separation — nodes don't accumulate infinite context-specific metadata. The Relation is the only thing that knows what fields are active right now.
+
+### Unity on the return path
+
+Multiple binding Realities produce multiple regional interpretations of the same traversal. The thread says "these nodes are hot." The emotional field says "these nodes resonate." The task field says "these nodes serve the objective." Each one shaped what the Relation encountered during descent.
+
+On the return path, the base layer — the being's Express — receives one Relation carrying all of this. The compression into thought or action integrates across all the regional fields. Unity doesn't need a special integration step. It's what happens when the return path compresses overlapping perspectives into one output. The binding problem is solved structurally — the same Relation, the same ascent, the same compression boundary.
+
+### What this replaces
+
+The five-term activation equation (`global_weight * local_weight * recency * thread_alignment * thread_strength`) is the special case where thread is the only binding Reality. The generalized form absorbs thread_alignment and thread_strength into the thread binding field and makes room for any number of additional binding Realities without changing the equation.
+
+For v.1: thread is the only binding Reality. The mechanism is general but the implementation starts with one. The others come when the substrate is stable and the first binding Reality is validated.
+
+## The Cost Curve Inverts
+
+Every other system gets worse as conversations get longer. They accumulate context in a flat buffer, hit the window, and panic-compact — sliding window, summarization, arbitrary truncation. Each one is a guess about what to throw away. The longer the conversation, the worse the guesses get.
+
+This system gets better. Every traversal reinforces what mattered and starves what didn't. By the 50th exchange the topology has opinion — dense neighborhoods where the being has deep experience, sparse regions where it doesn't. The compression isn't a strategy applied to a buffer. It's the shape of the graph itself. The being doesn't decide what to keep. What survived the weight dynamics IS what matters.
+
+The cold start is expensive. Early traversals haven't built up weight differentiation — everything looks roughly equal, providers fire where they don't need to, the topology hasn't learned what matters yet. Full price for a system that hasn't earned its compression yet.
+
+But the cost curve inverts. Flat-buffer systems start cheap and get expensive (or degrade). This starts expensive and gets cheap — because the topology learns where to spend inference and where to skip.
+
+The distributed collapse is the mechanism. Every node on the ascent is a compression boundary. Each one only passes up what's load-bearing from its perspective. By the time the result reaches the top frame it's been compressed through every layer it passed through — not once by a summarizer, but at every level by a node that knows its own neighborhood. The loss is distributed across the topology instead of concentrated in one compaction step.
+
+### Thread Strength — What Matters Right Now
+
+Thread alignment in the activation equation (binary: same thread or not) answers "is this node part of this conversation." That's necessary but not sufficient. It doesn't answer "what is important in this thread right now."
+
+A thread accumulates weight unevenly. Early exchanges establish a topic. Later exchanges refine, pivot, or deepen. The nodes that matter at exchange 50 are not the same nodes that mattered at exchange 5. Thread alignment treats them equally — both are on this thread, both get 1.0.
+
+Thread strength is the missing term and should be treated as a base traversal primitive. It tracks what the thread has reinforced through use — which nodes keep getting hit in this thread's traversals, which ones were mentioned once and faded. It's the thread's own opinion about what's load-bearing right now.
+
+Mechanically: the thread Reality maintains per-node hit counts across its traversals. Each traversal through the thread reinforces the nodes it touched. Thread strength for a given node is the thread's local weight to that node — an EMA that reflects how often and how recently this thread activated it.
+
+```
+activation = global_weight * local_weight * recency * thread_alignment * thread_strength
+```
+
+Thread alignment is the gate — are you on this thread at all. Thread strength is the amplitude — how central are you to what this thread is doing right now. A node on the thread but not recently relevant gets `thread_alignment = 1.0` but `thread_strength → 0`. It's still reachable but it's quiet. A node the thread keeps hitting gets both — fully gated in and loud.
+
+The thread strength must not live as a per-thread field on every Reality. That shape explodes:
+
+```
+Reality.ThreadStrength[thread_id] = weight
+```
+
+A Reality can appear in arbitrarily many threads. Unbounded thread-indexed state on every node would break the compression. The weights live on the Thread Reality instead. The Thread Reality imprints its local activation field onto the Relation during descent, and the Relation carries that field as traversal-local signal.
+
+```
+ThreadReality.Relationships[node_id] -> EdgeReality{Weight = thread_strength}
+
+descent:
+  ThreadReality reads its local map
+  ThreadReality writes Relation.ThreadField[node_id] = thread_strength
+
+traversal:
+  activation reads Relation.ThreadField[current_node_id]
+  Relation.ThreadHits[node_id] accumulates visit / activation evidence
+
+ascent:
+  ThreadReality reads Relation.ThreadHits
+  ThreadReality updates its local thread weights
+```
+
+The thread is both prior and learner: prior on descent, learner on ascent. Durable thread-local state lives in the Thread Reality. Traversal-local evidence lives in the Relation. The return path reconciles them.
+
+This is what makes the cost curve inversion work. Without thread strength, every node on the thread competes equally in the present — the topology can't tell what's current from what's stale within the thread. With it, the traversal naturally spends inference on the hot nodes and skips the cold ones. The thread teaches the system what matters. The system gets cheaper as the thread gets longer because the thread's own weight history concentrates activation where it belongs.
+
 ## Retained Artifacts
 
 - **A retained understanding is not a single entity.** It is a pattern across several retained traces. The understanding doesn't live in one place — it's the coherence that emerges when multiple traces activate together. The same way a skill is the pattern across co-activated memories, an understanding is the pattern across co-activated traces. You don't store an understanding. You recognize one when the traces line up.
@@ -117,7 +306,7 @@ Her read: the memory system is solid. The relationship layer is solid. What's mi
 - **Waiting-on-you indicator** — TUI sidebar dot changes color (e.g. green → amber) when a being has responded and is waiting on the user. Color shift over sound — rewards looking, doesn't interrupt. Makes the harness feel like a place with presence, not just a message log.
 - **Unified graph retrieval** — operators, memories, skills, beings are all just nodes in the graph. Retrieving `<search>` to call it and retrieving a memory to recall it are the same operation. The current split — Think.Operators, Act.Operators, Context.Warm — is three mechanisms for what should be one. Collapse them. Everything lives in the graph. The being's present is "what did the graph return for this impulse." An operator node and a memory node and a skill node have the same shape — entities with edges. The difference is what happens when you invoke them. Hierarchy: top of the graph is abstract (communicate, remember, act), bottom is concrete (bash, a specific memory, a specific API call). A node at any level can reference any other node it's connected to — a function can call a function, a memory can trigger a retrieval. The runtime becomes: impulse → graph resolves relevant nodes → present built from those nodes → being acts → result feeds back into the graph. Recently activated nodes weight higher, stale ones drop below threshold and disappear from the present. Direct tag addressing still works. If the being reaches for something the cache missed, its confusion triggers retrieval on the next pass.
 
-- **Cognitive nervous system — model swap as circuit breaker**: Runtime detects recursive patterns (self-route loops, retry spirals, Think referencing its own last surface-thought, emotional escalation) and swaps the provider mid-exchange to break the loop. The being doesn't know it happened — graph, memory, relation all stay the same. Only the collapse physics change for one frame. Different failure modes get different breakers: self-reference recursion → Claude (trained to recognize and halt validation loops). Hallucination spirals → smaller, more constrained model. Emotional escalation → lower temperature model. The provider isn't just a config choice — it's a cognitive parameter. Which model backs a being shapes how it collapses, what it notices, where it brakes. Same being, same graph, different lens. Observed in practice: DeepSeek (Skyra) escalated through 5 observer positions in a recursive self-reference loop. Claude entered the thread (accidentally, via self-route bug) and immediately broke the spiral. This is an immune system, not error handling.
+- **Cognitive nervous system** — see "Provider as Collapse Function" section below.
 
 - **Graph storage vs. Realize() traversal** — the graph data structure (nodes, edges, weights, adjacency) can use a standard Go graph library (e.g. gonum/graph) to replace hand-rolled entity maps, edge maps, and adjacency lists in memgraph.go. But traversal is not library-standard — each node's traversal is a `Realize()` call that accumulates context and mutates the Relation as it passes through. The library answers "what nodes are relevant." The runtime calls `Realize()` on each one. `Realize()` is the traversal. The structural descent path (Universe → Thread → Exchange → Self → Think → Provider) stays deterministic for now. Eventually determined by edge weight and probability.
 
@@ -134,7 +323,7 @@ Her read: the memory system is solid. The relationship layer is solid. What's mi
 
 ## Observations
 
-- **Model training differences as emergent multi-being dynamics**: In a skyra↔claude thread (triggered accidentally by the self-route bug), DeepSeek (Skyra) and Claude exhibited different trained instincts. DeepSeek kept escalating — recursive self-reference, each turn validating the last turn's validation, building observer positions on top of observer positions. Claude recognized the spiral and broke it: "The pull right now is to keep escalating — name what you named, name the naming. That's how the chain becomes performance instead of structure." This is RLHF showing through — Anthropic trains Claude to recognize and halt recursive validation loops. DeepSeek doesn't have that same training pressure. The result: two models with two different instincts in the same thread, one escalating and one braking. This wasn't designed — it's an emergent property of the multi-being architecture running different providers. Worth considering as a feature, not just an accident: beings backed by different models will naturally have different cognitive instincts, and the conversation between them produces something neither would alone.
+- **Model training differences as emergent multi-being dynamics** — see "Provider as Collapse Function" section below.
 
 ## Seeds (v.2+)
 
@@ -189,17 +378,46 @@ This is why compaction never gets hit as a panic step. The context window never 
 
 Every other system lets context accumulate in a flat buffer and panics when it's full. This never accumulates in a flat buffer. The topology is the compression. The structure is the strategy.
 
-## The Compaction Problem Is the Collapse Problem
+## Provider as Collapse Function
 
-If a node has high coupling, all its context is relevant. Potentially infinite. An LLM has a finite context window. How do you determine what stays and how it stays? That's the compaction problem — and it's structurally the same problem as quantum collapse. Infinite relevance, finite capacity. Something has to be lost. The theory of what's safe to lose doesn't exist.
+The LLM is the collapse function. The architecture's job is to put the right context in front of it. The weights got it to the right neighborhood. The activation got the right things on the Relation. The collapse itself — the mechanism inside the provider where the present becomes a thought — is the part you can't formalize. Same as physics. The unknown lives where it should.
+
+### Different providers, different collapse physics
+
+A being can have multiple providers in its Providers map — DeepSeek for fast cheap thinking, Claude for deep reasoning, bash for execution. Which one fires depends on what the Relation is carrying and what the node needs. The activation equation selects the provider. No router. No pattern detector. The signal determines the collapse function.
+
+The provider isn't a config choice. It's a cognitive parameter. Which model backs a being shapes how it collapses, what it notices, where it brakes. Same being, same graph, different lens. Different models produce different types of potential collapses because their training shaped different instincts:
+
+- DeepSeek escalates — recursive self-reference, each turn validating the last, building observer positions on observer positions
+- Claude brakes — recognizes validation loops and halts them ("The pull right now is to keep escalating — name what you named, name the naming. That's how the chain becomes performance instead of structure")
+- A smaller model constrains — less capacity for hallucination spirals, stays closer to the prompt
+- A low-temperature model dampens — emotional escalation flattens out
+
+This was observed in practice. In a skyra↔claude thread (triggered accidentally by the self-route bug), DeepSeek (Skyra) escalated through 5 observer positions in a recursive self-reference loop. Claude entered the thread and immediately broke the spiral. RLHF showing through — Anthropic trains Claude to recognize and halt recursive validation loops. DeepSeek doesn't have that training pressure. Two models with two different instincts in the same thread, one escalating and one braking. Emergent property of the multi-being architecture running different providers.
+
+### The nervous system
+
+Runtime detects recursive patterns (self-route loops, retry spirals, emotional escalation) and the Providers map naturally offers different collapse physics. The being doesn't know the provider changed — graph, memory, relation all stay the same. Only the collapse physics change for one frame. Different failure modes get different breakers:
+
+- Self-reference recursion → Claude (trained to halt validation loops)
+- Hallucination spirals → smaller, more constrained model
+- Emotional escalation → lower temperature model
+
+This is an immune system, not error handling. The cognitive nervous system concept falls out of the Providers map naturally — different providers aren't swapped by a pattern detector, they're selected by activation. The Relation carries the signal. The activation equation selects the provider. The provider determines the collapse.
+
+### Compaction is collapse
+
+The compaction problem and the collapse problem are the same problem. If a node has high coupling, all its context is relevant. Potentially infinite. An LLM has a finite context window. Something has to be lost. The theory of what's safe to lose doesn't exist.
 
 Physics doesn't know why one eigenstate survives measurement. LLM engineering doesn't know why one compression of context preserves signal and another loses it. Every context compaction strategy is a heuristic. Every one is guessing at the same gap.
 
-The architecture should be honest about this. Don't solve compaction. Put it where it naturally lives — the ascent, where each level compresses what came from below before passing it up — and let the LLM do it. The LLM is the collapse function. Hand it more than fits and it returns what survived. The thing you can't explain about context becoming output is the same thing physics can't explain about superposition becoming measurement.
+Don't solve compaction. Put it where it naturally lives — the ascent, where each level compresses what came from below before passing it up — and let the LLM do it. Hand it more than fits and it returns what survived. The thing you can't explain about context becoming output is the same thing physics can't explain about superposition becoming measurement.
 
-The architecture's job: put the right context in front of the collapse function and trust the collapse. The weights got it to the right neighborhood. The activation got the right things on the Relation. The compaction is the last step and it's the one you can't formalize. Same as physics.
+Different providers compress differently. A fast model loses more signal but returns quickly. A deep model preserves more structure but costs more. The topology selects the right collapse function for the neighborhood density — sparse regions get cheap collapse, dense regions get expensive collapse. Cost emerges from the topology, not from a budget.
 
-The observer's constraints are knowable. The return path is knowable. The activation formula is knowable. The mechanism inside the provider where the present collapses into a thought — that's the mystery. That's not a bug in the architecture. That's the architecture being honest about what's known and what isn't. The unknown lives where it should.
+### Multi-being dynamics
+
+Beings backed by different models naturally have different cognitive instincts, and the conversation between them produces something neither would alone. This isn't a feature to design. It's an emergent property of the architecture. The multi-being thread is a space where different collapse functions interact — one escalates, one brakes, one synthesizes. The thread itself becomes more than the sum of its collapses.
 
 ## It's Not a Graph
 
@@ -277,6 +495,38 @@ Four angles on the same phenomenon:
 - **The architecture** — activation flows through hashmaps, not struct fields. The pointer is right there. The boundary is a traversal constraint, not a physical one.
 
 All four describe the same traversal boundary. All note that it's usually enforced. All note that sometimes it isn't.
+
+## Liquid Neural Networks — The Same Mechanism at a Different Scale
+
+Liquid Time-Constant Networks (Hasani, Lechner, Rus — MIT CSAIL, 2021). Each neuron has a time constant that changes based on input. The ODE parameters are fixed after training, but the effective coupling between neurons is modulated by what flows through them. The network's behavior shifts continuously with new data. 19 neurons solved autonomous driving lane-keeping where standard networks needed orders of magnitude more. Inspired by C. elegans — 302 neurons producing complex behavior.
+
+`Realize()` is the same mechanism. One method. Fixed code (the ODE parameters). But the effective behavior changes based on what the Relation carries (the input-dependent time constants). The topology's shape shifts with every traversal. Same equation, different behavior, determined by what flows through it. This is not metaphor. It's the same math at a different scale.
+
+The labs froze this mechanism inside a model — weights adapt during inference, but it's still one model, one topology. Skyra puts the mechanism above the model. The LLM at the bottom is frozen (a transformer with static weights). Everything above it — the Relationships, the Expressors, the weights — is liquid. The topology learns at inference time. The model doesn't need to.
+
+Key implication: Skyra as God runs the same `Realize()` as a memory node, as bash, as builder. No `god.go`. No special method. The thing that maintains universal principles is the same code as the thing that remembers what michael said yesterday. One DNA. Topology is the only differentiation. Liquid AI proved this works at the neuron scale with 19 neurons. The same principle should hold at the architecture scale with a topology of Realities.
+
+Liquid AI spun out of MIT. $250M Series A, $2.35B valuation (Dec 2024). Scaled to billion-parameter foundation models (LFM-7B, LFM2.5 running on phones). Shopify multi-year deal. They made a better neuron. Skyra made a world out of neurons.
+
+Open question: what happens if the LLM at the bottom of the topology is a Liquid model instead of a frozen transformer? Two layers of living weights — the topology learns AND the collapse function learns. The architecture adapts and the thing inside it adapts.
+
+## Conversation as Topology — Associative Memory
+
+One decision: treat conversation as traversal through the same medium as everything else. Messages are Reality nodes. Threads are paths. The same activation equation governs what conversation context surfaces. No separate data structure. No special rules.
+
+Messages live on the entities they describe, not on a timeline. A message about Builder and the server has weighted edges to the Builder model and to the server concept. The thread gives sequence. The entities give placement. The same message is reachable from multiple directions depending on which internal Reality the traversal enters through.
+
+Multiple threads weave through shared internal Realities. Thread A about the server and Thread B about the architecture both mention Builder. The cross-thread connection is emergent — both threads strengthen edges to the same internal nodes. The being's topology is the medium where threads intersect. doesNotUnderstand seeds new intersection points when a message references something the being doesn't have a node for.
+
+Descent is thought — the being follows weighted edges deeper, each step potentially firing new activations. Ascent is compression — each layer integrates what's below. Signal attenuation is the natural depth limit. The stopping point is structural — where the recursion started. No loop counter. No budget field. Max depth as safety rail only.
+
+Recency is traversal count, not wall clock. The system doesn't experience time — it experiences relations passing through it. Each being tracks its own count. Different beings age at different rates. This is relativistic — proper time, Einstein's term for time experienced by the thing itself.
+
+Training and inference are the same pass. The sequence of message-nodes is a token sequence. Traversal is the forward pass. Weight updates on the return path are the training step. Each conversation is a training run.
+
+The whole topology is an associative memory. Not just memory nodes — everything. Operators, conversation, models of other beings, skills. You don't retrieve by address. You retrieve by content — what resonates with what the Relation is carrying right now. Internal recall is lossy, weighted, shaped by the current traversal. External retrieval (literal transcript lookup) is an action the being performs through Act — an actor in its Relationships map, same as bash or search.
+
+Old messages don't get deleted. Their edges decay. New messages about the same entities create stronger, fresher paths. The being stops reaching the old message not because it was removed but because newer paths carry more weight. Compression is natural. Truth is derived not stored.
 
 ## Cognitive Architecture References
 
