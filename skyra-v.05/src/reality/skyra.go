@@ -11,14 +11,17 @@ type Skyra struct {
 	LastTraversed  int     // traversal count when last activated
 	Alpha          float64 // EMA smoothing factor — slow = stable, fast = reactive
 	Type           string  // current expression — set by Competence each frame
+	Content        string  // what this cell holds — identity for PFC, memory for memory, skill for skill
+	Description    string  // what this cell type is responsible for — shapes traversal, not shown during inference
 
 	// the topology — where this Reality sits in the graph
 	Relationships map[string]Reality // descent targets — what this node knows
 	Expressors    map[string]Reality // ascent targets — what this node can do
 
 	// the DNA — keyed by Type, selected by Competence
-	ObserveFns map[string]func(*Relation)            // intake behaviors per type
+	ObserveFns map[string]func(*Relation)            // intake behaviors per type — needed: pass-through, pick-up, propagate
 	ExpressFns map[string]func(*Relation) *Relation  // output behaviors per type
+	// expressors needed: motor (act), thought (provider call), memory (store/retrieve), specialist (promoted dense region)
 }
 
 func (s *Skyra) ID() string {
@@ -49,7 +52,9 @@ func (s *Skyra) Competence(r *Relation) {
 	switch {
 	case activation > 0.8:
 		s.Type = "integrator"
-	case activation > 0.5:
+	case activation > 0.6:
+		s.Type = "specialist" // episodic processor: batch extraction, memory deposit
+	case activation > 0.4:
 		s.Type = "processor"
 	case activation > 0.2:
 		s.Type = "context"
@@ -62,12 +67,18 @@ func (s *Skyra) Competence(r *Relation) {
 // Competence → Observe → descent → ascent → Express → weight update.
 // The Relation enters and leaves transformed. So does the cell.
 func (s *Skyra) Realize(r *Relation) *Relation {
+	if r.Cancelled {
+		s.Decay()
+		return r
+	}
 	if r.Visited[s.id] {
 		return r
 	}
+	r.mu.Lock()
 	r.Visited[s.id] = true
+	r.mu.Unlock()
 
-	// the cell reads itself — what am I right now?
+	// first competence read — what am I on intake?
 	s.Competence(r)
 
 	// descent phase — the cell absorbs from the signal
@@ -78,12 +89,22 @@ func (s *Skyra) Realize(r *Relation) *Relation {
 		r = rel.Realize(r)
 	}
 
+	// decay unvisited neighbors — cancelled traversal, one level deep
+	for id, rel := range s.Relationships {
+		if !r.Visited[id] {
+			rel.Realize(&Relation{Cancelled: true})
+		}
+	}
+
 	// ascent phase — expressors fire on the way back up
 	for _, e := range s.Expressors {
 		r = e.Realize(r)
 	}
 
-	// the cell outputs — may call a Provider from the Relation
+	// second competence read — what am I on output, after descent changed things?
+	s.Competence(r)
+
+	// the cell outputs
 	r = s.Express(r)
 
 	// the cell ages — proper time increments, weights update
@@ -97,7 +118,17 @@ func (s *Skyra) Realize(r *Relation) *Relation {
 // Observe — mutual observation. The Relation observes itself through
 // the encounter first, then the cell's type-specific intake fires.
 func (s *Skyra) Observe(r *Relation) {
+	r.mu.Lock()
+	r.LastSeen = s
+	r.mu.Unlock()
 	r.Observe(r)
+	if s.Content != "" && s.Activation(r) > 0.2 {
+		r.mu.Lock()
+		r.Thoughts = append(r.Thoughts, s.Content)
+		r.Load += len(s.Content)
+		r.Signal -= 0.01 // TODO: cost should be based on token count of content, not flat rate
+		r.mu.Unlock()
+	}
 	if fn, ok := s.ObserveFns[s.Type]; ok {
 		fn(r)
 	}
@@ -118,8 +149,8 @@ func (s *Skyra) Express(r *Relation) *Relation {
 // This is the score that Competence reads to determine what the cell is.
 func (s *Skyra) Activation(rel *Relation) float64 {
 	base := s.Weight * Recency(s.TraversalCount, s.LastTraversed)
-	for _, field := range rel.Fields {
-		if w, ok := field[s.id]; ok {
+	if field, ok := rel.Fields[s.id]; ok {
+		for _, w := range field {
 			base *= w
 		}
 	}

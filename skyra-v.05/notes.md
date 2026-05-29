@@ -434,6 +434,8 @@ This is what makes the cost curve inversion work. Without thread strength, every
 
 - **Cognitive nervous system** — see "Provider as Collapse Function" section below.
 
+- **Persistence** — JSON with ID references for now. Serialize the topology on shutdown, deserialize on boot, re-register function maps from the genome. Circular references (bidirectional relationships) mean serialize by ID and reconstruct pointers on load. This will break eventually — either the topology gets dense enough that pointer reconstruction is too slow, mid-traversal state needs persisting, or the memory pool outgrows a single file. When it breaks, we build custom storage. By then the access patterns will be concrete. Let the pain tell us what the storage needs to be.
+
 - **Graph storage vs. Realize() traversal** — the graph data structure (nodes, edges, weights, adjacency) can use a standard Go graph library (e.g. gonum/graph) to replace hand-rolled entity maps, edge maps, and adjacency lists in memgraph.go. But traversal is not library-standard — each node's traversal is a `Realize()` call that accumulates context and mutates the Relation as it passes through. The library answers "what nodes are relevant." The runtime calls `Realize()` on each one. `Realize()` is the traversal. The structural descent path (Universe → Thread → Exchange → Self → Think → Provider) stays deterministic for now. Eventually determined by edge weight and probability.
 
 ## Bugs
@@ -653,6 +655,72 @@ Training and inference are the same pass. The sequence of message-nodes is a tok
 The whole topology is an associative memory. Not just memory nodes — everything. Operators, conversation, models of other beings, skills. You don't retrieve by address. You retrieve by content — what resonates with what the Relation is carrying right now. Internal recall is lossy, weighted, shaped by the current traversal. External retrieval (literal transcript lookup) is an action the being performs through Act — an actor in its Relationships map, same as bash or search.
 
 Old messages don't get deleted. Their edges decay. New messages about the same entities create stronger, fresher paths. The being stops reaching the old message not because it was removed but because newer paths carry more weight. Compression is natural. Truth is derived not stored.
+
+## Places as Topology Regions
+
+Places are Realities with localized affordances. Beings don't move to places — they subscribe. Subscriptions determine what signals reach a being, what capabilities are visible, what acts are available. A place is just a Reality. A subscription is just an edge. Two creation paths: genome-seeded and density-emerged.
+
+### Two Seeded Places
+
+**Town Hall** — the registry. Every being registers here. Discovery happens through traversal against the registry. Solves "who's here and what can they do." PFC at the world level.
+
+**Factory** — where work happens. Deterministic systems, build pipelines, adapters, act service blocks register here. Solves "what can we build with."
+
+Everything else emerges from density. Lab, Workshop, Desk, Meeting Hall — they form when activity clusters cross threshold. Same mechanism as specialist promotion. Density-emerged places are the promotion gradient applied to regions rather than individual nodes.
+
+### Subscriptions Have Cost
+
+More subscriptions increase awareness but increase noise and cognitive load. Forces natural specialization. A being subscribed to too many places loses energy and becomes less effective. Attention economics as a runtime constraint. The subscription cost is a term in the being's energy budget — same economics layer that governs token and memory budgets.
+
+## Deterministic Systems as First-Class Citizens
+
+LangChain flows, LangGraph workflows, CI/CD, ETL, scripts, adapters — all Realities on the plane. Not competing with beings. Living inside the topology as callable structures. Factory is their natural home.
+
+A deterministic system is a Reality whose Realize() is a fixed pipeline. No inference call. No weight update. It takes a Relation in, runs its steps, returns a Relation out. The topology doesn't care whether a Reality thinks or executes — same interface, same traversal, same activation equation. A being can descend into a CI pipeline the same way it descends into a memory cluster.
+
+This means the plane doesn't replace existing tooling. It becomes the substrate existing tooling lives on. A LangGraph workflow registered as a Reality in the Factory is discoverable, addressable, and composable with every other Reality on the plane.
+
+## External Agents as Native Citizens
+
+Claude Code, AutoGen, CrewAI, any CLI agent — participates through adapters. Two lines in the genome, a Reality whose invariant is a pipe. The adapter Reality's Realize() serializes the Relation into the external agent's expected format, calls it, deserializes the response back onto the Relation. The plane doesn't dominate other ecosystems. It becomes the plane they live on.
+
+```
+being ~name claude ~type agent ~entrypoints claude ~relationships michael,skyra
+being ~name autogen-team ~type agent ~entrypoints pipe:autogen-cli ~relationships skyra,builder
+```
+
+The external agent doesn't know it's inside a topology. It receives a prompt and returns a response. The adapter handles the boundary. The genome declares the agent exists, the adapter implements the crossing, the topology treats it like any other being.
+
+## Four-Provider Cognitive System
+
+Descent and ascent use different collapse physics. Two providers on observe/descent — one for breadth, one for deep seam-finding exploration. Two providers on express/ascent — one for heavy compression in dense neighborhoods, one for fast lightweight compression in sparse regions.
+
+The current concrete mapping:
+
+| Phase | Role | Provider | Why |
+|---|---|---|---|
+| Descent | Breadth exploration | ChatGPT | Wide associative recall, good at surface coverage |
+| Descent | Deep seam-finding | DeepSeek | Recursive depth, follows threads into structure |
+| Ascent | Dense compression | Claude | Heavy synthesis, preserves nuance under pressure |
+| Ascent | Sparse compression | Grok | Fast, lightweight, good at thin signal |
+
+Provider fires based on activation and neighborhood density, not a router. The activation equation selects the provider — dense region triggers heavy collapse, sparse region triggers light collapse. Different collapse physics composed into one traversal.
+
+The being develops cognitive style through which providers keep proving useful where. Early traversals try all four. Over time, weight reinforcement concentrates each provider in the neighborhoods where it performs. The being doesn't choose its cognitive style — it emerges from what worked.
+
+This extends the nervous system concept from notes on Provider as Collapse Function. The difference: that section identified that different providers have different instincts. This section assigns them structurally — descent vs ascent, dense vs sparse — instead of switching reactively on failure.
+
+## Rest Cycle
+
+Continuous traversal without recovery degrades weight structure. The topology needs silence between waves to consolidate what the signal deposited. Not a feature — a requirement of excitable media.
+
+The Visited map is the refractory period for a single traversal — prevents re-entry within one wave. But between waves, the topology has no recovery mechanism. Every traversal reinforces and decays weights immediately. Under sustained load, weights converge too fast — recent signals dominate absolutely, older structure gets starved before it can prove its value.
+
+Rest is the gap between traversals where no new signal enters but weight dynamics still run. Decay continues. Reinforcement from the last traversal settles. The topology reaches a resting potential — a stable weight distribution that reflects accumulated experience, not just the last thing that happened.
+
+Without rest: fibrillation (conflicting signals creating oscillation), seizure (runaway reinforcement in a tight loop), spiral turbulence (circular activation that never dampens). All observed failure modes in excitable media — cardiac tissue, neural networks, chemical reaction-diffusion systems. The architecture inherits them because it implements the same primitive.
+
+Mechanically: a minimum inter-traversal interval per being. The being's thread accepts new Relations but buffers them until the rest period expires. The rest period scales with traversal intensity — deep traversals need longer recovery. The being can be interrupted during rest (urgent signal breaks through) but the interruption itself has cost — reduced compression quality on the forced traversal.
 
 ## Cognitive Architecture References
 
