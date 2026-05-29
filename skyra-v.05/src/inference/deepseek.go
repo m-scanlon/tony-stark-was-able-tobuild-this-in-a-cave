@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"skyra-v05/src/keychain"
+	"skyra-v1/src/keychain"
 )
 
 const (

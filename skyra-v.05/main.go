@@ -10,9 +10,9 @@ import (
 
 	"strconv"
 
-	"skyra-v05/src/debug"
-	"skyra-v05/src/inference"
-	"skyra-v05/src/reality"
+	"skyra-v1/src/debug"
+	"skyra-v1/src/inference"
+	"skyra-v1/src/reality"
 )
 
 func main() {

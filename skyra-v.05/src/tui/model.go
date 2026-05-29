@@ -10,7 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"skyra-v05/src/reality"
+	"skyra-v1/src/reality"
 )
 
 var (

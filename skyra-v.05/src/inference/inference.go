@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"skyra-v05/src/keychain"
+	"skyra-v1/src/keychain"
 )
 
 const (
